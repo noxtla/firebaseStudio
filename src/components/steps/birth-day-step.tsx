@@ -17,6 +17,9 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
     <Card className="w-full border-none shadow-none">
       <CardContent className="space-y-4 pt-6">
         <div className="space-y-2">
+          <p className="text-sm text-foreground mb-1">
+            Your month is September and your year is 1996. Please enter only the day.
+          </p>
           <Label htmlFor="birthDay">Day of Birth</Label>
           <Input
             id="birthDay"
@@ -26,13 +29,10 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
             value={formData.birthDay}
             onChange={onInputChange}
             placeholder="DD"
-            maxLength={2} 
+            maxLength={2}
             required
             className="text-lg p-3"
           />
-          <p className="text-sm text-muted-foreground pt-1">
-            Please enter only the day. For example, if your birthday is September 15, 1996, you would enter 15.
-          </p>
         </div>
       </CardContent>
     </Card>
@@ -40,4 +40,3 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
 };
 
 export default BirthDayStep;
-
