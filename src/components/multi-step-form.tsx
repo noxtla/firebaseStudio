@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
-import type { FormData, FormStep, UserData, CapturedLocation } from '@/types'; // Added CapturedLocation
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 
 import AppHeader from './app-header';
@@ -150,7 +150,7 @@ export default function MultiStepForm() {
                 const nameParts = responseData[0].Name.split(' ');
                 const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
                 setUserInitials(initials);
-                toast({ title: "Success", description: "Phone number verified." });
+                toast({ variant: "success", title: "Success", description: "Phone number verified." });
                 setCurrentStep((prev) => (prev + 1) as FormStep);
               } else {
                 toast({ variant: "destructive", title: "Error", description: "User not found or name missing in response." });
@@ -194,15 +194,13 @@ export default function MultiStepForm() {
         setCaptureTimestamp(null);
         setCapturedLocation(null);
       }
-      if (currentStep === 1) { // Going back to step 0 from step 1
+      if (currentStep === 1) { 
         setUserData(null);
         setUserInitials(null);
         setRawApiResponse(null);
       }
-       if (currentStep === 2 && currentStep -1 === 1) { // Going back to step 1 (phone) from step 2 (SSN)
-         // Keep userData and userInitials if we are going back to step 1 from step 2
-         // but clear ssnLast4, which is already done above.
-       } else if (currentStep > 1) { // Reset user data if going back further than phone step
+       if (currentStep === 2 && currentStep -1 === 1) { 
+       } else if (currentStep > 1) { 
            setUserData(null);
            setUserInitials(null);
            setRawApiResponse(null);
@@ -223,7 +221,7 @@ export default function MultiStepForm() {
   };
 
   let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && currentStep === 4) { // Only show for Photo Step (step 4)
+  if (userInitials && currentStep === 4) { 
     formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
   }
 
@@ -242,7 +240,7 @@ export default function MultiStepForm() {
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            formattedUserInitials={null} // Pass null explicitly
+            formattedUserInitials={null}
           />
         );
       case 3:
@@ -251,7 +249,7 @@ export default function MultiStepForm() {
             formData={formData}
             onInputChange={handleInputChange}
             userData={userData}
-            formattedUserInitials={null} // Pass null explicitly
+            formattedUserInitials={null}
           />
         );
       case 4:
@@ -287,7 +285,7 @@ export default function MultiStepForm() {
   
   const showAppHeader = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
-  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Don't show for step 5 (Done)
+  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; 
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
   return (
@@ -317,34 +315,32 @@ export default function MultiStepForm() {
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
           </div>
+
+          {showNavButtons && (
+            <div className="w-full mt-8 flex justify-between">
+              <Button
+                variant="ghost"
+                onClick={prevStep}
+                disabled={currentStep === 1 && (!userData || isLoadingPhoneNumber)}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+              </Button>
+              <Button onClick={nextStep} disabled={!canProceed || (currentStep === 1 && isLoadingPhoneNumber)}>
+                {currentStep === 1 && isLoadingPhoneNumber ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Next <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-
-      {showNavButtons && (
-        <div className="sticky bottom-0 left-0 right-0 bg-background p-4 border-t border-border shadow-md">
-          <div className="w-full max-w-md mx-auto flex justify-between">
-            <Button
-              variant="ghost"
-              onClick={prevStep}
-              disabled={currentStep === 1 && (!userData || isLoadingPhoneNumber)}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-            </Button>
-            <Button onClick={nextStep} disabled={!canProceed || (currentStep === 1 && isLoadingPhoneNumber)}>
-              {currentStep === 1 && isLoadingPhoneNumber ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Verifying...
-                </>
-              ) : (
-                <>
-                  Next <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
