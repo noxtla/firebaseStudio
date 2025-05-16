@@ -87,22 +87,22 @@ export default function MultiStepForm() {
       // Send phone number to webhook when transitioning from Phone Number step (step 1)
       if (currentStep === 1 && canProceed) {
         const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-        const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1'; // Updated webhook URL
+        const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1';
         try {
           const response = await fetch(webhookUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
+            body: JSON.stringify({ phoneNumber: cleanedPhoneNumber, phoneNumberFlag: true }),
           });
           if (response.ok) {
-            console.log('Phone number sent to webhook successfully.');
+            console.log('Phone number and flag sent to webhook successfully.');
           } else {
-            console.error('Failed to send phone number to webhook:', response.status, await response.text());
+            console.error('Failed to send phone number and flag to webhook:', response.status, await response.text());
           }
         } catch (error) {
-          console.error('Error sending phone number to webhook:', error);
+          console.error('Error sending phone number and flag to webhook:', error);
         }
       }
       setCurrentStep((prev) => (prev + 1) as FormStep);
