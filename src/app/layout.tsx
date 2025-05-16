@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
-import { Shadows_Into_Light_Two, Open_Sans } from 'next/font/google'; // Changed Poppins to Shadows_Into_Light_Two
+import { Shadows_Into_Light_Two, Open_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
-const shadowsIntoLightTwo = Shadows_Into_Light_Two({ // Changed font
+const shadowsIntoLightTwo = Shadows_Into_Light_Two({
   subsets: ['latin'],
-  variable: '--font-heading', // Kept variable name
-  weight: ['400'], // Shadows Into Light Two typically only has a regular weight
+  variable: '--font-heading',
+  weight: ['400'],
 });
 
 const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-body',
-  weight: ['400', '600'],
+  weight: ['400', '600', '800'], // Added 800 weight
 });
 
 export const metadata: Metadata = {
