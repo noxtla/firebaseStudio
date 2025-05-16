@@ -5,7 +5,7 @@ import type { FC, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Removed CardHeader, CardDescription
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import type { FormData } from '@/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -20,24 +20,23 @@ const SsnStep: FC<SsnStepProps> = ({ formData, onInputChange, onNextStep, onPrev
   const canProceed = formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4);
 
   return (
-    <Card className="w-full shadow-xl">
-      {/* CardHeader removed, title is now global */}
+    <Card className="w-full border-none shadow-none">
       <CardContent className="space-y-4 pt-6">
         <div className="space-y-2">
           <Label htmlFor="ssnLast4">Last 4 Digits of SSN</Label>
           <Input
             id="ssnLast4"
             name="ssnLast4"
-            type="password" 
+            type="password"
             inputMode="numeric"
             value={formData.ssnLast4}
             onChange={onInputChange}
-            placeholder="••••" 
+            placeholder="••••"
             maxLength={4}
             minLength={4}
             pattern="\d{4}"
             required
-            className="text-lg p-3 tracking-widest" // border-primary focus:ring-primary applied via globals.css --input
+            className="text-lg p-3 tracking-widest"
           />
         </div>
       </CardContent>

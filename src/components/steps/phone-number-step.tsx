@@ -5,7 +5,7 @@ import type { FC, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Removed CardHeader, CardDescription
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import type { FormData } from '@/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -17,11 +17,10 @@ interface PhoneNumberStepProps {
 }
 
 const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange, onNextStep, onPrevStep }) => {
-  const canProceed = formData.phoneNumber.replace(/\D/g, '').length === 10; // Stricter validation for 10 digits
+  const canProceed = formData.phoneNumber.replace(/\D/g, '').length === 10;
 
   return (
-    <Card className="w-full shadow-xl">
-      {/* CardHeader removed, title is now global */}
+    <Card className="w-full border-none shadow-none">
       <CardContent className="space-y-4 pt-6">
         <div className="space-y-2">
           <Label htmlFor="phoneNumber">Phone Number</Label>
@@ -32,10 +31,10 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange, on
             value={formData.phoneNumber}
             onChange={onInputChange}
             placeholder="(555) 123-4567"
-            maxLength={14} // For formatting like (XXX) XXX-XXXX
+            maxLength={14}
             autoComplete="tel"
             required
-            className="text-lg p-3" // border-primary focus:ring-primary applied via globals.css --input
+            className="text-lg p-3"
           />
         </div>
       </CardContent>

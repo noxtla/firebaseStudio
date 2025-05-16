@@ -5,7 +5,7 @@ import type { FC, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Removed CardHeader, CardDescription
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import type { FormData } from '@/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -21,8 +21,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onNextSt
   const canProceed = !isNaN(day) && day >= 1 && day <= 31;
 
   return (
-    <Card className="w-full shadow-xl">
-      {/* CardHeader removed, title is now global */}
+    <Card className="w-full border-none shadow-none">
       <CardContent className="space-y-4 pt-6">
         <div className="space-y-2">
           <Label htmlFor="birthDay">Day of Birth (e.g., 5, 17, 31)</Label>
@@ -37,7 +36,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onNextSt
             min="1"
             max="31"
             required
-            className="text-lg p-3" // border-primary focus:ring-primary applied via globals.css --input
+            className="text-lg p-3"
           />
         </div>
       </CardContent>

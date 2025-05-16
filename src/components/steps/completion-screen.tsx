@@ -16,15 +16,15 @@ interface CompletionScreenProps {
 
 const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, onRestart }) => {
   return (
-    <Card className="w-full shadow-xl">
-      <CardHeader className="items-center pt-6"> {/* Adjusted padding */}
+    <Card className="w-full border-none shadow-none">
+      <CardHeader className="items-center pt-6">
         <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
         <CardTitle className="text-2xl text-center">Verification Complete!</CardTitle>
         <CardDescription className="text-center">
           Thank you. Your information has been submitted.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6 pt-6"> {/* Adjusted padding */}
+      <CardContent className="space-y-6 pt-6">
         <div>
           <h3 className="font-semibold mb-2 text-lg">Summary:</h3>
           <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">

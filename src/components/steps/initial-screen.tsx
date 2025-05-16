@@ -13,7 +13,7 @@ interface InitialScreenProps {
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card p-4">
-      <Card className="w-full max-w-md shadow-xl">
+      <Card className="w-full max-w-md border-none shadow-none">
         <CardHeader className="items-center pt-10 pb-6">
           <AppHeader />
         </CardHeader>
