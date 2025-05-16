@@ -4,7 +4,11 @@
 
 body {
   font-family: var(--font-body, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif); /* Changed to --font-body */
-  @apply bg-card text-foreground; /* Changed bg-background to bg-card */
+  @apply text-foreground; /* Removed bg-card, text-foreground remains */
+  background-image: linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--card)), #000000);
+  background-repeat: no-repeat;
+  background-attachment: fixed; /* Makes gradient smoother on scroll */
+  min-height: 100vh;
 }
 
 h1, h2, h3, h4, h5, h6, .font-heading-style { /* Changed .font-montserrat to .font-heading-style */
