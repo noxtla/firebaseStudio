@@ -13,7 +13,8 @@ import BirthDayStep from './steps/birth-day-step';
 import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
-import { Phone, Info, CalendarDays, Camera, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Phone, Info, CalendarDays, Camera, CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const initialFormData: FormData = {
@@ -27,7 +28,7 @@ const MAX_STEPS: FormStep = 5;
 const stepLabels = ["Phone", "SSN", "Birth Day", "Photo", "Done"];
 
 const STEP_CONFIG = [
-  { title: "", icon: null }, 
+  { title: "", icon: null },
   { title: "Enter Your Phone Number", icon: Phone },
   { title: "Enter Last 4 of SSN", icon: Info },
   { title: "Day of Birth", icon: CalendarDays },
@@ -59,7 +60,7 @@ export default function MultiStepForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handlePhotoCaptured = (imageDataUrl: string) => {
+  const handlePhotoCaptured = (imageDataUrl: string | null) => {
     setCapturedImage(imageDataUrl);
   };
 
@@ -81,6 +82,24 @@ export default function MultiStepForm() {
     setCapturedImage(null);
   };
 
+  const getCanProceed = (): boolean => {
+    switch (currentStep) {
+      case 1: // Phone Number
+        return formData.phoneNumber.replace(/\D/g, '').length === 10;
+      case 2: // SSN
+        return formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4);
+      case 3: // Birth Day
+        const day = parseInt(formData.birthDay, 10);
+        return !isNaN(day) && day >= 1 && day <= 31;
+      case 4: // Photo
+        return !!capturedImage;
+      default:
+        return false; // Should not happen for steps 1-4
+    }
+  };
+  
+  const canProceed = getCanProceed();
+
   const renderActiveStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -88,8 +107,6 @@ export default function MultiStepForm() {
           <PhoneNumberStep
             formData={formData}
             onInputChange={handleInputChange}
-            onNextStep={nextStep}
-            onPrevStep={prevStep}
           />
         );
       case 2:
@@ -97,8 +114,6 @@ export default function MultiStepForm() {
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            onNextStep={nextStep}
-            onPrevStep={prevStep}
           />
         );
       case 3:
@@ -106,16 +121,12 @@ export default function MultiStepForm() {
           <BirthDayStep
             formData={formData}
             onInputChange={handleInputChange}
-            onNextStep={nextStep}
-            onPrevStep={prevStep}
           />
         );
       case 4:
         return (
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
-            onNextStep={nextStep}
-            onPrevStep={prevStep}
             capturedImage={capturedImage}
           />
         );
@@ -139,37 +150,54 @@ export default function MultiStepForm() {
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
-  const showAppHeader = currentStep !== 0; 
+  const showAppHeader = currentStep !== 0;
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
+  const showFooterNav = currentStep > 0 && currentStep < MAX_STEPS;
+
 
   return (
-    <div className="flex flex-col items-center justify-start w-full min-h-screen bg-card p-4 pt-8 md:pt-12"> {/* Added pt for AppHeader spacing */}
-      <div className="w-full max-w-md">
-        {showAppHeader && <AppHeader className="mb-8" />} {/* Removed my-8, using pt on parent and mb here */}
+    <div className="flex flex-col min-h-screen bg-card">
+      <div className="flex-grow overflow-y-auto p-4 pt-8 md:pt-12">
+        <div className="w-full max-w-md mx-auto">
+          {showAppHeader && <AppHeader className="mb-8" />}
 
-        {showStepper && (
-          <ProgressStepper
-            currentStepIndex={currentStep - 1} 
-            steps={stepLabels}
-            className="mb-6 w-full"
-          />
-        )}
+          {showStepper && (
+            <ProgressStepper
+              currentStepIndex={currentStep - 1}
+              steps={stepLabels}
+              className="mb-6 w-full"
+            />
+          )}
 
-        {showStepTitle && ActiveIcon && activeTitle && (
-          <div className={cn(
-            "mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground",
-            "font-heading-style" // Apply heading font style to step titles
-          )}>
-            <ActiveIcon className="h-6 w-6 text-primary" />
-            <span>{activeTitle}</span>
+          {showStepTitle && ActiveIcon && activeTitle && (
+            <div className={cn(
+              "mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground",
+              "font-heading-style"
+            )}>
+              <ActiveIcon className="h-6 w-6 text-primary" />
+              <span>{activeTitle}</span>
+            </div>
+          )}
+
+          <div className="animate-step-enter w-full" key={currentStep}>
+            {renderActiveStepContent()}
           </div>
-        )}
-
-        <div className="animate-step-enter w-full" key={currentStep}>
-          {renderActiveStepContent()}
         </div>
       </div>
+
+      {showFooterNav && (
+        <div className="sticky bottom-0 w-full bg-card py-4 border-t border-border">
+          <div className="w-full max-w-md mx-auto flex justify-between px-4">
+            <Button variant="ghost" onClick={prevStep} disabled={currentStep === 1 /* Cannot go back from first data step to initial screen via this button */}>
+              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+            </Button>
+            <Button onClick={nextStep} disabled={!canProceed}>
+              Next <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

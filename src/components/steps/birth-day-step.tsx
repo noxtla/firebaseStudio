@@ -2,23 +2,23 @@
 "use client";
 
 import type { FC, ChangeEvent } from 'react';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button'; // No longer needed here
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card'; // Removed CardFooter
 import type { FormData } from '@/types';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+// import { ArrowLeft, ArrowRight } from 'lucide-react'; // No longer needed here
 
 interface BirthDayStepProps {
   formData: Pick<FormData, 'birthDay'>;
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  onNextStep: () => void;
-  onPrevStep: () => void;
+  // onNextStep: () => void; // Removed
+  // onPrevStep: () => void; // Removed
 }
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onNextStep, onPrevStep }) => {
-  const day = parseInt(formData.birthDay, 10);
-  const canProceed = !isNaN(day) && day >= 1 && day <= 31;
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
+  // const day = parseInt(formData.birthDay, 10); // Logic moved to MultiStepForm
+  // const canProceed = !isNaN(day) && day >= 1 && day <= 31; // Logic moved to MultiStepForm
 
   return (
     <Card className="w-full border-none shadow-none">
@@ -40,14 +40,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onNextSt
           />
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button variant="ghost" onClick={onPrevStep} aria-label="Go to previous step">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-        </Button>
-        <Button onClick={onNextStep} disabled={!canProceed} aria-label="Go to next step">
-          Next <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </CardFooter>
+      {/* CardFooter removed */}
     </Card>
   );
 };
