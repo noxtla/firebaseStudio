@@ -47,16 +47,19 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
 
+    if (!capturedImage) {
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: "No image captured. Please go back and take a photo.",
+      });
+      setSubmissionState('reviewing');
+      return;
+    }
+
     const payload = {
       step: "finalSubmission", // Flag for N8N
-      userInput: {
-        phoneNumber: formData.phoneNumber,
-        ssnLast4: formData.ssnLast4,
-        birthDay: formData.birthDay,
-      },
-      verifiedUserData: userData,
       capturedImageBase64: capturedImage,
-      submissionTimestamp: new Date().toISOString(),
     };
 
     try {
@@ -77,17 +80,17 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
           description: "Your information has been sent.",
         });
       } else {
-        // const errorData = await response.text();
-        // console.error('Submission failed:', response.status, errorData);
+        const errorData = await response.text();
+        console.error('Submission failed:', response.status, errorData);
         toast({
           variant: "destructive",
           title: "Submission Error",
-          description: `Failed to submit data. Status: ${response.status}`,
+          description: `Failed to submit data. Status: ${response.status}. ${errorData ? `Details: ${errorData}` : ''}`,
         });
         setSubmissionState('reviewing'); // Allow user to try again
       }
     } catch (error) {
-      // console.error('Error submitting form:', error);
+      console.error('Error submitting form:', error);
       toast({
         variant: "destructive",
         title: "Submission Error",
@@ -166,7 +169,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
               onClick={handleSubmit}
               size="lg"
               aria-label="Submit information"
-              disabled={submissionState === 'submitting'}
+              disabled={submissionState === 'submitting' || !capturedImage}
               className={cn(
                 "bg-green-600 hover:bg-green-700 text-white focus-visible:ring-green-500",
               )}
