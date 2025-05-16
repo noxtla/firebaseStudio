@@ -28,12 +28,12 @@ const MAX_STEPS: FormStep = 5;
 const stepLabels = ["Phone", "SSN", "Birth Day", "Photo", "Done"];
 
 const STEP_CONFIG = [
-  { title: "", icon: null },
-  { title: "Enter Your Phone Number", icon: Phone },
-  { title: "Enter Last 4 of SSN", icon: Info },
-  { title: "Day of Birth", icon: CalendarDays },
-  { title: "Take a Photo", icon: Camera },
-  { title: "Verification Complete!", icon: CheckCircle2 },
+  { title: "", icon: null }, // Initial Screen (Step 0)
+  { title: "Enter Your Phone Number", icon: Phone }, // Step 1
+  { title: "Enter Last 4 of SSN", icon: Info }, // Step 2
+  { title: "Day of Birth", icon: CalendarDays }, // Step 3
+  { title: "Take a Photo", icon: Camera }, // Step 4
+  { title: "Verification Complete!", icon: CheckCircle2 }, // Step 5
 ];
 
 export default function MultiStepForm() {
@@ -71,7 +71,7 @@ export default function MultiStepForm() {
   };
 
   const prevStep = () => {
-    if (currentStep > 0) {
+    if (currentStep > 0) { // Allow going back from step 1 to 0 if needed, though UI button is disabled for step 1
       setCurrentStep((prev) => (prev - 1) as FormStep);
     }
   };
@@ -93,8 +93,8 @@ export default function MultiStepForm() {
         return !isNaN(day) && day >= 1 && day <= 31;
       case 4: // Photo
         return !!capturedImage;
-      default:
-        return false; // Should not happen for steps 1-4
+      default: // Includes step 0 (InitialScreen) and step 5 (CompletionScreen)
+        return true; // Can always "proceed" from initial by button, completion by "start over"
     }
   };
   
@@ -138,11 +138,12 @@ export default function MultiStepForm() {
             onRestart={restartForm}
           />
         );
-      default:
-        return null;
+      default: // Handles step 0
+        return <InitialScreen onNextStep={nextStep} />;
     }
   };
 
+  // For step 0, InitialScreen handles its own full-page layout
   if (currentStep === 0) {
     return <InitialScreen onNextStep={nextStep} />;
   }
@@ -150,21 +151,23 @@ export default function MultiStepForm() {
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
-  const showAppHeader = currentStep !== 0;
+  // Header, Stepper, Title, and Nav should not show on step 0 (InitialScreen)
+  // Nav should not show on step 5 (CompletionScreen)
+  const showAppHeader = currentStep > 0; // Show for all steps except initial
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
-  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
-  const showFooterNav = currentStep > 0 && currentStep < MAX_STEPS;
+  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Not on completion screen
+  const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS; // Not on initial or completion
 
 
   return (
-    <div className="flex flex-col min-h-screen bg-card">
+    <div className="flex flex-col min-h-screen bg-card"> {/* Ensure bg-card for all steps */}
       <div className="flex-grow overflow-y-auto p-4 pt-8 md:pt-12">
         <div className="w-full max-w-md mx-auto">
           {showAppHeader && <AppHeader className="mb-8" />}
 
           {showStepper && (
             <ProgressStepper
-              currentStepIndex={currentStep - 1}
+              currentStepIndex={currentStep - 1} // Stepper is 0-indexed for steps 1-5
               steps={stepLabels}
               className="mb-6 w-full"
             />
@@ -173,7 +176,7 @@ export default function MultiStepForm() {
           {showStepTitle && ActiveIcon && activeTitle && (
             <div className={cn(
               "mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground",
-              "font-heading-style"
+              "font-heading-style" // Apply heading font style
             )}>
               <ActiveIcon className="h-6 w-6 text-primary" />
               <span>{activeTitle}</span>
@@ -183,21 +186,23 @@ export default function MultiStepForm() {
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
           </div>
+
+          {showNavButtons && (
+            <div className="mt-12 flex justify-between"> {/* Increased top margin */}
+              <Button 
+                variant="ghost" 
+                onClick={prevStep} 
+                disabled={currentStep === 1} // Cannot go back from first data step (Phone) to initial via this button
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+              </Button>
+              <Button onClick={nextStep} disabled={!canProceed}>
+                Next <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-
-      {showFooterNav && (
-        <div className="sticky bottom-0 w-full bg-card py-4 border-t border-border">
-          <div className="w-full max-w-md mx-auto flex justify-between px-4">
-            <Button variant="ghost" onClick={prevStep} disabled={currentStep === 1 /* Cannot go back from first data step to initial screen via this button */}>
-              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-            </Button>
-            <Button onClick={nextStep} disabled={!canProceed}>
-              Next <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
