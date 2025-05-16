@@ -43,7 +43,6 @@ export default function MultiStepForm() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
-  // apiError state is removed, using toasts directly for feedback
   const { toast } = useToast();
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -90,15 +89,13 @@ export default function MultiStepForm() {
         if (isNaN(day) || day < 1 || day > 31 || formData.birthDay.length === 0 || formData.birthDay.length > 2) {
           return false;
         }
-        // Validate against userData.dataBirth
         try {
           const [year, month] = userData.dataBirth.split('-').map(Number);
-          // Pad the day from formData for correct comparison
           const paddedDay = String(day).padStart(2, '0');
           const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${paddedDay}`;
           return userEnteredFullDate === userData.dataBirth;
         } catch (e) {
-          return false; // Error parsing date
+          return false; 
         }
       case 4: // Photo
         return !!capturedImage;
@@ -110,9 +107,9 @@ export default function MultiStepForm() {
   const canProceed = getCanProceed();
 
   const nextStep = async () => {
-    if (currentStep === 1 && canProceed) { // Phone Number step
+    if (currentStep === 1 && canProceed) { 
       setIsLoadingPhoneNumber(true);
-      setUserData(null); // Clear previous user data
+      setUserData(null); 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1';
       try {
@@ -122,18 +119,31 @@ export default function MultiStepForm() {
           body: JSON.stringify({ phoneNumber: cleanedPhoneNumber, phoneNumberFlag: true }),
         });
 
+        const responseText = await response.text(); // Get response as text first
+
         if (response.ok) {
-          const responseData: UserData[] = await response.json();
-          if (responseData && responseData.length > 0) {
-            setUserData(responseData[0]);
-            toast({ title: "Success", description: "Phone number verified." });
-            setCurrentStep((prev) => (prev + 1) as FormStep);
+          if (responseText) { // Check if there's content
+            try {
+              const responseData: UserData[] = JSON.parse(responseText);
+              if (responseData && responseData.length > 0) {
+                setUserData(responseData[0]);
+                toast({ title: "Success", description: "Phone number verified." });
+                setCurrentStep((prev) => (prev + 1) as FormStep);
+              } else {
+                toast({ variant: "destructive", title: "Error", description: "User not found with this phone number." });
+              }
+            } catch (jsonError) {
+              console.error('Error parsing JSON:', jsonError, 'Response text:', responseText);
+              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
+            }
           } else {
-            toast({ variant: "destructive", title: "Error", description: "User not found with this phone number." });
+            // Empty response body, even if response.ok is true
+             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
           }
         } else {
-          const errorText = await response.text();
-          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${response.status} ${errorText}` });
+          // Use responseText for error details if available, otherwise a generic message
+          const errorDetails = responseText || `Status: ${response.status}`;
+          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${errorDetails}` });
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
@@ -149,13 +159,9 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-       // Optionally clear specific form data for the step being left
       if (currentStep === 2) setFormData(prev => ({...prev, ssnLast4: ''}));
       if (currentStep === 3) setFormData(prev => ({...prev, birthDay: ''}));
       if (currentStep === 4) setCapturedImage(null);
-      // Do not clear userData when going back from SSN to Phone,
-      // as user might want to re-verify or it might be cleared on next Phone submission.
-      // However, if going back from BirthDay to SSN, userData is still relevant.
     }
   };
 
