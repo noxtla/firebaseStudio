@@ -42,6 +42,10 @@ h1, h2, h3, h4, h5, h6, .font-heading-style { /* Changed .font-montserrat to .fo
     --success: 140 60% 45%; /* Green for success */
     --success-foreground: 0 0% 100%; /* White text for success */
 
+    --toast-success-background: 140 70% 96%; /* Very light pastel green */
+    --toast-success-foreground: 140 60% 30%; /* Darker, readable green text */
+    --toast-success-border: 140 50% 80%;   /* Soft green border */
+
     --border: 0 0% 86.3%; /* #DCDCDC */
     --input: 23 89% 54.1%; /* Primary Orange for input borders, matching the screenshot */
     --ring: 23 89% 54.1%; /* Primary Orange for focus rings */
@@ -83,6 +87,11 @@ h1, h2, h3, h4, h5, h6, .font-heading-style { /* Changed .font-montserrat to .fo
     --destructive-foreground: 0 0% 98%;
     --success: 140 60% 35%; /* Darker green for dark mode */
     --success-foreground: 0 0% 100%;
+    
+    --toast-success-background: 140 30% 12%; /* Dark, slightly green background for dark mode */
+    --toast-success-foreground: 140 50% 75%; /* Lighter green text for dark mode */
+    --toast-success-border: 140 40% 25%;    /* Muted green border for dark mode */
+    
     --border: 0 0% 14.9%;
     --input: 23 89% 54.1%; /* Primary Orange for input borders in dark mode */
     --ring: 23 89% 54.1%;

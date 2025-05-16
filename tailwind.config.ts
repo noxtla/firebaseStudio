@@ -40,9 +40,12 @@ export default {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
-        success: { // Added success variant colors
+        success: {
           DEFAULT: 'hsl(var(--success))',
-          foreground: 'hsl(var(--success-foreground))'
+          foreground: 'hsl(var(--success-foreground))',
+          'toast-bg': 'hsl(var(--toast-success-background))',
+          'toast-text': 'hsl(var(--toast-success-foreground))',
+          'toast-border': 'hsl(var(--toast-success-border))',
         },
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
