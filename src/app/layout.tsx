@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
-import { Montserrat, Roboto } from 'next/font/google';
+import { Poppins, Open_Sans } from 'next/font/google'; // Changed imports
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
-const montserrat = Montserrat({
+const poppins = Poppins({ // Changed font
   subsets: ['latin'],
-  variable: '--font-montserrat',
-  weight: ['400', '600', '700', '800'], // For regular, semibold, bold, extrabold
+  variable: '--font-heading', // Changed variable name
+  weight: ['600', '700', '800'], // Semibold, Bold, ExtraBold
 });
 
-const roboto = Roboto({
+const openSans = Open_Sans({ // Changed font
   subsets: ['latin'],
-  variable: '--font-roboto',
-  weight: ['400', '500', '700'], // For regular, medium, bold
+  variable: '--font-body', // Changed variable name
+  weight: ['400', '600'], // Regular, Semibold (for a slightly bolder body option if needed)
 });
 
 export const metadata: Metadata = {
@@ -26,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${montserrat.variable} ${roboto.variable}`}>
-      <body className={`antialiased`}> {/* Font family will be applied via globals.css */}
-        <main> {/* Removed min-h-screen from here, individual pages/components will control height */}
+    <html lang="en" className={`${poppins.variable} ${openSans.variable}`}>
+      <body className={`antialiased`}>
+        <main>
           {children}
         </main>
         <Toaster />

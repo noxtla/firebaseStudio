@@ -27,7 +27,7 @@ const MAX_STEPS: FormStep = 5;
 const stepLabels = ["Phone", "SSN", "Birth Day", "Photo", "Done"];
 
 const STEP_CONFIG = [
-  { title: "", icon: null }, // Step 0 (Initial Screen) has no specific title/icon here
+  { title: "", icon: null }, 
   { title: "Enter Your Phone Number", icon: Phone },
   { title: "Enter Last 4 of SSN", icon: Info },
   { title: "Day of Birth", icon: CalendarDays },
@@ -83,7 +83,6 @@ export default function MultiStepForm() {
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
-      // case 0 is handled by returning InitialScreen directly below
       case 1:
         return (
           <PhoneNumberStep
@@ -137,23 +136,21 @@ export default function MultiStepForm() {
     return <InitialScreen onNextStep={nextStep} />;
   }
 
-  // For steps other than initial screen
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
-  // AppHeader is not shown on InitialScreen (step 0) as it's part of InitialScreen's layout
-  const showAppHeader = currentStep !== 0;
+  const showAppHeader = currentStep !== 0; 
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
-  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Title not shown on completion screen
+  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
 
   return (
-    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-card p-4">
+    <div className="flex flex-col items-center justify-start w-full min-h-screen bg-card p-4 pt-8 md:pt-12"> {/* Added pt for AppHeader spacing */}
       <div className="w-full max-w-md">
-        {showAppHeader && <AppHeader className="my-8" />}
+        {showAppHeader && <AppHeader className="mb-8" />} {/* Removed my-8, using pt on parent and mb here */}
 
         {showStepper && (
           <ProgressStepper
-            currentStepIndex={currentStep - 1} // Stepper index is 0-based for steps 1-5
+            currentStepIndex={currentStep - 1} 
             steps={stepLabels}
             className="mb-6 w-full"
           />
@@ -162,7 +159,7 @@ export default function MultiStepForm() {
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
             "mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground",
-            "font-montserrat" // Apply Montserrat to step titles
+            "font-heading-style" // Apply heading font style to step titles
           )}>
             <ActiveIcon className="h-6 w-6 text-primary" />
             <span>{activeTitle}</span>
