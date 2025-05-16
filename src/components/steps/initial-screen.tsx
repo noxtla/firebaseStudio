@@ -3,7 +3,8 @@
 
 import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card'; // Added CardHeader
+import AppHeader from '../app-header'; // Import AppHeader
 
 interface InitialScreenProps {
   onNextStep: () => void;
@@ -12,7 +13,10 @@ interface InitialScreenProps {
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
     <Card className="w-full shadow-xl">
-      <CardContent className="pt-10 pb-8 flex flex-col items-center"> {/* Removed CardDescription and space-y-6 */}
+      <CardHeader className="items-center pt-10 pb-6"> {/* Centering and padding for the header */}
+        <AppHeader /> {/* AppHeader is now inside the Card for the initial screen */}
+      </CardHeader>
+      <CardContent className="pb-10 flex flex-col items-center"> {/* Adjusted padding for the button */}
         <Button
           size="lg"
           onClick={onNextStep}
@@ -27,4 +31,3 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
 };
 
 export default InitialScreen;
-

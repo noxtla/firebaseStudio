@@ -4,7 +4,7 @@
 import { useState, type ChangeEvent } from 'react';
 import type { FormData, FormStep } from '@/types';
 
-import AppHeader from './app-header'; // Renamed from AnimatedLogo
+import AppHeader from './app-header'; 
 import ProgressStepper from './progress-stepper';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
@@ -13,7 +13,7 @@ import BirthDayStep from './steps/birth-day-step';
 import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
-import { Phone, Info, CalendarDays, Camera, CheckCircle2 } from 'lucide-react'; // Lucide icons
+import { Phone, Info, CalendarDays, Camera, CheckCircle2 } from 'lucide-react'; 
 
 const initialFormData: FormData = {
   phoneNumber: '',
@@ -21,17 +21,17 @@ const initialFormData: FormData = {
   birthDay: '',
 };
 
-const MAX_STEPS: FormStep = 5; // 0: Initial, ..., 5: Completion
+const MAX_STEPS: FormStep = 5; 
 
 const stepLabels = ["Phone", "SSN", "Birth Day", "Photo", "Done"];
 
 const STEP_CONFIG = [
-  { title: "", icon: null }, // 0: InitialScreen (no specific title/icon needed here)
-  { title: "Enter Your Phone Number", icon: Phone }, // 1: PhoneNumberStep
-  { title: "Enter Last 4 of SSN", icon: Info },    // 2: SsnStep
-  { title: "Day of Birth", icon: CalendarDays }, // 3: BirthDayStep
-  { title: "Take a Photo", icon: Camera },        // 4: PhotoStep
-  { title: "Verification Complete!", icon: CheckCircle2 }, // 5: CompletionScreen (uses its own header)
+  { title: "", icon: null }, 
+  { title: "Enter Your Phone Number", icon: Phone }, 
+  { title: "Enter Last 4 of SSN", icon: Info },    
+  { title: "Day of Birth", icon: CalendarDays }, 
+  { title: "Take a Photo", icon: Camera },        
+  { title: "Verification Complete!", icon: CheckCircle2 }, 
 ];
 
 export default function MultiStepForm() {
@@ -135,22 +135,21 @@ export default function MultiStepForm() {
 
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
-  // Show stepper for steps 1 (Phone) through 5 (Done).
+  
   const showStepper = currentStep > 0;
-  // Show specific step title for steps 1 (Phone) through 4 (Photo).
-  // Step 0 (Initial) and Step 5 (Completion) have their own title/header mechanisms.
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
 
 
   return (
     <div className="w-full flex flex-col items-center">
-      <AppHeader className="my-8" />
+      {/* Conditionally render AppHeader. It will NOT render for step 0 (InitialScreen) */}
+      {currentStep !== 0 && <AppHeader className="my-8" />}
 
       {showStepper && (
         <ProgressStepper
-          currentStepIndex={currentStep - 1} // 0 for Phone, 1 for SSN, ..., 4 for Done
+          currentStepIndex={currentStep - 1} 
           steps={stepLabels}
-          className="mb-6 w-full px-4 md:px-0" // Added padding for mobile
+          className="mb-6 w-full px-4 md:px-0" 
         />
       )}
 
