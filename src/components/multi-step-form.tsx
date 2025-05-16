@@ -4,6 +4,7 @@
 import { useState, type ChangeEvent, useEffect } from 'react';
 import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "@/components/ui/toaster"; // Added Toaster import
 
 import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
@@ -221,9 +222,10 @@ export default function MultiStepForm() {
   };
 
   let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && currentStep === 4) { 
+  if (userInitials && currentStep === 4) { // Only for Photo Step (step 4)
     formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
   }
+
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
@@ -240,7 +242,7 @@ export default function MultiStepForm() {
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            formattedUserInitials={null}
+            formattedUserInitials={null} // Initials not shown on SSN step
           />
         );
       case 3:
@@ -249,7 +251,7 @@ export default function MultiStepForm() {
             formData={formData}
             onInputChange={handleInputChange}
             userData={userData}
-            formattedUserInitials={null}
+            formattedUserInitials={null} // Initials not shown on BirthDay step
           />
         );
       case 4:
@@ -257,7 +259,7 @@ export default function MultiStepForm() {
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
             capturedImage={capturedImage}
-            formattedUserInitials={formattedUserInitialsForStep}
+            formattedUserInitials={formattedUserInitialsForStep} // Pass formatted initials only for photo step
           />
         );
       case 5:
@@ -293,6 +295,8 @@ export default function MultiStepForm() {
       <div className="flex-grow overflow-y-auto p-4 pt-6 sm:pt-8 md:pt-12">
         <div className="w-full max-w-md mx-auto">
           {showAppHeader && <AppHeader className="mb-8" />}
+          
+          <Toaster /> {/* Toaster moved here */}
 
           {showStepper && (
             <ProgressStepper
