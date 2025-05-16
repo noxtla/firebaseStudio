@@ -3,7 +3,7 @@
 
 import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface InitialScreenProps {
   onNextStep: () => void;
@@ -12,11 +12,7 @@ interface InitialScreenProps {
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
     <Card className="w-full shadow-xl">
-      <CardContent className="pt-10 pb-8 flex flex-col items-center space-y-6"> {/* Adjusted padding and spacing */}
-        {/* AppHeader is now rendered globally in MultiStepForm */}
-        <CardDescription className="text-center text-lg px-4">
-          Please verify your identity to continue.
-        </CardDescription>
+      <CardContent className="pt-10 pb-8 flex flex-col items-center"> {/* Removed CardDescription and space-y-6 */}
         <Button
           size="lg"
           onClick={onNextStep}
@@ -31,3 +27,4 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
 };
 
 export default InitialScreen;
+
