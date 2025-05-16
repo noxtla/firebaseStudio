@@ -87,7 +87,7 @@ export default function MultiStepForm() {
       // Send phone number to webhook when transitioning from Phone Number step (step 1)
       if (currentStep === 1 && canProceed) {
         const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-        const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/6c317574-aab1-4a6a-8c49-ca06296fdf7f';
+        const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1'; // Updated webhook URL
         try {
           const response = await fetch(webhookUrl, {
             method: 'POST',
