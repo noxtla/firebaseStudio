@@ -12,21 +12,20 @@ interface InitialScreenProps {
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
     <Card className="w-full shadow-xl">
-      <CardContent className="pt-12 pb-10 flex flex-col items-center space-y-8"> {/* Increased bottom padding and spacing */}
+      <CardContent className="pt-10 pb-8 flex flex-col items-center space-y-6"> {/* Adjusted padding and spacing */}
         {/* AppHeader is now rendered globally in MultiStepForm */}
-        <CardDescription className="text-center text-lg px-4"> {/* Added some horizontal padding for better text flow on small screens */}
+        <CardDescription className="text-center text-lg px-4">
           Please verify your identity to continue.
         </CardDescription>
         <Button
           size="lg"
           onClick={onNextStep}
-          className="w-full max-w-xs text-lg py-6" // Consistent with previous styling
+          className="w-full max-w-xs text-lg py-6 whitespace-normal h-auto" // Allow text wrapping and adjust height
           aria-label="Enter Your Phone Number to start verification process"
         >
           Enter Your Phone Number
         </Button>
       </CardContent>
-      {/* CardFooter removed, button moved into CardContent */}
     </Card>
   );
 };
