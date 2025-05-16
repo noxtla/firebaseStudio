@@ -5,8 +5,8 @@ import type { FC } from 'react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Loader2 } from 'lucide-react';
-import type { FormData, UserData } from '@/types';
+import { CheckCircle, Loader2, MapPin } from 'lucide-react';
+import type { FormData, UserData, CapturedLocation } from '@/types'; // Added CapturedLocation
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ interface CompletionScreenProps {
   formData: FormData;
   capturedImage: string | null;
   captureTimestamp: string | null;
+  capturedLocation: CapturedLocation | null; // New prop
   userData: UserData | null;
   onRestart: () => void;
 }
@@ -41,7 +42,14 @@ const getYearFromDate = (dateString: string): string => {
 };
 
 
-const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, captureTimestamp, userData, onRestart }) => {
+const CompletionScreen: FC<CompletionScreenProps> = ({
+  formData,
+  capturedImage,
+  captureTimestamp,
+  capturedLocation,
+  userData,
+  onRestart
+}) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
   const { toast } = useToast();
 
@@ -58,12 +66,22 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
       return;
     }
 
+    let locationInfo: any = "Precise location not available or permission denied.";
+    if (capturedLocation) {
+      locationInfo = {
+        latitude: capturedLocation.latitude,
+        longitude: capturedLocation.longitude,
+        accuracy: capturedLocation.accuracy,
+        geolocationTimestamp: new Date(capturedLocation.timestamp).toISOString(),
+      };
+    }
+
     const payload = {
       step: "finalSubmission",
       capturedImageBase64: capturedImage,
       metadata: {
-        captureTimestamp: captureTimestamp || new Date().toISOString(), // Fallback if timestamp somehow not set
-        locationInfo: "Precise location not available from image; requires separate Geolocation API permission."
+        captureTimestamp: captureTimestamp || new Date().toISOString(),
+        locationInfo: locationInfo,
       }
     };
 
@@ -162,16 +180,25 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
                     layout="fill"
                     objectFit="contain"
                     data-ai-hint="person face"
+                    className="transform scale-x-[-1]"
                   />
                 </div>
               </div>
             )}
-             {captureTimestamp && (
-              <div>
-                <h3 className="font-semibold text-lg">Photo Details:</h3>
-                <p className="text-sm text-muted-foreground">Captured on: {new Date(captureTimestamp).toLocaleString()}</p>
-              </div>
-            )}
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">Capture Details:</h3>
+              {captureTimestamp && (
+                <p className="text-sm text-muted-foreground">Photo captured on: {new Date(captureTimestamp).toLocaleString()}</p>
+              )}
+              {capturedLocation ? (
+                <p className="text-sm text-muted-foreground flex items-center">
+                  <MapPin className="h-4 w-4 mr-1 text-primary" />
+                  Location: Lat {capturedLocation.latitude.toFixed(4)}, Lon {capturedLocation.longitude.toFixed(4)} (Accuracy: {capturedLocation.accuracy.toFixed(0)}m)
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
+              )}
+            </div>
           </CardContent>
           <CardFooter className="flex justify-center">
             <Button

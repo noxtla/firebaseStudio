@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
-import type { FormData, FormStep, UserData } from '@/types';
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types'; // Added CapturedLocation
 import { useToast } from "@/hooks/use-toast";
 
 import AppHeader from './app-header';
@@ -15,7 +15,7 @@ import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Phone, Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'; // Renamed Camera to CameraIconLucide
+import { Phone, Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const initialFormData: FormData = {
@@ -42,6 +42,7 @@ export default function MultiStepForm() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
+  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null); // New state for location
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
@@ -70,9 +71,14 @@ export default function MultiStepForm() {
     }
   };
 
-  const handlePhotoCaptured = (imageDataUrl: string | null, timestamp?: string) => {
+  const handlePhotoCaptured = (
+    imageDataUrl: string | null,
+    timestamp?: string,
+    location?: CapturedLocation | null
+  ) => {
     setCapturedImage(imageDataUrl);
     setCaptureTimestamp(timestamp || null);
+    setCapturedLocation(location || null);
   };
 
   const getCanProceed = (): boolean => {
@@ -98,7 +104,7 @@ export default function MultiStepForm() {
           const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${paddedDay}`;
           return userEnteredFullDate === userData.dataBirth;
         } catch (e) {
-          return false; 
+          return false;
         }
       case 4: // Photo
         return !!capturedImage;
@@ -110,7 +116,7 @@ export default function MultiStepForm() {
   const canProceed = getCanProceed();
 
   const nextStep = async () => {
-    if (currentStep === 1 && canProceed) { 
+    if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
       setUserData(null);
       setRawApiResponse(null);
@@ -124,7 +130,7 @@ export default function MultiStepForm() {
         });
 
         const responseText = await response.text();
-        setRawApiResponse(responseText);
+        setRawApiResponse(responseText); // Store raw response for debugging
 
         if (response.ok) {
           if (responseText) {
@@ -172,10 +178,11 @@ export default function MultiStepForm() {
       if (currentStep === 4) {
         setCapturedImage(null);
         setCaptureTimestamp(null);
+        setCapturedLocation(null); // Reset location on going back from photo step
       }
-      if (currentStep === 1) { 
+      if (currentStep === 1) {
         setUserData(null);
-        setRawApiResponse(null); 
+        setRawApiResponse(null);
       }
     }
   };
@@ -185,6 +192,7 @@ export default function MultiStepForm() {
     setFormData(initialFormData);
     setCapturedImage(null);
     setCaptureTimestamp(null);
+    setCapturedLocation(null); // Reset location on restart
     setUserData(null);
     setIsLoadingPhoneNumber(false);
     setRawApiResponse(null);
@@ -228,6 +236,7 @@ export default function MultiStepForm() {
             formData={formData}
             capturedImage={capturedImage}
             captureTimestamp={captureTimestamp}
+            capturedLocation={capturedLocation} // Pass location
             userData={userData}
             onRestart={restartForm}
           />

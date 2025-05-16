@@ -14,3 +14,10 @@ export interface UserData {
   NSS: number; // Assuming NSS is the last 4 digits as a number
   dataBirth: string; // Expected format "YYYY-MM-DD"
 }
+
+export interface CapturedLocation {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  timestamp: number; // Timestamp from the geolocation API
+}
