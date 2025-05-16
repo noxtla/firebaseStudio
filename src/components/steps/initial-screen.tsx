@@ -19,7 +19,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
           <Button
             size="lg"
             onClick={onNextStep}
-            className="w-full max-w-xs text-lg py-6 whitespace-normal h-auto"
+            className="w-full max-w-xs text-lg py-6 whitespace-nowrap animate-soft-pulse"
             aria-label="Enter Your Phone Number to start verification process"
           >
             Enter Your Phone Number
@@ -31,3 +31,4 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
 };
 
 export default InitialScreen;
+
