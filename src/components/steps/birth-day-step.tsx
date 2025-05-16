@@ -30,6 +30,9 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
             required
             className="text-lg p-3"
           />
+          <p className="text-sm text-muted-foreground pt-1">
+            Please enter only the day. For example, if your birthday is May 15, 1980, you would enter 15.
+          </p>
         </div>
       </CardContent>
     </Card>

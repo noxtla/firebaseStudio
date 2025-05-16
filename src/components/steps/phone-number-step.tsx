@@ -21,13 +21,13 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange }) 
           <Input
             id="phoneNumber"
             name="phoneNumber"
-            type="text" // Changed from "tel" to "text"
-            inputMode="numeric" // Ensures numeric keypad
+            type="text" 
+            inputMode="numeric" 
             value={formData.phoneNumber}
             onChange={onInputChange}
             placeholder="(555) 123-4567"
-            maxLength={14} // Max length for (XXX) XXX-XXXX format
-            autoComplete="tel" // Still useful for autofill hints
+            maxLength={14} 
+            autoComplete="tel" 
             required
             className="text-lg p-3"
           />
