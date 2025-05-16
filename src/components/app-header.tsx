@@ -8,7 +8,7 @@ interface AppHeaderProps {
 const AppHeader: FC<AppHeaderProps> = ({ className }) => {
   return (
     <div className={cn("text-center", className)}>
-      <h1 className="text-5xl font-extrabold uppercase" style={{ color: 'hsl(var(--primary))' }}>
+      <h1 className="text-4xl md:text-5xl font-extrabold uppercase" style={{ color: 'hsl(var(--primary))' }}>
         ASPLUNDH
       </h1>
     </div>
