@@ -64,24 +64,6 @@ export default function MultiStepForm() {
     setCapturedImage(imageDataUrl);
   };
 
-  const nextStep = () => {
-    if (currentStep < MAX_STEPS) {
-      setCurrentStep((prev) => (prev + 1) as FormStep);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) { 
-      setCurrentStep((prev) => (prev - 1) as FormStep);
-    }
-  };
-
-  const restartForm = () => {
-    setCurrentStep(0);
-    setFormData(initialFormData);
-    setCapturedImage(null);
-  };
-
   const getCanProceed = (): boolean => {
     switch (currentStep) {
       case 1: // Phone Number
@@ -99,6 +81,45 @@ export default function MultiStepForm() {
   };
   
   const canProceed = getCanProceed();
+
+  const nextStep = async () => {
+    if (currentStep < MAX_STEPS) {
+      // Send phone number to webhook when transitioning from Phone Number step (step 1)
+      if (currentStep === 1 && canProceed) {
+        const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
+        const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/6c317574-aab1-4a6a-8c49-ca06296fdf7f';
+        try {
+          const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
+          });
+          if (response.ok) {
+            console.log('Phone number sent to webhook successfully.');
+          } else {
+            console.error('Failed to send phone number to webhook:', response.status, await response.text());
+          }
+        } catch (error) {
+          console.error('Error sending phone number to webhook:', error);
+        }
+      }
+      setCurrentStep((prev) => (prev + 1) as FormStep);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) { 
+      setCurrentStep((prev) => (prev - 1) as FormStep);
+    }
+  };
+
+  const restartForm = () => {
+    setCurrentStep(0);
+    setFormData(initialFormData);
+    setCapturedImage(null);
+  };
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
