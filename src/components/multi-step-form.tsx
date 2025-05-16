@@ -223,7 +223,7 @@ export default function MultiStepForm() {
   };
 
   let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && (currentStep === 2 || currentStep === 3 || currentStep === 4)) {
+  if (userInitials && currentStep === 4) { // Only show for Photo Step (step 4)
     formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
   }
 
@@ -242,7 +242,7 @@ export default function MultiStepForm() {
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            formattedUserInitials={formattedUserInitialsForStep}
+            formattedUserInitials={null} // Pass null explicitly
           />
         );
       case 3:
@@ -251,7 +251,7 @@ export default function MultiStepForm() {
             formData={formData}
             onInputChange={handleInputChange}
             userData={userData}
-            formattedUserInitials={formattedUserInitialsForStep}
+            formattedUserInitials={null} // Pass null explicitly
           />
         );
       case 4:
