@@ -15,7 +15,7 @@ import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Phone, Info, CalendarDays, Camera, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Phone, Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'; // Renamed Camera to CameraIconLucide
 import { cn } from '@/lib/utils';
 
 const initialFormData: FormData = {
@@ -33,7 +33,7 @@ const STEP_CONFIG = [
   { title: "Enter Your Phone Number", icon: Phone }, // Step 1
   { title: "Enter Last 4 of SSN", icon: Info }, // Step 2
   { title: "Day of Birth", icon: CalendarDays }, // Step 3
-  { title: "Take a Photo", icon: Camera }, // Step 4
+  { title: "Take a Photo", icon: CameraIconLucide }, // Step 4
   { title: "Review Your Information", icon: CheckCircle2 }, // Step 5
 ];
 
@@ -41,9 +41,10 @@ export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
-  const [rawApiResponse, setRawApiResponse] = useState<string | null>(null); // For debugging
+  const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -69,8 +70,9 @@ export default function MultiStepForm() {
     }
   };
 
-  const handlePhotoCaptured = (imageDataUrl: string | null) => {
+  const handlePhotoCaptured = (imageDataUrl: string | null, timestamp?: string) => {
     setCapturedImage(imageDataUrl);
+    setCaptureTimestamp(timestamp || null);
   };
 
   const getCanProceed = (): boolean => {
@@ -111,7 +113,7 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) { 
       setIsLoadingPhoneNumber(true);
       setUserData(null);
-      setRawApiResponse(null); // Reset raw API response for new request
+      setRawApiResponse(null);
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1';
       try {
@@ -122,7 +124,7 @@ export default function MultiStepForm() {
         });
 
         const responseText = await response.text();
-        setRawApiResponse(responseText); // Store raw response for debugging
+        setRawApiResponse(responseText);
 
         if (response.ok) {
           if (responseText) {
@@ -167,8 +169,11 @@ export default function MultiStepForm() {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       if (currentStep === 2) setFormData(prev => ({...prev, ssnLast4: ''}));
       if (currentStep === 3) setFormData(prev => ({...prev, birthDay: ''}));
-      if (currentStep === 4) setCapturedImage(null);
-      if (currentStep === 1) { // Reset user data if going back from SSN to Phone
+      if (currentStep === 4) {
+        setCapturedImage(null);
+        setCaptureTimestamp(null);
+      }
+      if (currentStep === 1) { 
         setUserData(null);
         setRawApiResponse(null); 
       }
@@ -179,9 +184,10 @@ export default function MultiStepForm() {
     setCurrentStep(0);
     setFormData(initialFormData);
     setCapturedImage(null);
+    setCaptureTimestamp(null);
     setUserData(null);
     setIsLoadingPhoneNumber(false);
-    setRawApiResponse(null); // Reset raw API response
+    setRawApiResponse(null);
   };
 
   const renderActiveStepContent = () => {
@@ -191,7 +197,7 @@ export default function MultiStepForm() {
           <PhoneNumberStep
             formData={formData}
             onInputChange={handleInputChange}
-            rawApiResponse={rawApiResponse} // Pass raw API response
+            rawApiResponse={rawApiResponse}
           />
         );
       case 2:
@@ -221,6 +227,7 @@ export default function MultiStepForm() {
           <CompletionScreen
             formData={formData}
             capturedImage={capturedImage}
+            captureTimestamp={captureTimestamp}
             userData={userData}
             onRestart={restartForm}
           />
@@ -237,7 +244,7 @@ export default function MultiStepForm() {
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
-  const showAppHeader = currentStep > 0;
+  const showAppHeader = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
@@ -275,7 +282,7 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 && (!userData || isLoadingPhoneNumber)}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>

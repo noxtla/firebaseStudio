@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 interface CompletionScreenProps {
   formData: FormData;
   capturedImage: string | null;
+  captureTimestamp: string | null;
   userData: UserData | null;
   onRestart: () => void;
 }
@@ -40,7 +41,7 @@ const getYearFromDate = (dateString: string): string => {
 };
 
 
-const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, userData, onRestart }) => {
+const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, captureTimestamp, userData, onRestart }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
   const { toast } = useToast();
 
@@ -58,8 +59,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
     }
 
     const payload = {
-      step: "finalSubmission", // Flag for N8N
+      step: "finalSubmission",
       capturedImageBase64: capturedImage,
+      metadata: {
+        captureTimestamp: captureTimestamp || new Date().toISOString(), // Fallback if timestamp somehow not set
+        locationInfo: "Precise location not available from image; requires separate Geolocation API permission."
+      }
     };
 
     try {
@@ -72,8 +77,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
       });
 
       if (response.ok) {
-        // const responseData = await response.json(); // Or response.text() if N8N returns simple status
-        // console.log('Submission successful:', responseData);
         setSubmissionState('submitted');
         toast({
           title: "Submission Successful",
@@ -87,7 +90,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
           title: "Submission Error",
           description: `Failed to submit data. Status: ${response.status}. ${errorData ? `Details: ${errorData}` : ''}`,
         });
-        setSubmissionState('reviewing'); // Allow user to try again
+        setSubmissionState('reviewing');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -96,7 +99,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
         title: "Submission Error",
         description: "An error occurred while submitting your information. Please try again.",
       });
-      setSubmissionState('reviewing'); // Allow user to try again
+      setSubmissionState('reviewing');
     }
   };
 
@@ -161,6 +164,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
                     data-ai-hint="person face"
                   />
                 </div>
+              </div>
+            )}
+             {captureTimestamp && (
+              <div>
+                <h3 className="font-semibold text-lg">Photo Details:</h3>
+                <p className="text-sm text-muted-foreground">Captured on: {new Date(captureTimestamp).toLocaleString()}</p>
               </div>
             )}
           </CardContent>
