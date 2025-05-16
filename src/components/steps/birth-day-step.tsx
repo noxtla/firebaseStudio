@@ -44,9 +44,11 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData
           </p>
         )}
         <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex items-baseline justify-center flex-wrap gap-x-2 text-foreground text-base sm:text-lg" aria-live="polite">
+          {/* Updated class here: removed flex-wrap, changed text size */}
+          <div className="flex items-baseline justify-center gap-x-2 text-foreground text-sm sm:text-base" aria-live="polite">
             <span>Your birthday is</span>
-            <div className="inline-block w-20 align-baseline">
+            {/* Updated width for input container */}
+            <div className="inline-block w-16 align-baseline"> 
               <Input
                 id="birthDay"
                 name="birthDay"
@@ -58,7 +60,8 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData
                 placeholder="DD"
                 maxLength={2}
                 required
-                className="w-full text-center text-lg"
+                // Updated text size for input
+                className="w-full text-center text-sm sm:text-base" 
                 aria-label="Day of your birth (enter two digits)"
               />
             </div>
