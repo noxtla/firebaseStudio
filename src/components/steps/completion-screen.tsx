@@ -155,13 +155,11 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         <>
           <CardHeader className="items-center pt-6">
             <CardTitle className="text-xl sm:text-2xl text-center">Review Your Information</CardTitle>
-            <CardDescription className="text-center pt-2">
-              Please review your details below before submitting.
-            </CardDescription>
+            {/* Removed CardDescription text "Please review your details below before submitting." */}
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>
-              <h3 className="font-semibold mb-2 text-lg">Summary:</h3>
+              <h3 className="font-semibold text-lg mb-2">Summary:</h3>
               <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                 <li>Phone: {formData.phoneNumber}</li>
                 <li>SSN (Last 4): ••••{formData.ssnLast4.slice(-4)}</li>
@@ -231,3 +229,4 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+
