@@ -34,16 +34,24 @@ const STEP_CONFIG = [
   { title: "Enter Last 4 of SSN", icon: Info }, // Step 2
   { title: "Day of Birth", icon: CalendarDays }, // Step 3
   { title: "Take a Photo", icon: CameraIconLucide }, // Step 4
-  { title: "Review Your Information", icon: CheckCircle2 }, // Step 5
+  { title: "Review Your Information", icon: CheckCircle2 }, // Step 5 (CompletionScreen handles its own title)
 ];
+
+const formatInitialsForDisplay = (initials: string): string => {
+  return initials
+    .split('')
+    .map(char => `${char}****`)
+    .join(' ');
+};
 
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
-  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null); // New state for location
+  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [userInitials, setUserInitials] = useState<string | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const { toast } = useToast();
@@ -119,6 +127,7 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
       setUserData(null);
+      setUserInitials(null);
       setRawApiResponse(null);
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1';
@@ -130,33 +139,36 @@ export default function MultiStepForm() {
         });
 
         const responseText = await response.text();
-        setRawApiResponse(responseText); // Store raw response for debugging
+        setRawApiResponse(responseText); 
 
         if (response.ok) {
           if (responseText) {
             try {
               const responseData: UserData[] = JSON.parse(responseText);
-              if (responseData && responseData.length > 0) {
+              if (responseData && responseData.length > 0 && responseData[0].Name) {
                 setUserData(responseData[0]);
+                const nameParts = responseData[0].Name.split(' ');
+                const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
+                setUserInitials(initials);
                 toast({ title: "Success", description: "Phone number verified." });
                 setCurrentStep((prev) => (prev + 1) as FormStep);
               } else {
-                toast({ variant: "destructive", title: "Error", description: "User not found with this phone number." });
+                toast({ variant: "destructive", title: "Error", description: "User not found or name missing in response." });
               }
             } catch (jsonError) {
               console.error('Error parsing JSON:', jsonError, 'Response text:', responseText);
-              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server. Check debug output." });
+              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
             }
           } else {
-             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server. Check debug output." });
+             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
           }
         } else {
           const errorDetails = responseText || `Status: ${response.status}`;
-          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${errorDetails}. Check debug output.` });
+          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${errorDetails}.` });
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
-        toast({ variant: "destructive", title: "Error", description: "An error occurred while verifying your phone number. Check debug output." });
+        toast({ variant: "destructive", title: "Error", description: "An error occurred while verifying your phone number." });
          if (error instanceof Error) {
           setRawApiResponse(`Fetch Error: ${error.message}`);
         } else {
@@ -173,17 +185,28 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (currentStep === 2) setFormData(prev => ({...prev, ssnLast4: ''}));
+      if (currentStep === 2) {
+        setFormData(prev => ({...prev, ssnLast4: ''}));
+      }
       if (currentStep === 3) setFormData(prev => ({...prev, birthDay: ''}));
       if (currentStep === 4) {
         setCapturedImage(null);
         setCaptureTimestamp(null);
-        setCapturedLocation(null); // Reset location on going back from photo step
+        setCapturedLocation(null);
       }
-      if (currentStep === 1) {
+      if (currentStep === 1) { // Going back to step 0 from step 1
         setUserData(null);
+        setUserInitials(null);
         setRawApiResponse(null);
       }
+       if (currentStep === 2 && currentStep -1 === 1) { // Going back to step 1 (phone) from step 2 (SSN)
+         // Keep userData and userInitials if we are going back to step 1 from step 2
+         // but clear ssnLast4, which is already done above.
+       } else if (currentStep > 1) { // Reset user data if going back further than phone step
+           setUserData(null);
+           setUserInitials(null);
+           setRawApiResponse(null);
+       }
     }
   };
 
@@ -192,11 +215,17 @@ export default function MultiStepForm() {
     setFormData(initialFormData);
     setCapturedImage(null);
     setCaptureTimestamp(null);
-    setCapturedLocation(null); // Reset location on restart
+    setCapturedLocation(null);
     setUserData(null);
+    setUserInitials(null);
     setIsLoadingPhoneNumber(false);
     setRawApiResponse(null);
   };
+
+  let formattedUserInitialsForStep: string | null = null;
+  if (userInitials && (currentStep === 2 || currentStep === 3 || currentStep === 4)) {
+    formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
+  }
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
@@ -213,6 +242,7 @@ export default function MultiStepForm() {
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
+            formattedUserInitials={formattedUserInitialsForStep}
           />
         );
       case 3:
@@ -221,6 +251,7 @@ export default function MultiStepForm() {
             formData={formData}
             onInputChange={handleInputChange}
             userData={userData}
+            formattedUserInitials={formattedUserInitialsForStep}
           />
         );
       case 4:
@@ -228,6 +259,7 @@ export default function MultiStepForm() {
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
             capturedImage={capturedImage}
+            formattedUserInitials={formattedUserInitialsForStep}
           />
         );
       case 5:
@@ -236,7 +268,7 @@ export default function MultiStepForm() {
             formData={formData}
             capturedImage={capturedImage}
             captureTimestamp={captureTimestamp}
-            capturedLocation={capturedLocation} // Pass location
+            capturedLocation={capturedLocation}
             userData={userData}
             onRestart={restartForm}
           />
@@ -252,10 +284,10 @@ export default function MultiStepForm() {
 
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
-
+  
   const showAppHeader = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
-  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
+  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Don't show for step 5 (Done)
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
   return (
@@ -275,7 +307,7 @@ export default function MultiStepForm() {
           {showStepTitle && ActiveIcon && activeTitle && (
             <div className={cn(
               "mb-6 flex items-center justify-center text-lg sm:text-xl font-semibold space-x-2 text-foreground",
-              "font-heading-style"
+              "font-heading-style" 
             )}>
               <ActiveIcon className="h-6 w-6 text-primary" />
               <span>{activeTitle}</span>
@@ -285,32 +317,34 @@ export default function MultiStepForm() {
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
           </div>
-
-          {showNavButtons && (
-            <div className="mt-12 flex justify-between">
-              <Button
-                variant="ghost"
-                onClick={prevStep}
-                disabled={currentStep === 1 && (!userData || isLoadingPhoneNumber)}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-              </Button>
-              <Button onClick={nextStep} disabled={!canProceed || (currentStep === 1 && isLoadingPhoneNumber)}>
-                {currentStep === 1 && isLoadingPhoneNumber ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    Next <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            </div>
-          )}
         </div>
       </div>
+
+      {showNavButtons && (
+        <div className="sticky bottom-0 left-0 right-0 bg-background p-4 border-t border-border shadow-md">
+          <div className="w-full max-w-md mx-auto flex justify-between">
+            <Button
+              variant="ghost"
+              onClick={prevStep}
+              disabled={currentStep === 1 && (!userData || isLoadingPhoneNumber)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+            </Button>
+            <Button onClick={nextStep} disabled={!canProceed || (currentStep === 1 && isLoadingPhoneNumber)}>
+              {currentStep === 1 && isLoadingPhoneNumber ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                <>
+                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

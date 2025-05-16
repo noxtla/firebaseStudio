@@ -19,9 +19,10 @@ interface PhotoStepProps {
     location?: CapturedLocation | null
   ) => void;
   capturedImage: string | null;
+  formattedUserInitials?: string | null;
 }
 
-const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
+const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formattedUserInitials }) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -45,7 +46,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
 
     const getCameraPermission = async () => {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(null); // Reset before attempting
+        setHasCameraPermission(null); 
         try {
           const mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "user" }
@@ -104,8 +105,6 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
 
 
   useEffect(() => {
-    // Fetch location only when camera is ready and no image is captured yet,
-    // and we haven't already tried (or succeeded/failed) to get location.
     if (stream && hasCameraPermission === true && !capturedImage && locationStatus === 'idle') {
       if (navigator.geolocation) {
         setLocationStatus('fetching');
@@ -130,7 +129,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
             console.error("Error getting location:", error);
             setLocationErrorMsg(error.message || "Could not retrieve location.");
             setLocationStatus('error');
-            setLocationData(null); // Ensure locationData is null on error
+            setLocationData(null); 
             toast({
               title: "Location Error",
               description: `Could not retrieve location: ${error.message}. Proceeding without location.`,
@@ -160,14 +159,14 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
-        context.translate(canvas.width, 0); // Flip horizontally
+        context.translate(canvas.width, 0); 
         context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        context.setTransform(1, 0, 0, 1, 0, 0); // Reset transform for future draws if any
+        context.setTransform(1, 0, 0, 1, 0, 0); 
 
         const imageDataUrl = canvas.toDataURL('image/jpeg');
         const captureTimestamp = new Date().toISOString();
-        onPhotoCaptured(imageDataUrl, captureTimestamp, locationData); // Pass locationData
+        onPhotoCaptured(imageDataUrl, captureTimestamp, locationData); 
         toast({
           title: "Photo Captured!",
           description: "Your photo has been successfully captured.",
@@ -179,15 +178,14 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
   };
 
   const retakePhoto = () => {
-    onPhotoCaptured(null); // This will clear capturedImage in parent
-    // Reset location fetching states so it tries again
+    onPhotoCaptured(null); 
     setLocationData(null);
     setLocationStatus('idle');
     setLocationErrorMsg(null);
   };
 
   const renderLocationStatus = () => {
-    if (capturedImage) return null; // Don't show while reviewing captured image
+    if (capturedImage) return null; 
 
     if (locationStatus === 'fetching') {
       return (
@@ -220,6 +218,11 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
   return (
     <Card className="w-full border-none shadow-none">
       <CardContent className="space-y-4 pt-6">
+        {formattedUserInitials && (
+          <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
+            {formattedUserInitials}
+          </p>
+        )}
         <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative border border-input">
           <video
             ref={videoRef}
@@ -227,14 +230,14 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
             playsInline
             muted
             className={cn(
-              "w-full h-full object-cover transform scale-x-[-1]", // Mirror effect
+              "w-full h-full object-cover transform scale-x-[-1]", 
               (!!capturedImage || hasCameraPermission !== true || !stream) && "hidden"
             )}
             aria-label="Live camera feed"
           />
 
           {capturedImage && (
-             <Image src={capturedImage} alt="Captured photo" layout="fill" objectFit="contain" data-ai-hint="person selfie" className="transform scale-x-[-1]" /> // Mirror effect
+             <Image src={capturedImage} alt="Captured photo" layout="fill" objectFit="contain" data-ai-hint="person selfie" className="transform scale-x-[-1]" /> 
           )}
 
           {hasCameraPermission === null && !capturedImage && (
@@ -266,7 +269,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage }) => {
             className="w-full"
             size="lg"
             aria-label="Capture photo"
-            disabled={locationStatus === 'fetching'} // Disable capture if location is being fetched
+            disabled={locationStatus === 'fetching'} 
           >
             <Camera className="mr-2 h-5 w-5" />
             {locationStatus === 'fetching' ? 'Fetching Location...' : 'Capture Photo'}

@@ -10,34 +10,39 @@ interface BirthDayStepProps {
   formData: Pick<FormData, 'birthDay'>;
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
   userData: UserData | null;
+  formattedUserInitials?: string | null;
 }
 
 const getMonthName = (monthNumber: number): string => {
   const date = new Date();
-  date.setMonth(monthNumber - 1); // Month is 0-indexed in JavaScript Date
+  date.setMonth(monthNumber - 1); 
   return date.toLocaleString('en-US', { month: 'long' });
 };
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData }) => {
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData, formattedUserInitials }) => {
   let displayMonth = "September";
   let displayYear = "1996";
 
   if (userData && userData.dataBirth) {
     try {
-      const parts = userData.dataBirth.split('-'); // YYYY-MM-DD
+      const parts = userData.dataBirth.split('-'); 
       if (parts.length === 3) {
         displayYear = parts[0];
         displayMonth = getMonthName(parseInt(parts[1], 10));
       }
     } catch (e) {
       console.error("Error parsing userData.dataBirth:", e);
-      // Fallback to defaults if parsing fails
     }
   }
 
   return (
     <Card className="w-full border-none shadow-none">
       <CardContent className="pt-6">
+        {formattedUserInitials && (
+          <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
+            {formattedUserInitials}
+          </p>
+        )}
         <div className="flex flex-col items-center space-y-3 text-center">
           <div className="flex items-baseline justify-center flex-wrap gap-x-2 text-foreground text-base sm:text-lg" aria-live="polite">
             <span>Your birthday is</span>
