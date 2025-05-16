@@ -31,7 +31,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
             className="text-lg p-3"
           />
           <p className="text-sm text-muted-foreground pt-1">
-            Please enter only the day. For example, if your birthday is May 15, 1980, you would enter 15.
+            Please enter only the day. For example, if your birthday is September 15, 1996, you would enter 15.
           </p>
         </div>
       </CardContent>
@@ -40,3 +40,4 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
 };
 
 export default BirthDayStep;
+
