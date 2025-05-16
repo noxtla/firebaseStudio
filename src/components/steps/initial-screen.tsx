@@ -3,7 +3,7 @@
 
 import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card'; // Added CardHeader
+import { Card, CardContent } from '@/components/ui/card';
 import AppHeader from '../app-header';
 
 interface InitialScreenProps {
@@ -12,18 +12,16 @@ interface InitialScreenProps {
 
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
-    // Removed bg-card from this div to allow body gradient to show
-    // Main container centers content vertically and horizontally
-    <div className="min-h-screen w-full flex flex-col items-center justify-center px-4">
-      <Card className="w-full max-w-md border-none shadow-none bg-card"> {/* Card itself remains white */}
-        <CardHeader className="pt-8 pb-4 md:pt-12 md:pb-6"> {/* Adjusted padding */}
-          <AppHeader />
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center p-6 md:p-8"> {/* Adjusted padding */}
+    // Main container centers content vertically and horizontally, with full white background
+    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card px-4">
+      <Card className="w-full max-w-md border-none shadow-none bg-card"> {/* Card itself remains white and borderless/shadowless */}
+        {/* AppHeader and Button are now direct children of CardContent for better spacing control */}
+        <CardContent className="flex flex-col items-center justify-center p-6 md:p-8 gap-y-12"> {/* Increased gap for more spacing */}
+          <AppHeader /> {/* Removed specific margin from AppHeader */}
           <Button
             size="lg"
             onClick={onNextStep}
-            className="w-full max-w-xs text-lg py-6 whitespace-normal h-auto mt-4" // Added margin top
+            className="w-full max-w-xs text-lg py-6 whitespace-normal h-auto" // Removed specific margin
             aria-label="Enter Your Phone Number to start verification process"
           >
             Enter Your Phone Number
