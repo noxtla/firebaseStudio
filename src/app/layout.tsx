@@ -1,9 +1,19 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Montserrat, Roboto } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
+  weight: ['400', '600', '700', '800'], // For regular, semibold, bold, extrabold
+});
+
+const roboto = Roboto({
+  subsets: ['latin'],
+  variable: '--font-roboto',
+  weight: ['400', '500', '700'], // For regular, medium, bold
+});
 
 export const metadata: Metadata = {
   title: 'Asplundh Access',
@@ -16,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        <main className="min-h-screen">
+    <html lang="en" className={`${montserrat.variable} ${roboto.variable}`}>
+      <body className={`antialiased`}> {/* Font family will be applied via globals.css */}
+        <main> {/* Removed min-h-screen from here, individual pages/components will control height */}
           {children}
         </main>
         <Toaster />

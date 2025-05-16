@@ -14,6 +14,7 @@ import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
 import { Phone, Info, CalendarDays, Camera, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const initialFormData: FormData = {
   phoneNumber: '',
@@ -26,7 +27,7 @@ const MAX_STEPS: FormStep = 5;
 const stepLabels = ["Phone", "SSN", "Birth Day", "Photo", "Done"];
 
 const STEP_CONFIG = [
-  { title: "", icon: null },
+  { title: "", icon: null }, // Step 0 (Initial Screen) has no specific title/icon here
   { title: "Enter Your Phone Number", icon: Phone },
   { title: "Enter Last 4 of SSN", icon: Info },
   { title: "Day of Birth", icon: CalendarDays },
@@ -82,7 +83,7 @@ export default function MultiStepForm() {
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
-      // case 0 is handled by returning InitialScreen directly
+      // case 0 is handled by returning InitialScreen directly below
       case 1:
         return (
           <PhoneNumberStep
@@ -128,7 +129,7 @@ export default function MultiStepForm() {
           />
         );
       default:
-        return null; // Should not happen with currentStep logic
+        return null;
     }
   };
 
@@ -136,27 +137,33 @@ export default function MultiStepForm() {
     return <InitialScreen onNextStep={nextStep} />;
   }
 
+  // For steps other than initial screen
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
-  const showStepper = currentStep > 0 && currentStep <= MAX_STEPS; // MAX_STEPS is inclusive for "Done"
+  // AppHeader is not shown on InitialScreen (step 0) as it's part of InitialScreen's layout
+  const showAppHeader = currentStep !== 0;
+  const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Title not shown on completion screen
 
   return (
-    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-background p-4">
+    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-card p-4">
       <div className="w-full max-w-md">
-        <AppHeader className="my-8" />
+        {showAppHeader && <AppHeader className="my-8" />}
 
         {showStepper && (
           <ProgressStepper
-            currentStepIndex={currentStep - 1}
+            currentStepIndex={currentStep - 1} // Stepper index is 0-based for steps 1-5
             steps={stepLabels}
             className="mb-6 w-full"
           />
         )}
 
         {showStepTitle && ActiveIcon && activeTitle && (
-          <div className="mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground">
+          <div className={cn(
+            "mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground",
+            "font-montserrat" // Apply Montserrat to step titles
+          )}>
             <ActiveIcon className="h-6 w-6 text-primary" />
             <span>{activeTitle}</span>
           </div>
