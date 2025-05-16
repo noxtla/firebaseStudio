@@ -4,7 +4,7 @@
 import { useState, type ChangeEvent, useEffect } from 'react';
 import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster"; // Added Toaster import
+import { Toaster } from "@/components/ui/toaster";
 
 import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
@@ -178,6 +178,12 @@ export default function MultiStepForm() {
       } finally {
         setIsLoadingPhoneNumber(false);
       }
+    } else if (currentStep === 2 && canProceed) {
+      toast({ variant: "success", title: "Success", description: "SSN verified." });
+      setCurrentStep((prev) => (prev + 1) as FormStep);
+    } else if (currentStep === 3 && canProceed) {
+      toast({ variant: "success", title: "Success", description: "Birth day verified." });
+      setCurrentStep((prev) => (prev + 1) as FormStep);
     } else if (currentStep < MAX_STEPS && canProceed) {
       setCurrentStep((prev) => (prev + 1) as FormStep);
     }
@@ -186,26 +192,29 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (currentStep === 2) {
+      if (currentStep === 2) { // Coming from SSN back to Phone
         setFormData(prev => ({...prev, ssnLast4: ''}));
+        // Keep userData, userInitials, rawApiResponse from phone step if needed for quick re-verify
+        // Or reset them if phone needs full re-verification:
+        // setUserData(null);
+        // setUserInitials(null);
+        // setRawApiResponse(null);
       }
-      if (currentStep === 3) setFormData(prev => ({...prev, birthDay: ''}));
-      if (currentStep === 4) {
+      if (currentStep === 3) { // Coming from Birth Day back to SSN
+         setFormData(prev => ({...prev, birthDay: ''}));
+      }
+      if (currentStep === 4) { // Coming from Photo back to Birth Day
         setCapturedImage(null);
         setCaptureTimestamp(null);
         setCapturedLocation(null);
       }
-      if (currentStep === 1) { 
-        setUserData(null);
-        setUserInitials(null);
-        setRawApiResponse(null);
+       // If going back to phone step (step 1), conditionally reset userData
+       // This logic might need adjustment based on desired UX if user goes back to phone step
+      if (currentStep -1 === 0) { // if target is initial screen
+          setUserData(null);
+          setUserInitials(null);
+          setRawApiResponse(null);
       }
-       if (currentStep === 2 && currentStep -1 === 1) { 
-       } else if (currentStep > 1) { 
-           setUserData(null);
-           setUserInitials(null);
-           setRawApiResponse(null);
-       }
     }
   };
 
@@ -242,7 +251,7 @@ export default function MultiStepForm() {
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            formattedUserInitials={null} // Initials not shown on SSN step
+            formattedUserInitials={null} 
           />
         );
       case 3:
@@ -251,7 +260,7 @@ export default function MultiStepForm() {
             formData={formData}
             onInputChange={handleInputChange}
             userData={userData}
-            formattedUserInitials={null} // Initials not shown on BirthDay step
+            formattedUserInitials={null} 
           />
         );
       case 4:
@@ -259,7 +268,7 @@ export default function MultiStepForm() {
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
             capturedImage={capturedImage}
-            formattedUserInitials={formattedUserInitialsForStep} // Pass formatted initials only for photo step
+            formattedUserInitials={formattedUserInitialsForStep} 
           />
         );
       case 5:
@@ -296,7 +305,7 @@ export default function MultiStepForm() {
         <div className="w-full max-w-md mx-auto">
           {showAppHeader && <AppHeader className="mb-8" />}
           
-          <Toaster /> {/* Toaster moved here */}
+          <Toaster />
 
           {showStepper && (
             <ProgressStepper
@@ -325,7 +334,7 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 1 && (!userData || isLoadingPhoneNumber)}
+                disabled={currentStep === 1 && isLoadingPhoneNumber} // Disable previous on step 1 if loading
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
