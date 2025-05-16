@@ -27,8 +27,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
   };
 
   const handleStartOver = () => {
-    setSubmissionState('reviewing'); // Reset state for this component
-    onRestart(); // Call original restart logic from MultiStepForm
+    setSubmissionState('reviewing'); 
+    onRestart(); 
   };
 
   return (
@@ -37,7 +37,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
         <>
           <CardHeader className="items-center pt-6 animate-step-enter">
             <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-            <CardTitle className="text-2xl text-center">Submission Successful!</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl text-center">Submission Successful!</CardTitle>
             <CardDescription className="text-center">
               Your information has been submitted successfully.
             </CardDescription>
@@ -51,7 +51,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
       ) : (
         <>
           <CardHeader className="items-center pt-6">
-            <CardTitle className="text-2xl text-center">Review Your Information</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl text-center">Review Your Information</CardTitle>
             <CardDescription className="text-center pt-2">
               Please review your details below before submitting.
             </CardDescription>
@@ -88,7 +88,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
               disabled={submissionState === 'submitting'}
               className={cn(
                 "bg-green-600 hover:bg-green-700 text-white focus-visible:ring-green-500",
-                 // submissionState === 'submitting' ? "bg-green-400" : "bg-green-600 hover:bg-green-700"
               )}
             >
               {submissionState === 'submitting' ? (

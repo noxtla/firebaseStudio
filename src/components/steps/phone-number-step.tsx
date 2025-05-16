@@ -23,14 +23,14 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange }) 
             name="phoneNumber"
             type="text" 
             inputMode="numeric" 
-            pattern="[0-9]*" // Added pattern
+            pattern="[0-9]*"
             value={formData.phoneNumber}
             onChange={onInputChange}
             placeholder="(555) 123-4567"
             maxLength={14} 
             autoComplete="tel" 
             required
-            className="text-lg p-3"
+            className="text-base sm:text-lg p-2 sm:p-3"
           />
         </div>
       </CardContent>
@@ -39,4 +39,3 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange }) 
 };
 
 export default PhoneNumberStep;
-

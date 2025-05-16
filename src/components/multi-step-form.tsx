@@ -151,15 +151,14 @@ export default function MultiStepForm() {
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
-  // For steps 1-5, show the main form layout
   const showAppHeader = currentStep > 0; 
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; 
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background"> {/* Added bg-background for steps 1-5 */}
-      <div className="flex-grow overflow-y-auto p-4 pt-8 md:pt-12">
+    <div className="flex flex-col min-h-screen bg-background">
+      <div className="flex-grow overflow-y-auto p-4 pt-6 sm:pt-8 md:pt-12">
         <div className="w-full max-w-md mx-auto">
           {showAppHeader && <AppHeader className="mb-8" />}
 
@@ -173,7 +172,7 @@ export default function MultiStepForm() {
 
           {showStepTitle && ActiveIcon && activeTitle && (
             <div className={cn(
-              "mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground",
+              "mb-6 flex items-center justify-center text-lg sm:text-xl font-semibold space-x-2 text-foreground",
               "font-heading-style" 
             )}>
               <ActiveIcon className="h-6 w-6 text-primary" />
@@ -186,7 +185,7 @@ export default function MultiStepForm() {
           </div>
 
           {showNavButtons && (
-            <div className="mt-12 flex justify-between"> {/* mt-8 or mt-12, adjust as needed */}
+            <div className="mt-12 flex justify-between"> 
               <Button 
                 variant="ghost" 
                 onClick={prevStep} 
