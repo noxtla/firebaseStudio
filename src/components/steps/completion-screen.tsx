@@ -6,30 +6,58 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2 } from 'lucide-react';
-import type { FormData } from '@/types';
+import type { FormData, UserData } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 interface CompletionScreenProps {
   formData: FormData;
   capturedImage: string | null;
+  userData: UserData | null; // Added userData
   onRestart: () => void;
 }
 
-const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, onRestart }) => {
+const getMonthNameFromDate = (dateString: string): string => {
+  try {
+    const [_, monthNumStr] = dateString.split('-');
+    const monthNum = parseInt(monthNumStr, 10);
+    const date = new Date();
+    date.setMonth(monthNum - 1);
+    return date.toLocaleString('en-US', { month: 'long' });
+  } catch {
+    return "September"; // Fallback
+  }
+};
+
+const getYearFromDate = (dateString: string): string => {
+  try {
+    const [yearStr] = dateString.split('-');
+    return yearStr;
+  } catch {
+    return "1996"; // Fallback
+  }
+};
+
+
+const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, userData, onRestart }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
     // Simulate API call
+    // TODO: Implement actual submission logic if needed, e.g., sending all data to a final webhook.
     await new Promise(resolve => setTimeout(resolve, 2000));
     setSubmissionState('submitted');
   };
 
   const handleStartOver = () => {
-    setSubmissionState('reviewing'); 
-    onRestart(); 
+    setSubmissionState('reviewing');
+    onRestart();
   };
+
+  const displayMonth = userData?.dataBirth ? getMonthNameFromDate(userData.dataBirth) : "September";
+  const displayYear = userData?.dataBirth ? getYearFromDate(userData.dataBirth) : "1996";
+  const birthDayDisplay = `${formData.birthDay} ${displayMonth} ${displayYear}`;
 
   return (
     <Card className="w-full border-none shadow-none">
@@ -62,7 +90,13 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
               <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                 <li>Phone: {formData.phoneNumber}</li>
                 <li>SSN (Last 4): ••••{formData.ssnLast4.slice(-4)}</li>
-                <li>Birth Day: {formData.birthDay} September 1996</li>
+                <li>Birth Day: {birthDayDisplay}</li>
+                {userData && (
+                  <>
+                    <li>Name: {userData.Name}</li>
+                    <li>Position: {userData.Puesto}</li>
+                  </>
+                )}
               </ul>
             </div>
             {capturedImage && (
