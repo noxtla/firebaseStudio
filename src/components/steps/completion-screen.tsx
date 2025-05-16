@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin } from 'lucide-react';
-import type { FormData, UserData, CapturedLocation } from '@/types'; // Added CapturedLocation
+import type { FormData, UserData, CapturedLocation } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -15,7 +15,7 @@ interface CompletionScreenProps {
   formData: FormData;
   capturedImage: string | null;
   captureTimestamp: string | null;
-  capturedLocation: CapturedLocation | null; // New prop
+  capturedLocation: CapturedLocation | null;
   userData: UserData | null;
   onRestart: () => void;
 }
@@ -76,8 +76,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       };
     }
 
-    const payload = {
+    const payload: any = {
       step: "finalSubmission",
+      name: userData?.Name || '',
+      phoneNumber: formData.phoneNumber || '',
+      ssnLast4: formData.ssnLast4 || '',
+      birthDay: formData.birthDay || '',
       capturedImageBase64: capturedImage,
       metadata: {
         captureTimestamp: captureTimestamp || new Date().toISOString(),
