@@ -33,7 +33,7 @@ body {
     --destructive-foreground: 0 0% 98%;
 
     --border: 0 0% 86.3%; /* #DCDCDC */
-    --input: 0 0% 86.3%; /* #DCDCDC */
+    --input: 23 89% 54.1%; /* Primary Orange for input borders, matching the screenshot */
     --ring: 23 89% 54.1%; /* Primary Orange for focus rings */
 
     --chart-1: 12 76% 61%;
@@ -72,7 +72,7 @@ body {
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --input: 23 89% 54.1%; /* Primary Orange for input borders in dark mode */
     --ring: 23 89% 54.1%;
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;

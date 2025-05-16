@@ -1,9 +1,9 @@
+
 "use client";
 
 import type { FC } from 'react';
-import AnimatedLogo from '@/components/animated-logo';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardDescription } from '@/components/ui/card'; // Added CardDescription
 
 interface InitialScreenProps {
   onNextStep: () => void;
@@ -12,10 +12,13 @@ interface InitialScreenProps {
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
     <Card className="w-full shadow-xl">
-      <CardContent className="pt-10 pb-8 flex flex-col items-center space-y-8">
-        <AnimatedLogo />
+      <CardContent className="pt-12 pb-8 flex flex-col items-center space-y-6">
+        {/* AppHeader is now rendered globally in MultiStepForm */}
+        <CardDescription className="text-center text-lg">
+          Please verify your identity to continue.
+        </CardDescription>
       </CardContent>
-      <CardFooter className="flex justify-center pb-8">
+      <CardFooter className="flex justify-center pb-10">
         <Button 
           size="lg" 
           onClick={onNextStep} 

@@ -1,10 +1,11 @@
+
 "use client";
 
 import type { FC, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Removed CardHeader, CardDescription
 import type { FormData } from '@/types';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -21,15 +22,10 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onNextSt
 
   return (
     <Card className="w-full shadow-xl">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center">Day of Birth</CardTitle>
-        <CardDescription className="text-center">
-          Please enter the day of the month you were born (e.g., 5, 17, 31).
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+      {/* CardHeader removed, title is now global */}
+      <CardContent className="space-y-4 pt-6">
         <div className="space-y-2">
-          <Label htmlFor="birthDay">Day of Birth</Label>
+          <Label htmlFor="birthDay">Day of Birth (e.g., 5, 17, 31)</Label>
           <Input
             id="birthDay"
             name="birthDay"
@@ -41,13 +37,13 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onNextSt
             min="1"
             max="31"
             required
-            className="text-lg p-3"
+            className="text-lg p-3" // border-primary focus:ring-primary applied via globals.css --input
           />
         </div>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onPrevStep} aria-label="Go to previous step">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        <Button variant="ghost" onClick={onPrevStep} aria-label="Go to previous step">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Previous
         </Button>
         <Button onClick={onNextStep} disabled={!canProceed} aria-label="Go to next step">
           Next <ArrowRight className="ml-2 h-4 w-4" />

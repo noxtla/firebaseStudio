@@ -1,9 +1,10 @@
+
 "use client";
 
 import type { FC } from 'react';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter } from '@/components/ui/card'; // Removed CardHeader, CardDescription
 import { useToast } from "@/hooks/use-toast";
 import { Camera, ArrowLeft, ArrowRight, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
@@ -23,7 +24,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, onNextStep, onPrevStep
   const { toast } = useToast();
 
   useEffect(() => {
-    if (capturedImage) { // If image already captured, don't restart camera
+    if (capturedImage) { 
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
@@ -68,7 +69,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, onNextStep, onPrevStep
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [capturedImage]); // Rerun if capturedImage is cleared
+  }, [capturedImage]); 
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current && stream) {
@@ -81,8 +82,10 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, onNextStep, onPrevStep
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageDataUrl = canvas.toDataURL('image/jpeg');
         onPhotoCaptured(imageDataUrl);
-        stream.getTracks().forEach(track => track.stop()); // Stop camera after capture
-        setStream(null);
+        if (stream) { // Check stream again before stopping
+            stream.getTracks().forEach(track => track.stop()); 
+            setStream(null);
+        }
         toast({
           title: "Photo Captured!",
           description: "Your photo has been successfully captured.",
@@ -94,21 +97,15 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, onNextStep, onPrevStep
   };
 
   const retakePhoto = () => {
-    onPhotoCaptured(""); // Clear the captured image
+    onPhotoCaptured(""); 
     setError(null);
-    // useEffect will restart the camera
   };
 
   return (
     <Card className="w-full shadow-xl">
-      <CardHeader>
-        <CardTitle className="text-2xl text-center">Take a Photo</CardTitle>
-        <CardDescription className="text-center">
-          Please take a live photo of yourself.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative">
+      {/* CardHeader removed, title is now global */}
+      <CardContent className="space-y-4 pt-6">
+        <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative border border-input"> {/* Added border-input for consistency */}
           {error && !capturedImage && (
             <div className="p-4 text-center text-destructive-foreground bg-destructive rounded-md flex flex-col items-center">
               <AlertTriangle className="w-12 h-12 mb-2" />
@@ -146,8 +143,8 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, onNextStep, onPrevStep
 
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={onPrevStep} aria-label="Go to previous step">
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+        <Button variant="ghost" onClick={onPrevStep} aria-label="Go to previous step">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Previous
         </Button>
         <Button onClick={onNextStep} disabled={!capturedImage} aria-label="Complete verification and go to next step">
           Complete <ArrowRight className="ml-2 h-4 w-4" />
