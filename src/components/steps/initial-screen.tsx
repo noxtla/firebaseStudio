@@ -21,7 +21,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
           <Button
             size="lg"
             onClick={onNextStep}
-            className="w-full max-w-xs text-lg py-6 whitespace-normal h-auto" // Removed specific margin
+            className="w-full max-w-xs text-lg py-6 whitespace-normal h-auto" // Added whitespace-normal and h-auto
             aria-label="Enter Your Phone Number to start verification process"
           >
             Enter Your Phone Number
