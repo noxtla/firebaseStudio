@@ -1,18 +1,18 @@
 import type { Metadata } from 'next';
-import { Poppins, Open_Sans } from 'next/font/google'; // Changed imports
+import { Shadows_Into_Light_Two, Open_Sans } from 'next/font/google'; // Changed Poppins to Shadows_Into_Light_Two
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
-const poppins = Poppins({ // Changed font
+const shadowsIntoLightTwo = Shadows_Into_Light_Two({ // Changed font
   subsets: ['latin'],
-  variable: '--font-heading', // Changed variable name
-  weight: ['600', '700', '800'], // Semibold, Bold, ExtraBold
+  variable: '--font-heading', // Kept variable name
+  weight: ['400'], // Shadows Into Light Two typically only has a regular weight
 });
 
-const openSans = Open_Sans({ // Changed font
+const openSans = Open_Sans({
   subsets: ['latin'],
-  variable: '--font-body', // Changed variable name
-  weight: ['400', '600'], // Regular, Semibold (for a slightly bolder body option if needed)
+  variable: '--font-body',
+  weight: ['400', '600'],
 });
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${openSans.variable}`}>
+    <html lang="en" className={`${shadowsIntoLightTwo.variable} ${openSans.variable}`}>
       <body className={`antialiased`}>
         <main>
           {children}
