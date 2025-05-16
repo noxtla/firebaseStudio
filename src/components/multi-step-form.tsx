@@ -172,13 +172,14 @@ export default function MultiStepForm() {
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
 
+  // Conditional rendering for AppHeader in MultiStepForm
   const showAppHeader = currentStep > 0; 
   const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; 
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background"> {/* Use bg-background for steps 1-5 */}
       <div className="flex-grow overflow-y-auto p-4 pt-6 sm:pt-8 md:pt-12">
         <div className="w-full max-w-md mx-auto">
           {showAppHeader && <AppHeader className="mb-8" />}
@@ -206,7 +207,7 @@ export default function MultiStepForm() {
           </div>
 
           {showNavButtons && (
-            <div className="mt-12 flex justify-between"> 
+            <div className="mt-12 flex justify-between"> {/* Increased mt-8 to mt-12 for more space */}
               <Button 
                 variant="ghost" 
                 onClick={prevStep} 
