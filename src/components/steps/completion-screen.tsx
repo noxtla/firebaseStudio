@@ -9,11 +9,12 @@ import { CheckCircle, Loader2 } from 'lucide-react';
 import type { FormData, UserData } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
 
 interface CompletionScreenProps {
   formData: FormData;
   capturedImage: string | null;
-  userData: UserData | null; // Added userData
+  userData: UserData | null;
   onRestart: () => void;
 }
 
@@ -41,13 +42,59 @@ const getYearFromDate = (dateString: string): string => {
 
 const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, userData, onRestart }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
+  const { toast } = useToast();
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
-    // Simulate API call
-    // TODO: Implement actual submission logic if needed, e.g., sending all data to a final webhook.
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setSubmissionState('submitted');
+
+    const payload = {
+      step: "finalSubmission", // Flag for N8N
+      userInput: {
+        phoneNumber: formData.phoneNumber,
+        ssnLast4: formData.ssnLast4,
+        birthDay: formData.birthDay,
+      },
+      verifiedUserData: userData,
+      capturedImageBase64: capturedImage,
+      submissionTimestamp: new Date().toISOString(),
+    };
+
+    try {
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // const responseData = await response.json(); // Or response.text() if N8N returns simple status
+        // console.log('Submission successful:', responseData);
+        setSubmissionState('submitted');
+        toast({
+          title: "Submission Successful",
+          description: "Your information has been sent.",
+        });
+      } else {
+        // const errorData = await response.text();
+        // console.error('Submission failed:', response.status, errorData);
+        toast({
+          variant: "destructive",
+          title: "Submission Error",
+          description: `Failed to submit data. Status: ${response.status}`,
+        });
+        setSubmissionState('reviewing'); // Allow user to try again
+      }
+    } catch (error) {
+      // console.error('Error submitting form:', error);
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: "An error occurred while submitting your information. Please try again.",
+      });
+      setSubmissionState('reviewing'); // Allow user to try again
+    }
   };
 
   const handleStartOver = () => {
