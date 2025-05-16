@@ -57,8 +57,8 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
               className={cn(
                 "w-full max-w-xs text-lg py-6 whitespace-nowrap",
                 !isDisabled && "animate-soft-pulse", // Apply animation only when enabled
-                // Custom disabled styles:
-                "disabled:bg-zinc-600 disabled:text-zinc-400 disabled:opacity-100"
+                // Custom disabled styles: keep orange, set opacity
+                "disabled:bg-primary disabled:text-primary-foreground disabled:opacity-60"
               )}
               aria-label="Enter Your Phone Number to start verification process"
               disabled={isDisabled}
@@ -73,9 +73,14 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
               )}
             </Button>
             {!isLoadingStatus && !isButtonEnabledByApi && (
-              <p className="text-sm text-muted-foreground mt-2 text-center">
-                Access is currently disabled. The registration is only 7:00 am - 7:15 am
-              </p>
+              <div className="mt-4 text-center">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Access is currently disabled.
+                </p>
+                <p className="text-xs text-muted-foreground/90 mt-1">
+                  The registration is only 7:00 am - 7:15 am.
+                </p>
+              </div>
             )}
           </div>
         </CardContent>
