@@ -93,7 +93,9 @@ export default function MultiStepForm() {
         // Validate against userData.dataBirth
         try {
           const [year, month] = userData.dataBirth.split('-').map(Number);
-          const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          // Pad the day from formData for correct comparison
+          const paddedDay = String(day).padStart(2, '0');
+          const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${paddedDay}`;
           return userEnteredFullDate === userData.dataBirth;
         } catch (e) {
           return false; // Error parsing date
@@ -278,3 +280,5 @@ export default function MultiStepForm() {
     </div>
   );
 }
+
+    
