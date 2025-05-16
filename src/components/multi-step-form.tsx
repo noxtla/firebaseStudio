@@ -4,7 +4,7 @@
 import { useState, type ChangeEvent } from 'react';
 import type { FormData, FormStep } from '@/types';
 
-import AppHeader from './app-header'; 
+import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
@@ -13,7 +13,7 @@ import BirthDayStep from './steps/birth-day-step';
 import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
-import { Phone, Info, CalendarDays, Camera, CheckCircle2 } from 'lucide-react'; 
+import { Phone, Info, CalendarDays, Camera, CheckCircle2 } from 'lucide-react';
 
 const initialFormData: FormData = {
   phoneNumber: '',
@@ -21,17 +21,17 @@ const initialFormData: FormData = {
   birthDay: '',
 };
 
-const MAX_STEPS: FormStep = 5; 
+const MAX_STEPS: FormStep = 5;
 
 const stepLabels = ["Phone", "SSN", "Birth Day", "Photo", "Done"];
 
 const STEP_CONFIG = [
-  { title: "", icon: null }, 
-  { title: "Enter Your Phone Number", icon: Phone }, 
-  { title: "Enter Last 4 of SSN", icon: Info },    
-  { title: "Day of Birth", icon: CalendarDays }, 
-  { title: "Take a Photo", icon: Camera },        
-  { title: "Verification Complete!", icon: CheckCircle2 }, 
+  { title: "", icon: null },
+  { title: "Enter Your Phone Number", icon: Phone },
+  { title: "Enter Last 4 of SSN", icon: Info },
+  { title: "Day of Birth", icon: CalendarDays },
+  { title: "Take a Photo", icon: Camera },
+  { title: "Verification Complete!", icon: CheckCircle2 },
 ];
 
 export default function MultiStepForm() {
@@ -41,7 +41,7 @@ export default function MultiStepForm() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     if (name === "phoneNumber") {
       const cleaned = ('' + value).replace(/\D/g, '');
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
@@ -54,7 +54,7 @@ export default function MultiStepForm() {
         return;
       }
     }
-    
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -80,10 +80,9 @@ export default function MultiStepForm() {
     setCapturedImage(null);
   };
 
-  const renderStep = () => {
+  const renderActiveStepContent = () => {
     switch (currentStep) {
-      case 0:
-        return <InitialScreen onNextStep={nextStep} />;
+      // case 0 is handled by returning InitialScreen directly
       case 1:
         return (
           <PhoneNumberStep
@@ -129,39 +128,43 @@ export default function MultiStepForm() {
           />
         );
       default:
-        return <InitialScreen onNextStep={nextStep} />;
+        return null; // Should not happen with currentStep logic
     }
   };
 
+  if (currentStep === 0) {
+    return <InitialScreen onNextStep={nextStep} />;
+  }
+
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
-  
-  const showStepper = currentStep > 0;
-  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
 
+  const showStepper = currentStep > 0 && currentStep <= MAX_STEPS; // MAX_STEPS is inclusive for "Done"
+  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Title not shown on completion screen
 
   return (
-    <div className="w-full flex flex-col items-center">
-      {/* Conditionally render AppHeader. It will NOT render for step 0 (InitialScreen) */}
-      {currentStep !== 0 && <AppHeader className="my-8" />}
+    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-background p-4">
+      <div className="w-full max-w-md">
+        <AppHeader className="my-8" />
 
-      {showStepper && (
-        <ProgressStepper
-          currentStepIndex={currentStep - 1} 
-          steps={stepLabels}
-          className="mb-6 w-full px-4 md:px-0" 
-        />
-      )}
+        {showStepper && (
+          <ProgressStepper
+            currentStepIndex={currentStep - 1}
+            steps={stepLabels}
+            className="mb-6 w-full"
+          />
+        )}
 
-      {showStepTitle && ActiveIcon && activeTitle && (
-        <div className="mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground">
-          <ActiveIcon className="h-6 w-6 text-primary" />
-          <span>{activeTitle}</span>
+        {showStepTitle && ActiveIcon && activeTitle && (
+          <div className="mb-6 flex items-center justify-center text-xl font-semibold space-x-2 text-foreground">
+            <ActiveIcon className="h-6 w-6 text-primary" />
+            <span>{activeTitle}</span>
+          </div>
+        )}
+
+        <div className="animate-step-enter w-full" key={currentStep}>
+          {renderActiveStepContent()}
         </div>
-      )}
-
-      <div className="animate-step-enter w-full" key={currentStep}>
-        {renderStep()}
       </div>
     </div>
   );

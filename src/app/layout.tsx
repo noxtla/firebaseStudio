@@ -18,10 +18,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <main className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-          <div className="w-full max-w-md">
-            {children}
-          </div>
+        <main className="min-h-screen">
+          {children}
         </main>
         <Toaster />
       </body>
