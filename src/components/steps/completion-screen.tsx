@@ -62,7 +62,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({ formData, capturedImage, 
               <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                 <li>Phone: {formData.phoneNumber}</li>
                 <li>SSN (Last 4): ••••{formData.ssnLast4.slice(-4)}</li>
-                <li>Birth Day: {formData.birthDay}</li>
+                <li>Birth Day: {formData.birthDay} September 1996</li>
               </ul>
             </div>
             {capturedImage && (
