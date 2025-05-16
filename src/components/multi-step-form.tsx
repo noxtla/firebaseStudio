@@ -43,6 +43,7 @@ export default function MultiStepForm() {
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
+  const [rawApiResponse, setRawApiResponse] = useState<string | null>(null); // For debugging
   const { toast } = useToast();
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -109,7 +110,8 @@ export default function MultiStepForm() {
   const nextStep = async () => {
     if (currentStep === 1 && canProceed) { 
       setIsLoadingPhoneNumber(true);
-      setUserData(null); 
+      setUserData(null);
+      setRawApiResponse(null); // Reset raw API response for new request
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1';
       try {
@@ -119,10 +121,11 @@ export default function MultiStepForm() {
           body: JSON.stringify({ phoneNumber: cleanedPhoneNumber, phoneNumberFlag: true }),
         });
 
-        const responseText = await response.text(); // Get response as text first
+        const responseText = await response.text();
+        setRawApiResponse(responseText); // Store raw response for debugging
 
         if (response.ok) {
-          if (responseText) { // Check if there's content
+          if (responseText) {
             try {
               const responseData: UserData[] = JSON.parse(responseText);
               if (responseData && responseData.length > 0) {
@@ -134,20 +137,23 @@ export default function MultiStepForm() {
               }
             } catch (jsonError) {
               console.error('Error parsing JSON:', jsonError, 'Response text:', responseText);
-              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
+              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server. Check debug output." });
             }
           } else {
-            // Empty response body, even if response.ok is true
-             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
+             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server. Check debug output." });
           }
         } else {
-          // Use responseText for error details if available, otherwise a generic message
           const errorDetails = responseText || `Status: ${response.status}`;
-          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${errorDetails}` });
+          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${errorDetails}. Check debug output.` });
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
-        toast({ variant: "destructive", title: "Error", description: "An error occurred while verifying your phone number." });
+        toast({ variant: "destructive", title: "Error", description: "An error occurred while verifying your phone number. Check debug output." });
+         if (error instanceof Error) {
+          setRawApiResponse(`Fetch Error: ${error.message}`);
+        } else {
+          setRawApiResponse('Fetch Error: An unknown error occurred.');
+        }
       } finally {
         setIsLoadingPhoneNumber(false);
       }
@@ -162,6 +168,10 @@ export default function MultiStepForm() {
       if (currentStep === 2) setFormData(prev => ({...prev, ssnLast4: ''}));
       if (currentStep === 3) setFormData(prev => ({...prev, birthDay: ''}));
       if (currentStep === 4) setCapturedImage(null);
+      if (currentStep === 1) { // Reset user data if going back from SSN to Phone
+        setUserData(null);
+        setRawApiResponse(null); 
+      }
     }
   };
 
@@ -171,6 +181,7 @@ export default function MultiStepForm() {
     setCapturedImage(null);
     setUserData(null);
     setIsLoadingPhoneNumber(false);
+    setRawApiResponse(null); // Reset raw API response
   };
 
   const renderActiveStepContent = () => {
@@ -180,6 +191,7 @@ export default function MultiStepForm() {
           <PhoneNumberStep
             formData={formData}
             onInputChange={handleInputChange}
+            rawApiResponse={rawApiResponse} // Pass raw API response
           />
         );
       case 2:
@@ -286,5 +298,3 @@ export default function MultiStepForm() {
     </div>
   );
 }
-
-    
