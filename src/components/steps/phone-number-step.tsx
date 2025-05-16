@@ -23,6 +23,7 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange }) 
             name="phoneNumber"
             type="text" 
             inputMode="numeric" 
+            pattern="[0-9]*" // Added pattern
             value={formData.phoneNumber}
             onChange={onInputChange}
             placeholder="(555) 123-4567"
@@ -38,3 +39,4 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange }) 
 };
 
 export default PhoneNumberStep;
+

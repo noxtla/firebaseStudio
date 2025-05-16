@@ -26,6 +26,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
             name="birthDay"
             type="text"
             inputMode="numeric"
+            pattern="[0-9]*" // Added pattern
             value={formData.birthDay}
             onChange={onInputChange}
             placeholder="DD"
@@ -40,3 +41,4 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
 };
 
 export default BirthDayStep;
+
