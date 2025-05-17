@@ -90,7 +90,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', { // Updated webhook URL
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -237,3 +237,5 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+
+    
