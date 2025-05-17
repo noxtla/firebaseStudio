@@ -134,7 +134,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       toast({
         variant: "destructive",
         title: "Submission Error",
-        description: `An error occurred while submitting your information: ${errorMessage}. Please try again.`,
+        description: `Could not submit your information. Error: ${errorMessage}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`,
       });
       setSubmissionState('reviewing');
     }
