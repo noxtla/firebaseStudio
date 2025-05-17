@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Camera, CheckCircle, AlertTriangle, RefreshCw, MapPin, Loader2 } from 'lucide-react';
+import { Camera as CameraIcon, CheckCircle, AlertTriangle, RefreshCw, MapPin, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { CapturedLocation } from '@/types';
@@ -46,7 +46,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
 
     const getCameraPermission = async () => {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        setHasCameraPermission(null); 
+        setHasCameraPermission(null);
         try {
           const mediaStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: "user" }
@@ -121,7 +121,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
             toast({
               title: "Location Captured",
               description: "Your location has been successfully recorded.",
-              variant: "default",
+              variant: "default", // Consider making this a success variant if available
               action: <MapPin className="text-green-500" />,
             });
           },
@@ -129,10 +129,10 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
             console.error("Error getting location:", error);
             setLocationErrorMsg(error.message || "Could not retrieve location.");
             setLocationStatus('error');
-            setLocationData(null); 
+            setLocationData(null);
             toast({
               title: "Location Error",
-              description: `Could not retrieve location: ${error.message}. Proceeding without location.`,
+              description: `Could not retrieve location: ${error.message}. Photo capture is disabled until location is available.`,
               variant: "destructive",
             });
           },
@@ -143,7 +143,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
         setLocationStatus('error');
         toast({
           title: "Location Error",
-          description: "Geolocation is not supported by this browser.",
+          description: "Geolocation is not supported by this browser. Photo capture is disabled.",
           variant: "destructive",
         });
       }
@@ -159,18 +159,18 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
-        context.translate(canvas.width, 0); 
+        context.translate(canvas.width, 0);
         context.scale(-1, 1);
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        context.setTransform(1, 0, 0, 1, 0, 0); 
+        context.setTransform(1, 0, 0, 1, 0, 0);
 
         const imageDataUrl = canvas.toDataURL('image/jpeg');
         const captureTimestamp = new Date().toISOString();
-        onPhotoCaptured(imageDataUrl, captureTimestamp, locationData); 
+        onPhotoCaptured(imageDataUrl, captureTimestamp, locationData);
         toast({
           title: "Photo Captured!",
           description: "Your photo has been successfully captured.",
-          variant: "default",
+          variant: "default", // Consider making this a success variant
           action: <CheckCircle className="text-green-500" />,
         });
       }
@@ -178,14 +178,14 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
   };
 
   const retakePhoto = () => {
-    onPhotoCaptured(null); 
+    onPhotoCaptured(null);
     setLocationData(null);
     setLocationStatus('idle');
     setLocationErrorMsg(null);
   };
 
   const renderLocationStatus = () => {
-    if (capturedImage) return null; 
+    if (capturedImage) return null;
 
     if (locationStatus === 'fetching') {
       return (
@@ -208,12 +208,31 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
         <Alert variant="destructive" className="mt-2">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Location Error</AlertTitle>
-          <AlertDescription>{locationErrorMsg} Photo will be submitted without location.</AlertDescription>
+          <AlertDescription>{locationErrorMsg} Photo capture is disabled until location can be obtained.</AlertDescription>
         </Alert>
+      );
+    }
+     if (locationStatus === 'idle' && stream && hasCameraPermission === true) {
+      return (
+        <div className="flex items-center justify-center text-sm text-muted-foreground mt-2">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Waiting for location...
+        </div>
       );
     }
     return null;
   };
+
+  const getCaptureButtonText = () => {
+    if (locationStatus === 'idle') return 'Waiting for Location...';
+    if (locationStatus === 'fetching') return 'Fetching Location...';
+    if (locationStatus === 'error') return 'Location Unavailable';
+    if (locationStatus === 'success') return 'Capture Photo';
+    return 'Capture Photo';
+  };
+
+  const CaptureButtonIcon = (locationStatus === 'idle' || locationStatus === 'fetching') ? Loader2 : CameraIcon;
+  const isCaptureButtonDisabled = locationStatus !== 'success';
 
   return (
     <Card className="w-full border-none shadow-none">
@@ -230,19 +249,19 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
             playsInline
             muted
             className={cn(
-              "w-full h-full object-cover transform scale-x-[-1]", 
+              "w-full h-full object-cover transform scale-x-[-1]",
               (!!capturedImage || hasCameraPermission !== true || !stream) && "hidden"
             )}
             aria-label="Live camera feed"
           />
 
           {capturedImage && (
-             <Image src={capturedImage} alt="Captured photo" layout="fill" objectFit="contain" data-ai-hint="person selfie" className="transform scale-x-[-1]" /> 
+             <Image src={capturedImage} alt="Captured photo" layout="fill" objectFit="contain" data-ai-hint="person selfie" className="transform scale-x-[-1]" />
           )}
 
           {hasCameraPermission === null && !capturedImage && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-              <Camera className="h-12 w-12 text-muted-foreground mb-2" />
+              <CameraIcon className="h-12 w-12 text-muted-foreground mb-2" />
               <p className="text-muted-foreground">Initializing camera...</p>
             </div>
           )}
@@ -269,10 +288,10 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
             className="w-full"
             size="lg"
             aria-label="Capture photo"
-            disabled={locationStatus === 'fetching'} 
+            disabled={isCaptureButtonDisabled}
           >
-            <Camera className="mr-2 h-5 w-5" />
-            {locationStatus === 'fetching' ? 'Fetching Location...' : 'Capture Photo'}
+            <CaptureButtonIcon className={cn("mr-2 h-5 w-5", (locationStatus === 'idle' || locationStatus === 'fetching') && "animate-spin")} />
+            {getCaptureButtonText()}
           </Button>
         )}
         {capturedImage && (
