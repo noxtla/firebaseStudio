@@ -142,3 +142,18 @@ h1, h2, h3, h4, h5, h6, .font-heading-style { /* Changed .font-montserrat to .fo
 .animate-step-enter {
   animation: stepEnter 0.5s ease-in-out forwards;
 }
+
+@keyframes titlePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.9;
+  }
+}
+
+.animate-title-pulse {
+  animation: titlePulse 2.5s ease-in-out infinite;
+}

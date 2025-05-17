@@ -82,7 +82,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       phoneNumber: formData.phoneNumber || '',
       ssnLast4: formData.ssnLast4 || '',
       birthDay: formData.birthDay || '',
-      capturedImageBase64: capturedImage,
+      capturedImageBase64: capturedImage, // This is the Base64 data URL
       metadata: {
         captureTimestamp: captureTimestamp || new Date().toISOString(),
         locationInfo: locationInfo,
@@ -101,6 +101,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       if (response.ok) {
         setSubmissionState('submitted');
         toast({
+          variant: "success",
           title: "Submission Successful",
           description: "Your information has been sent.",
         });
@@ -154,8 +155,15 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       ) : (
         <>
           <CardHeader className="items-center pt-6">
-            <CardTitle className="text-xl sm:text-2xl text-center">Review Your Information</CardTitle>
-            {/* Removed CardDescription text "Please review your details below before submitting." */}
+            <CardTitle 
+              className={cn(
+                "text-xl sm:text-2xl text-center",
+                submissionState === 'reviewing' && "animate-title-pulse"
+              )}
+            >
+              Send Your Information
+            </CardTitle>
+            {/* CardDescription "Please review your details below before submitting." removed as per request */}
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>
@@ -229,4 +237,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-
