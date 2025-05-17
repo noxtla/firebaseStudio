@@ -82,7 +82,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       phoneNumber: formData.phoneNumber || '',
       ssnLast4: formData.ssnLast4 || '',
       birthDay: formData.birthDay || '',
-      capturedImageBase64: capturedImage, // This is the Base64 data URL
+      capturedImageBase64: capturedImage,
       metadata: {
         captureTimestamp: captureTimestamp || new Date().toISOString(),
         locationInfo: locationInfo,
@@ -90,7 +90,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', {
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/4b27444b-be61-4318-b74b-836c99521354', { // Updated webhook URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
