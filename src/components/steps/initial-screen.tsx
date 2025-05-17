@@ -14,25 +14,12 @@ interface InitialScreenProps {
 }
 
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
-  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
-  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isButtonEnabled, setIsButtonEnabled] = useState(true); // Button is now enabled by default
+  const [isLoadingStatus, setIsLoadingStatus] = useState(false); // No loading status needed for this setup
 
-  useEffect(() => {
-    setIsLoadingStatus(true);
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinutes = now.getMinutes();
+  // useEffect hook for time-based enabling has been removed.
 
-    // Check if current time is between 7:00 AM and 7:15 AM
-    if (currentHour === 7 && currentMinutes >= 0 && currentMinutes <= 15) {
-      setIsButtonEnabled(true);
-    } else {
-      setIsButtonEnabled(false);
-    }
-    setIsLoadingStatus(false);
-  }, []);
-
-  const isDisabled = !isButtonEnabled || isLoadingStatus;
+  const isDisabled = isLoadingStatus; // Button is only disabled if loading (which it isn't here)
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card px-4">
@@ -45,7 +32,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
               onClick={onNextStep}
               className={cn(
                 "w-full max-w-xs text-lg py-6 whitespace-nowrap",
-                !isDisabled && "animate-soft-pulse",
+                !isDisabled && "animate-soft-pulse", // Animation only when enabled
                 "disabled:bg-primary disabled:text-primary-foreground disabled:opacity-60"
               )}
               aria-label="Enter Your Phone Number to start verification process"
@@ -60,7 +47,8 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
                 'Enter Your Phone Number'
               )}
             </Button>
-            {!isLoadingStatus && !isButtonEnabled && (
+            {/* The message is now always shown if not loading, regardless of button state */}
+            {!isLoadingStatus && (
               <div className="mt-4 text-center">
                 <p className="text-sm font-medium text-muted-foreground">
                   Access is currently disabled.
