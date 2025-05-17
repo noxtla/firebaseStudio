@@ -121,7 +121,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
             toast({
               title: "Location Captured",
               description: "Your location has been successfully recorded.",
-              variant: "default", // Consider making this a success variant if available
+              variant: "default", 
               action: <MapPin className="text-green-500" />,
             });
           },
@@ -170,7 +170,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
         toast({
           title: "Photo Captured!",
           description: "Your photo has been successfully captured.",
-          variant: "default", // Consider making this a success variant
+          variant: "default", 
           action: <CheckCircle className="text-green-500" />,
         });
       }
@@ -205,7 +205,7 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
     }
     if (locationStatus === 'error' && locationErrorMsg) {
       return (
-        <Alert variant="destructive" className="mt-2">
+        <Alert variant="destructive" className="mt-2 w-full">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Location Error</AlertTitle>
           <AlertDescription>{locationErrorMsg} Photo capture is disabled until location can be obtained.</AlertDescription>

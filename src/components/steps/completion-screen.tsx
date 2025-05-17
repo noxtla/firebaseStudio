@@ -59,12 +59,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   onRestart
 }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
-  const [submissionResponse, setSubmissionResponse] = useState<string | null>(null); // State for webhook response
+  const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
-    setSubmissionResponse(null); // Reset previous response
+    setSubmissionResponse(null);
 
     if (!capturedImage) {
       toast({
@@ -108,8 +108,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const responseText = await response.text(); // Get response text regardless of status
-      setSubmissionResponse(responseText); // Store the response
+      const responseText = await response.text();
+      setSubmissionResponse(responseText);
 
       if (response.ok) {
         setSubmissionState('submitted');
@@ -130,7 +130,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     } catch (error) {
       console.error('Error submitting form:', error);
       const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
-      setSubmissionResponse(`Fetch Error: ${errorMessage}`); // Store fetch error message
+      setSubmissionResponse(`Fetch Error: ${errorMessage}`);
       toast({
         variant: "destructive",
         title: "Submission Error",
@@ -142,7 +142,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
   const handleStartOver = () => {
     setSubmissionState('reviewing');
-    setSubmissionResponse(null); // Reset response on start over
+    setSubmissionResponse(null);
     onRestart();
   };
 
@@ -163,7 +163,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           </CardHeader>
           {submissionResponse && (
             <CardContent className="pt-4">
-              <div className="mt-4 p-3 bg-muted rounded-md">
+              <div className="mt-4 p-3 bg-muted rounded-md w-full overflow-x-auto">
                 <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Webhook Response:</h4>
                 <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
                   {submissionResponse}
@@ -180,7 +180,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       ) : (
         <>
           <CardHeader className="items-center pt-6">
-            <CardTitle 
+            <CardTitle
               className={cn(
                 "text-xl sm:text-2xl text-center",
                 submissionState === 'reviewing' && "animate-title-pulse"
@@ -233,9 +233,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
               )}
             </div>
-            {/* Display webhook response on error if still in 'reviewing' state */}
             {submissionState === 'reviewing' && submissionResponse && (
-               <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30">
+               <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30 w-full overflow-x-auto">
                 <h4 className="text-sm font-semibold mb-1 text-destructive">Webhook Submission Error Details:</h4>
                 <pre className="text-xs whitespace-pre-wrap break-all text-destructive/80 p-2 rounded">
                   {submissionResponse}
@@ -270,5 +269,4 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-
     
