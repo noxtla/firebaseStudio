@@ -76,9 +76,11 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       };
     }
 
+    const transformedName = userData?.Name ? userData.Name.toLowerCase().replace(/\s+/g, '-') : '';
+
     const payload: any = {
       step: "finalSubmission",
-      name: userData?.Name || '',
+      name: transformedName,
       phoneNumber: formData.phoneNumber || '',
       ssnLast4: formData.ssnLast4 || '',
       birthDay: formData.birthDay || '',
@@ -90,7 +92,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', { // Updated URL
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +165,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             >
               Send Your Information
             </CardTitle>
-            {/* CardDescription removed */}
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>
@@ -237,5 +238,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-
-    
