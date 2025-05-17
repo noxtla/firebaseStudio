@@ -14,36 +14,25 @@ interface InitialScreenProps {
 }
 
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
-  const [isButtonEnabledByApi, setIsButtonEnabledByApi] = useState(false);
+  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
   useEffect(() => {
-    const fetchButtonStatus = async () => {
-      setIsLoadingStatus(true);
-      try {
-        const response = await fetch('/api/button-control');
-        if (response.ok) {
-          const data = await response.json();
-          setIsButtonEnabledByApi(data.isEnabled);
-        } else {
-          console.error('Failed to fetch button status from API:', response.statusText);
-          setIsButtonEnabledByApi(false); // Keep disabled on error
-        }
-      } catch (error) {
-        console.error('Error fetching button status:', error);
-        setIsButtonEnabledByApi(false); // Keep disabled on error
-      } finally {
-        setIsLoadingStatus(false);
-      }
-    };
+    setIsLoadingStatus(true);
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinutes = now.getMinutes();
 
-    fetchButtonStatus();
-    // Optional: Set up polling if you need more real-time updates without user interaction.
-    // const intervalId = setInterval(fetchButtonStatus, 30000); // e.g., check every 30 seconds
-    // return () => clearInterval(intervalId); // Cleanup interval on component unmount
+    // Check if current time is between 7:00 AM and 7:15 AM
+    if (currentHour === 7 && currentMinutes >= 0 && currentMinutes <= 15) {
+      setIsButtonEnabled(true);
+    } else {
+      setIsButtonEnabled(false);
+    }
+    setIsLoadingStatus(false);
   }, []);
 
-  const isDisabled = !isButtonEnabledByApi || isLoadingStatus;
+  const isDisabled = !isButtonEnabled || isLoadingStatus;
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card px-4">
@@ -56,8 +45,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
               onClick={onNextStep}
               className={cn(
                 "w-full max-w-xs text-lg py-6 whitespace-nowrap",
-                !isDisabled && "animate-soft-pulse", // Apply animation only when enabled
-                // Custom disabled styles: keep orange, set opacity
+                !isDisabled && "animate-soft-pulse",
                 "disabled:bg-primary disabled:text-primary-foreground disabled:opacity-60"
               )}
               aria-label="Enter Your Phone Number to start verification process"
@@ -72,7 +60,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
                 'Enter Your Phone Number'
               )}
             </Button>
-            {!isLoadingStatus && !isButtonEnabledByApi && (
+            {!isLoadingStatus && !isButtonEnabled && (
               <div className="mt-4 text-center">
                 <p className="text-sm font-medium text-muted-foreground">
                   Access is currently disabled.
