@@ -90,7 +90,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', { 
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', { // Updated URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +163,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             >
               Send Your Information
             </CardTitle>
-            {/* CardDescription "Please review your details below before submitting." removed as per request */}
+            {/* CardDescription removed */}
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>

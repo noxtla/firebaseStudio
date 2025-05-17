@@ -131,7 +131,7 @@ export default function MultiStepForm() {
       setUserInitials(null);
       setRawApiResponse(null);
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/v1';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login'; // Updated URL
       try {
         const response = await fetch(webhookUrl, {
           method: 'POST',
@@ -230,7 +230,7 @@ export default function MultiStepForm() {
   };
 
   let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && currentStep === 4) { 
+  if (userInitials && currentStep === 4) { // Only for photo step
     formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
   }
 
@@ -299,12 +299,16 @@ export default function MultiStepForm() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="flex-grow overflow-y-auto p-4 pt-6 sm:pt-8 md:pt-12">
-        <div className="w-full max-w-md mx-auto">
-          {showAppHeader && <AppHeader className="mb-8" />}
-          
-          <Toaster />
+       {/* Toaster moved here to be between header and stepper */}
+      <div className="w-full max-w-md mx-auto">
+        {showAppHeader && <AppHeader className="mt-8 mb-8" />}
+        <Toaster />
+      </div>
 
+
+      <div className="flex-grow overflow-y-auto p-4 pt-0">
+        <div className="w-full max-w-md mx-auto">
+          
           {showStepper && (
             <ProgressStepper
               currentStepIndex={currentStep - 1}
