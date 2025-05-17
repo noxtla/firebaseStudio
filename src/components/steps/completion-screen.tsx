@@ -41,6 +41,14 @@ const getYearFromDate = (dateString: string): string => {
   }
 };
 
+const transformNameForPayload = (nameStr: string | undefined): string => {
+  if (!nameStr) return '';
+  return nameStr
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join('-');
+};
+
 
 const CompletionScreen: FC<CompletionScreenProps> = ({
   formData,
@@ -51,10 +59,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   onRestart
 }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
+  const [submissionResponse, setSubmissionResponse] = useState<string | null>(null); // State for webhook response
   const { toast } = useToast();
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
+    setSubmissionResponse(null); // Reset previous response
 
     if (!capturedImage) {
       toast({
@@ -76,11 +86,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       };
     }
 
-    const transformedName = userData?.Name ? userData.Name.toLowerCase().replace(/\s+/g, '-') : '';
-
     const payload: any = {
       step: "finalSubmission",
-      name: transformedName,
+      name: transformNameForPayload(userData?.Name),
       phoneNumber: formData.phoneNumber || '',
       ssnLast4: formData.ssnLast4 || '',
       birthDay: formData.birthDay || '',
@@ -100,6 +108,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         body: JSON.stringify(payload),
       });
 
+      const responseText = await response.text(); // Get response text regardless of status
+      setSubmissionResponse(responseText); // Store the response
+
       if (response.ok) {
         setSubmissionState('submitted');
         toast({
@@ -108,21 +119,22 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           description: "Your information has been sent.",
         });
       } else {
-        const errorData = await response.text();
-        console.error('Submission failed:', response.status, errorData);
+        console.error('Submission failed:', response.status, responseText);
         toast({
           variant: "destructive",
           title: "Submission Error",
-          description: `Failed to submit data. Status: ${response.status}. ${errorData ? `Details: ${errorData}` : ''}`,
+          description: `Failed to submit data. Status: ${response.status}. ${responseText ? `Details: ${responseText}` : ''}`,
         });
         setSubmissionState('reviewing');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
+      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
+      setSubmissionResponse(`Fetch Error: ${errorMessage}`); // Store fetch error message
       toast({
         variant: "destructive",
         title: "Submission Error",
-        description: "An error occurred while submitting your information. Please try again.",
+        description: `An error occurred while submitting your information: ${errorMessage}. Please try again.`,
       });
       setSubmissionState('reviewing');
     }
@@ -130,6 +142,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
   const handleStartOver = () => {
     setSubmissionState('reviewing');
+    setSubmissionResponse(null); // Reset response on start over
     onRestart();
   };
 
@@ -148,6 +161,16 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               Your information has been submitted successfully.
             </CardDescription>
           </CardHeader>
+          {submissionResponse && (
+            <CardContent className="pt-4">
+              <div className="mt-4 p-3 bg-muted rounded-md">
+                <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Webhook Response:</h4>
+                <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
+                  {submissionResponse}
+                </pre>
+              </div>
+            </CardContent>
+          )}
           <CardFooter className="flex justify-center pt-6">
             <Button onClick={handleStartOver} size="lg" aria-label="Start new verification">
               Start Over
@@ -210,6 +233,15 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
               )}
             </div>
+            {/* Display webhook response on error if still in 'reviewing' state */}
+            {submissionState === 'reviewing' && submissionResponse && (
+               <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30">
+                <h4 className="text-sm font-semibold mb-1 text-destructive">Webhook Submission Error Details:</h4>
+                <pre className="text-xs whitespace-pre-wrap break-all text-destructive/80 p-2 rounded">
+                  {submissionResponse}
+                </pre>
+              </div>
+            )}
           </CardContent>
           <CardFooter className="flex justify-center">
             <Button
@@ -238,3 +270,5 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+
+    
