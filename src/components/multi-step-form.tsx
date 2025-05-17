@@ -35,7 +35,7 @@ const STEP_CONFIG = [
   { title: "Enter Last 4 of SSN", icon: Info }, // Step 2
   { title: "Day of Birth", icon: CalendarDays }, // Step 3
   { title: "Take a Photo", icon: CameraIconLucide }, // Step 4
-  { title: "Review Your Information", icon: CheckCircle2 }, // Step 5 (CompletionScreen handles its own title)
+  { title: "Send Your Information", icon: CheckCircle2 }, // Step 5
 ];
 
 const formatInitialsForDisplay = (initials: string): string => {
@@ -116,7 +116,7 @@ export default function MultiStepForm() {
           return false;
         }
       case 4: // Photo
-        return !!capturedImage;
+        return !!capturedImage && !!capturedLocation; // Also ensure location is captured
       default:
         return true;
     }
@@ -169,7 +169,12 @@ export default function MultiStepForm() {
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
-        toast({ variant: "destructive", title: "Error", description: "An error occurred while verifying your phone number." });
+        const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
+        toast({
+          variant: "destructive",
+          title: "Error Verifying Phone",
+          description: `Could not connect: ${errorMessage}. Check internet or try again.`
+        });
          if (error instanceof Error) {
           setRawApiResponse(`Fetch Error: ${error.message}`);
         } else {
@@ -192,28 +197,22 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (currentStep === 2) { // Coming from SSN back to Phone
+      if (currentStep === 2) { 
         setFormData(prev => ({...prev, ssnLast4: ''}));
-        // Keep userData, userInitials, rawApiResponse from phone step if needed for quick re-verify
-        // Or reset them if phone needs full re-verification:
-        // setUserData(null);
-        // setUserInitials(null);
-        // setRawApiResponse(null);
       }
-      if (currentStep === 3) { // Coming from Birth Day back to SSN
+      if (currentStep === 3) { 
          setFormData(prev => ({...prev, birthDay: ''}));
       }
-      if (currentStep === 4) { // Coming from Photo back to Birth Day
+      if (currentStep === 4) { 
         setCapturedImage(null);
         setCaptureTimestamp(null);
         setCapturedLocation(null);
       }
-       // If going back to phone step (step 1), conditionally reset userData
-       // This logic might need adjustment based on desired UX if user goes back to phone step
-      if (currentStep -1 === 0) { // if target is initial screen
+      if (currentStep -1 === 0 || currentStep -1 === 1) { 
           setUserData(null);
           setUserInitials(null);
-          setRawApiResponse(null);
+          // Keep rawApiResponse for phone step if needed, or reset here
+          // setRawApiResponse(null); 
       }
     }
   };
@@ -231,10 +230,9 @@ export default function MultiStepForm() {
   };
 
   let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && currentStep === 4) { // Only for Photo Step (step 4)
+  if (userInitials && currentStep === 4) { 
     formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
   }
-
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
@@ -334,7 +332,7 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 1 && isLoadingPhoneNumber} // Disable previous on step 1 if loading
+                disabled={currentStep === 1 && isLoadingPhoneNumber} 
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
