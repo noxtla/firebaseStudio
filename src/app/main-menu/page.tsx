@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+// Separator removed as per new layout
 import AppHeader from '@/components/app-header'; 
 
 import {
@@ -27,9 +27,13 @@ interface MenuItemProps {
 
 const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true }) => (
   <Link href={href} passHref legacyBehavior>
-    <a className="block w-full no-underline">
+    <a className={cn(
+      "block no-underline",
+      isPrimary && "w-full" // Primary items take full width of their grid cell
+    )}>
       <Card className={cn(
-        "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden h-full flex",
+        "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden flex",
+        isPrimary && "h-full" // Primary items take full height of their grid cell
       )}>
         <CardContent className={cn(
           "flex flex-col items-center justify-center w-full",
@@ -63,30 +67,32 @@ export default function MainMenuPage() {
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
-    { icon: MessageSquare, title: "Support", href: "#support" },
-    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support" },
+    { icon: MessageSquare, title: "Support", href: "#support", isPrimary: false },
+    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false },
   ];
 
   return (
     <div className="flex flex-col min-h-screen bg-background items-center p-4 pb-8 sm:p-6">
       <AppHeader className="mt-8 mb-6 sm:mb-8" />
       
-      <div className="w-full max-w-xl mx-auto space-y-6 sm:space-y-8">
+      {/* Main content area that grows */}
+      <div className="w-full max-w-xl mx-auto flex-grow flex flex-col space-y-6 sm:space-y-8">
         {/* Primary Menu Items in a 2x2 Grid */}
         <div className="grid grid-cols-2 gap-4 sm:gap-6">
           {primaryMenuItems.map((item) => (
             <MenuItem key={item.title} {...item} isPrimary />
           ))}
         </div>
+      </div>
 
-        <Separator className="my-6 sm:my-8" />
-
-        {/* Secondary Menu Items - Stacked Vertically, Full Width */}
-        <div className="space-y-4 sm:space-y-6">
-          {secondaryMenuItems.map((item) => (
-            <MenuItem key={item.title} {...item} isPrimary={false} />
-          ))}
-        </div>
+      {/* Footer area for secondary items */}
+      <div className="w-full max-w-xl mx-auto mt-auto pt-8 flex flex-row justify-center items-start gap-6 sm:gap-8">
+        {secondaryMenuItems.map((item) => (
+          // Each secondary item will determine its own width based on content + padding
+          <div key={item.title} className="flex-shrink-0"> 
+            <MenuItem {...item} />
+          </div>
+        ))}
       </div>
     </div>
   );
