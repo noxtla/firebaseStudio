@@ -17,9 +17,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   const [isButtonEnabled, setIsButtonEnabled] = useState(true); // Button is now enabled by default
   const [isLoadingStatus, setIsLoadingStatus] = useState(false); // No loading status needed for this setup
 
-  // useEffect hook for time-based enabling has been removed.
-
-  const isDisabled = isLoadingStatus; // Button is only disabled if loading (which it isn't here)
+  const isDisabled = isLoadingStatus;
 
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card px-4">
@@ -47,7 +45,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
                 'Enter Your Phone Number'
               )}
             </Button>
-            {/* The message is now always shown if not loading, regardless of button state */}
+            {/* The message below has been removed
             {!isLoadingStatus && (
               <div className="mt-4 text-center">
                 <p className="text-sm font-medium text-muted-foreground">
@@ -58,6 +56,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
                 </p>
               </div>
             )}
+            */}
           </div>
         </CardContent>
       </Card>
