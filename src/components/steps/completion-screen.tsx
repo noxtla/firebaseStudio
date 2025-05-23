@@ -3,7 +3,6 @@
 
 import type { FC } from 'react';
 import { useState } from 'react';
-// import { useRouter } from 'next/navigation'; // Removed import
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin } from 'lucide-react';
@@ -13,15 +12,16 @@ import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 
 interface CompletionScreenProps {
-  formData: FormData;
+  formData: Pick<FormData, 'phoneNumber' | 'ssnLast4' | 'birthDay'>; // Ensure this matches what's passed
   capturedImage: string | null;
   captureTimestamp: string | null;
   capturedLocation: CapturedLocation | null;
-  userData: UserData | null;
-  onRestart: () => void;
+  userData: UserData | null; // This will be initialUserData in AttendanceForm context
+  onRestart: () => void; // Action after completion (e.g., go to main menu or restart login)
 }
 
-const getMonthNameFromDate = (dateString: string): string => {
+const getMonthNameFromDate = (dateString: string | undefined): string => {
+  if (!dateString) return "Month";
   try {
     const [_, monthNumStr] = dateString.split('-');
     const monthNum = parseInt(monthNumStr, 10);
@@ -29,16 +29,17 @@ const getMonthNameFromDate = (dateString: string): string => {
     date.setMonth(monthNum - 1);
     return date.toLocaleString('en-US', { month: 'long' });
   } catch {
-    return "September"; // Fallback
+    return "Month"; // Fallback
   }
 };
 
-const getYearFromDate = (dateString: string): string => {
+const getYearFromDate = (dateString: string | undefined): string => {
+  if (!dateString) return "Year";
   try {
     const [yearStr] = dateString.split('-');
     return yearStr;
   } catch {
-    return "1996"; // Fallback
+    return "Year"; // Fallback
   }
 };
 
@@ -57,9 +58,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   captureTimestamp,
   capturedLocation,
   userData,
-  onRestart
+  onRestart // Renamed from onRestart to make its purpose clearer
 }) => {
-  // const router = useRouter(); // Removed router initialization
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
   const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
   const { toast } = useToast();
@@ -120,7 +120,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           title: "Submission Successful",
           description: "Your information has been sent.",
         });
-        // Removed navigation to main menu
       } else {
         console.error('Submission failed:', response.status, responseText);
         toast({
@@ -143,8 +142,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
   };
 
-  const displayMonth = userData?.dataBirth ? getMonthNameFromDate(userData.dataBirth) : "September";
-  const displayYear = userData?.dataBirth ? getYearFromDate(userData.dataBirth) : "1996";
+  // Use userData.dataBirth for month/year if available, otherwise fallback
+  const displayMonth = getMonthNameFromDate(userData?.dataBirth);
+  const displayYear = getYearFromDate(userData?.dataBirth);
   const birthDayDisplay = `${formData.birthDay} ${displayMonth} ${displayYear}`;
 
   return (
@@ -155,7 +155,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
             <CardTitle className="text-xl sm:text-2xl text-center">Submission Successful!</CardTitle>
             <CardDescription className="text-center">
-              Your information has been submitted successfully. {/* Removed "You will be redirected shortly." */}
+              Your information has been submitted successfully.
             </CardDescription>
           </CardHeader>
           {submissionResponse && (
@@ -169,8 +169,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             </CardContent>
           )}
           <CardFooter className="flex justify-center pt-6">
-             <Button onClick={onRestart} size="lg" aria-label="Start new verification">
-              Start Over
+             <Button onClick={onRestart} size="lg" aria-label="Return to Menu or Start Over">
+              Done
             </Button>
           </CardFooter>
         </>
@@ -190,15 +190,11 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <div>
               <h3 className="font-semibold text-lg mb-2">Summary:</h3>
               <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
+                {userData && <li>Name: {userData.Name}</li>}
                 <li>Phone: {formData.phoneNumber}</li>
                 <li>SSN (Last 4): ••••{formData.ssnLast4.slice(-4)}</li>
                 <li>Birth Day: {birthDayDisplay}</li>
-                {userData && (
-                  <>
-                    <li>Name: {userData.Name}</li>
-                    <li>Position: {userData.Puesto}</li>
-                  </>
-                )}
+                {userData && <li>Position: {userData.Puesto}</li> }
               </ul>
             </div>
             {capturedImage && (

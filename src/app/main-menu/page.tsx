@@ -5,9 +5,8 @@ import type { FC } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import AppHeader from '@/components/app-header'; // Re-use the header
+import AppHeader from '@/components/app-header'; 
 
-// Lucide icons
 import {
   CalendarCheck,
   Car,
@@ -31,7 +30,7 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true
     <a className="block w-full no-underline">
       <Card className={cn(
         "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden h-full flex",
-        isPrimary ? "bg-card" : "bg-card" // Can differentiate later if needed
+        isPrimary ? "bg-card" : "bg-card" 
       )}>
         <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 space-y-2 sm:space-y-3 w-full">
           <Icon className={cn("h-8 w-8 sm:h-10 sm:w-10", isPrimary ? 'text-primary' : 'text-muted-foreground')} />
@@ -44,15 +43,15 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true
 
 export default function MainMenuPage() {
   const primaryMenuItems: MenuItemProps[] = [
-    { icon: CalendarCheck, title: "Attendance", href: "#attendance" }, // Placeholder href
-    { icon: Car, title: "Vehicles", href: "#vehicles" },
-    { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
-    { icon: ShieldCheck, title: "Safety", href: "#safety" },
+    { icon: CalendarCheck, title: "Attendance", href: "/attendance" }, // Updated href
+    { icon: Car, title: "Vehicles", href: "#vehicles" }, // Placeholder href
+    { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" }, // Placeholder href
+    { icon: ShieldCheck, title: "Safety", href: "#safety" }, // Placeholder href
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
-    { icon: MessageSquare, title: "Support", href: "#support" },
-    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support" },
+    { icon: MessageSquare, title: "Support", href: "#support" }, // Placeholder href
+    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support" }, // Placeholder href
   ];
 
   return (
@@ -60,7 +59,6 @@ export default function MainMenuPage() {
       <AppHeader className="mt-8 mb-6 sm:mb-8" />
       
       <div className="w-full max-w-xl mx-auto space-y-6 sm:space-y-8">
-        {/* Primary Options */}
         <div className="grid grid-cols-2 gap-4 sm:gap-6">
           {primaryMenuItems.map((item) => (
             <MenuItem key={item.title} {...item} isPrimary />
@@ -69,7 +67,6 @@ export default function MainMenuPage() {
 
         <Separator className="my-6 sm:my-8" />
 
-        {/* Secondary Options */}
         <div className="space-y-4 sm:space-y-6">
           {secondaryMenuItems.map((item) => (
             <MenuItem key={item.title} {...item} isPrimary={false} />
