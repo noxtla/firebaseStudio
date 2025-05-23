@@ -27,28 +27,28 @@ interface MenuItemProps {
 const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true }) => (
   <Link href={href} passHref legacyBehavior>
     <a className={cn(
-      "block no-underline w-full", // Apply w-full to the anchor for both primary and secondary
+      "block no-underline w-full", 
     )}>
       <Card className={cn(
-        "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden flex w-full", // Apply w-full to Card
-        isPrimary ? "h-full" : "h-auto" // Primary items take full height, secondary auto
+        "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden flex w-full", 
+        isPrimary ? "h-full" : "h-auto" 
       )}>
         <CardContent className={cn(
           "flex flex-col items-center justify-center w-full",
           isPrimary 
             ? "p-4 sm:p-6 space-y-2 sm:space-y-3" 
-            : "p-3 space-y-1.5" // Secondary: More compact padding and spacing
+            : "p-3 space-y-1.5" 
         )}>
           <Icon className={cn(
             isPrimary 
               ? 'h-8 w-8 sm:h-10 sm:w-10 text-primary' 
-              : 'h-6 w-6 text-muted-foreground' // Secondary: Smaller icon
+              : 'h-6 w-6 text-muted-foreground' 
           )} />
           <span className={cn(
             "font-medium text-center text-card-foreground",
             isPrimary 
               ? "text-base sm:text-lg" 
-              : "text-sm" // Secondary: Smaller text
+              : "text-sm" 
           )}>{title}</span>
         </CardContent>
       </Card>
@@ -70,13 +70,12 @@ export default function MainMenuPage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen bg-background items-center p-4 pb-8 sm:p-6">
+    <div className="flex flex-col min-h-screen bg-background p-4 pb-8 sm:p-6">
       <AppHeader className="mt-8 mb-6 sm:mb-8" />
       
       {/* Main content area that grows to fill space */}
-      <div className="w-full max-w-xl mx-auto flex-grow flex flex-col">
+      <div className="w-full flex-grow flex flex-col"> 
         {/* Primary Menu Items in a 2x2 Grid - this grid should fill the flex-grow parent */}
-        {/* Reduced gap from "gap-4 sm:gap-6" to "gap-4" */}
         <div className="grid grid-cols-2 gap-4 flex-grow">
           {primaryMenuItems.map((item) => (
             <div key={item.title} className="h-full"> {/* Ensure grid item takes full height */}
@@ -87,7 +86,7 @@ export default function MainMenuPage() {
       </div>
 
       {/* Footer area for secondary items, pushed to bottom */}
-      <div className="w-full max-w-xl mx-auto mt-auto pt-8 flex flex-row justify-center items-start gap-4 sm:gap-6">
+      <div className="w-full mt-auto pt-8 flex flex-row justify-center items-start gap-4 sm:gap-6"> 
         {secondaryMenuItems.map((item) => (
           <div key={item.title} className="flex-1 min-w-0"> {/* flex-1 to share space, min-w-0 for proper flex shrinking */}
             <MenuItem {...item} />
