@@ -30,18 +30,23 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true
     <a className="block w-full no-underline">
       <Card className={cn(
         "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden h-full flex",
-        // isPrimary ? "bg-card" : "bg-card" // No background change needed for this request
       )}>
         <CardContent className={cn(
           "flex flex-col items-center justify-center w-full",
-          isPrimary ? "p-4 sm:p-6 space-y-2 sm:space-y-3" : "p-3 sm:p-4 space-y-1 sm:space-y-2"
+          isPrimary 
+            ? "p-4 sm:p-6 space-y-2 sm:space-y-3" 
+            : "p-3 space-y-1.5" // Secondary: More compact padding and spacing
         )}>
           <Icon className={cn(
-            isPrimary ? 'h-8 w-8 sm:h-10 sm:w-10 text-primary' : 'h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground'
+            isPrimary 
+              ? 'h-8 w-8 sm:h-10 sm:w-10 text-primary' 
+              : 'h-6 w-6 text-muted-foreground' // Secondary: Smaller icon
           )} />
           <span className={cn(
             "font-medium text-center text-card-foreground",
-            isPrimary ? "text-base sm:text-lg" : "text-sm sm:text-base"
+            isPrimary 
+              ? "text-base sm:text-lg" 
+              : "text-sm" // Secondary: Smaller text
           )}>{title}</span>
         </CardContent>
       </Card>
