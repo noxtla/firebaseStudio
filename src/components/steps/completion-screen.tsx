@@ -3,6 +3,7 @@
 
 import type { FC } from 'react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter for navigation
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin } from 'lucide-react';
@@ -58,6 +59,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   userData,
   onRestart
 }) => {
+  const router = useRouter(); // Initialize router
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
   const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
   const { toast } = useToast();
@@ -118,6 +120,10 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           title: "Submission Successful",
           description: "Your information has been sent.",
         });
+        // Navigate to main menu after a short delay to allow user to see success message
+        setTimeout(() => {
+          router.push('/main-menu');
+        }, 2000);
       } else {
         console.error('Submission failed:', response.status, responseText);
         toast({
@@ -140,11 +146,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
   };
 
-  const handleStartOver = () => {
-    setSubmissionState('reviewing');
-    setSubmissionResponse(null);
-    onRestart();
-  };
+  // No longer using handleStartOver for navigation logic, use onRestart for full reset
+  // const handleStartOver = () => {
+  //   setSubmissionState('reviewing');
+  //   setSubmissionResponse(null);
+  //   onRestart();
+  // };
 
   const displayMonth = userData?.dataBirth ? getMonthNameFromDate(userData.dataBirth) : "September";
   const displayYear = userData?.dataBirth ? getYearFromDate(userData.dataBirth) : "1996";
@@ -158,7 +165,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
             <CardTitle className="text-xl sm:text-2xl text-center">Submission Successful!</CardTitle>
             <CardDescription className="text-center">
-              Your information has been submitted successfully.
+              Your information has been submitted successfully. You will be redirected shortly.
             </CardDescription>
           </CardHeader>
           {submissionResponse && (
@@ -172,7 +179,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             </CardContent>
           )}
           <CardFooter className="flex justify-center pt-6">
-            <Button onClick={handleStartOver} size="lg" aria-label="Start new verification">
+            {/* Button is now a placeholder or could restart if navigation fails */}
+             <Button onClick={onRestart} size="lg" aria-label="Start new verification">
               Start Over
             </Button>
           </CardFooter>
@@ -182,7 +190,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           <CardHeader className="items-center pt-6">
             <CardTitle
               className={cn(
-                "text-xl sm:text-2xl text-center",
+                "text-xl sm:text-2xl text-center font-heading-style",
                 submissionState === 'reviewing' && "animate-title-pulse"
               )}
             >
@@ -269,4 +277,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-    
