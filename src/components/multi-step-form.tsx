@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "@/components/ui/toaster";
@@ -56,6 +57,7 @@ export default function MultiStepForm() {
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const { toast } = useToast();
+  const router = useRouter(); // Initialize useRouter
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -116,7 +118,7 @@ export default function MultiStepForm() {
           return false;
         }
       case 4: // Photo
-        return !!capturedImage && !!capturedLocation; // Also ensure location is captured
+        return !!capturedImage && !!capturedLocation; 
       default:
         return true;
     }
@@ -131,7 +133,7 @@ export default function MultiStepForm() {
       setUserInitials(null);
       setRawApiResponse(null);
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login'; // Updated URL
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login';
       try {
         const response = await fetch(webhookUrl, {
           method: 'POST',
@@ -151,8 +153,10 @@ export default function MultiStepForm() {
                 const nameParts = responseData[0].Name.split(' ');
                 const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
                 setUserInitials(initials);
-                toast({ variant: "success", title: "Success", description: "Phone number verified." });
-                setCurrentStep((prev) => (prev + 1) as FormStep);
+                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to main menu..." });
+                // Navigate to main menu instead of next step
+                router.push('/main-menu'); 
+                // No longer setting currentStep for SSN
               } else {
                 toast({ variant: "destructive", title: "Error", description: "User not found or name missing in response." });
               }
@@ -169,17 +173,18 @@ export default function MultiStepForm() {
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
+        let errorMessage = "An unknown network error occurred.";
+        if (error instanceof Error) {
+          errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
+          setRawApiResponse(`Fetch Error: ${error.message}`);
+        } else {
+           setRawApiResponse('Fetch Error: An unknown error occurred.');
+        }
         toast({
           variant: "destructive",
           title: "Error Verifying Phone",
-          description: `Could not connect: ${errorMessage}. Check internet or try again.`
+          description: errorMessage
         });
-         if (error instanceof Error) {
-          setRawApiResponse(`Fetch Error: ${error.message}`);
-        } else {
-          setRawApiResponse('Fetch Error: An unknown error occurred.');
-        }
       } finally {
         setIsLoadingPhoneNumber(false);
       }
@@ -211,8 +216,6 @@ export default function MultiStepForm() {
       if (currentStep -1 === 0 || currentStep -1 === 1) { 
           setUserData(null);
           setUserInitials(null);
-          // Keep rawApiResponse for phone step if needed, or reset here
-          // setRawApiResponse(null); 
       }
     }
   };
@@ -299,12 +302,10 @@ export default function MultiStepForm() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-       {/* Toaster moved here to be between header and stepper */}
       <div className="w-full max-w-md mx-auto">
         {showAppHeader && <AppHeader className="mt-8 mb-8" />}
         <Toaster />
       </div>
-
 
       <div className="flex-grow overflow-y-auto p-4 pt-0">
         <div className="w-full max-w-md mx-auto">
@@ -359,5 +360,3 @@ export default function MultiStepForm() {
     </div>
   );
 }
-
-    
