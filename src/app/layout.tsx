@@ -12,12 +12,12 @@ const shadowsIntoLightTwo = Shadows_Into_Light_Two({
 const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-body',
-  weight: ['400', '600', '800'],
+  weight: ['400', '600', '800'], // Added 800 weight
 });
 
 export const metadata: Metadata = {
-  title: 'Asplundh Access',
-  description: 'Secure login gateway for Asplundh agents.',
+  title: 'MyApp', // Changed from 'Asplundh Access'
+  description: 'Secure login gateway.', // Generic description
 };
 
 export default function RootLayout({
@@ -31,7 +31,7 @@ export default function RootLayout({
         <main>
           {children}
         </main>
-        {/* <Toaster /> */} {/* Toaster removed from here */}
+        {/* <Toaster /> */} {/* Toaster moved from here */}
       </body>
     </html>
   );
