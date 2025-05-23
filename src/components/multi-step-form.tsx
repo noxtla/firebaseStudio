@@ -3,15 +3,14 @@
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData } from '@/types'; // UserData might be simplified if not used directly here after fetch
+import type { FormData, FormStep, UserData } from '@/types';
 import { useToast } from "@/hooks/use-toast";
-import { Toaster } from "@/components/ui/toaster";
+// Toaster is in layout.tsx or parent page
 
 import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
-// SSN, BirthDay, Photo, Completion steps are removed from this direct flow
 
 import { Button } from '@/components/ui/button';
 import { Phone, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
@@ -23,7 +22,7 @@ const initialFormData: Pick<FormData, 'phoneNumber'> = {
 
 // Simplified steps for phone login only
 const MAX_PHONE_STEPS: FormStep = 1; // 0: Initial, 1: Phone
-const phoneStepLabels = ["Phone"];
+const phoneStepLabels = ["Phone"]; // Kept for potential future use, but stepper is hidden
 const PHONE_STEP_CONFIG = [
   { title: "", icon: null }, // Initial Screen (Step 0)
   { title: "Enter Your Phone Number", icon: Phone }, // Step 1
@@ -41,6 +40,7 @@ export default function MultiStepForm() {
     const { name, value } = e.target;
 
     if (name === "phoneNumber") {
+      // Allow only digits and format as (XXX) XXX-XXXX
       const cleaned = ('' + value).replace(/\D/g, '');
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
@@ -91,10 +91,9 @@ export default function MultiStepForm() {
             const responseDataArray: UserData[] = JSON.parse(responseText);
             if (responseDataArray && responseDataArray.length > 0 && responseDataArray[0].Name) {
               const userData: UserData = responseDataArray[0];
-              // Store userData in sessionStorage
               sessionStorage.setItem('userData', JSON.stringify(userData));
               
-              toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to main menu..." });
+              toast({ variant: "success", title: "Success", description: "Phone number verified." });
               router.push('/main-menu');
             } else {
               toast({ variant: "destructive", title: "Error", description: "User not found or name missing in response." });
@@ -107,7 +106,7 @@ export default function MultiStepForm() {
             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
         } else {
           const errorDetails = responseText || `Status: ${response.status}`;
-          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number: ${errorDetails}.` });
+          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${errorDetails}.` });
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
@@ -138,7 +137,7 @@ export default function MultiStepForm() {
     setFormData(initialFormData);
     setIsLoadingPhoneNumber(false);
     setRawApiResponse(null);
-    sessionStorage.removeItem('userData'); // Clear session storage on restart
+    sessionStorage.removeItem('userData');
   };
 
   const renderActiveStepContent = () => {
@@ -151,7 +150,6 @@ export default function MultiStepForm() {
         />
       );
     }
-    // For currentStep === 0, InitialScreen is rendered directly below
     return null; 
   };
 
@@ -163,15 +161,15 @@ export default function MultiStepForm() {
   const activeTitle = PHONE_STEP_CONFIG[currentStep]?.title;
   
   const showAppHeader = currentStep > 0 && currentStep <= MAX_PHONE_STEPS;
-  const showStepper = currentStep > 0 && currentStep <= MAX_PHONE_STEPS;
-  const showStepTitle = currentStep > 0 && currentStep < MAX_PHONE_STEPS + 1; // Show title for phone step
+  const showStepper = false; // Changed to false to hide the stepper
+  const showStepTitle = currentStep > 0 && currentStep < MAX_PHONE_STEPS + 1; 
   const showNavButtons = currentStep > 0 && currentStep < MAX_PHONE_STEPS +1;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <div className="w-full max-w-md mx-auto">
         {showAppHeader && <AppHeader className="mt-8 mb-8" />}
-        <Toaster />
+        {/* Toaster is managed globally or by parent pages */}
       </div>
 
       <div className="flex-grow overflow-y-auto p-4 pt-0">
@@ -179,7 +177,7 @@ export default function MultiStepForm() {
           
           {showStepper && (
             <ProgressStepper
-              currentStepIndex={currentStep - 1} // 0 for Phone
+              currentStepIndex={currentStep - 1} 
               steps={phoneStepLabels}
               className="mb-6 w-full"
             />
@@ -187,10 +185,10 @@ export default function MultiStepForm() {
 
           {showStepTitle && ActiveIcon && activeTitle && (
             <div className={cn(
-              "mb-6 flex items-center justify-center text-lg sm:text-xl font-semibold space-x-2 text-foreground",
+              "mb-6 flex items-center justify-center text-2xl sm:text-3xl font-semibold space-x-3 text-foreground", // Increased text size and space
               "font-heading-style" 
             )}>
-              <ActiveIcon className="h-6 w-6 text-primary" />
+              <ActiveIcon className="h-7 w-7 text-primary" /> {/* Increased icon size */}
               <span>{activeTitle}</span>
             </div>
           )}
