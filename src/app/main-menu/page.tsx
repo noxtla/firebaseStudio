@@ -72,6 +72,7 @@ export default function MainMenuPage() {
       <AppHeader className="mt-8 mb-6 sm:mb-8" />
       
       <div className="w-full max-w-xl mx-auto space-y-6 sm:space-y-8">
+        {/* Primary Menu Items in a 2x2 Grid */}
         <div className="grid grid-cols-2 gap-4 sm:gap-6">
           {primaryMenuItems.map((item) => (
             <MenuItem key={item.title} {...item} isPrimary />
@@ -80,6 +81,7 @@ export default function MainMenuPage() {
 
         <Separator className="my-6 sm:my-8" />
 
+        {/* Secondary Menu Items - Stacked Vertically, Full Width */}
         <div className="space-y-4 sm:space-y-6">
           {secondaryMenuItems.map((item) => (
             <MenuItem key={item.title} {...item} isPrimary={false} />
