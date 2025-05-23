@@ -16,7 +16,7 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'MyApp', // Changed from 'Asplundh Access'
+  title: 'TreeService', // Changed from 'MyApp'
   description: 'Secure login gateway.', // Generic description
 };
 
