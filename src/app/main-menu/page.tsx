@@ -76,7 +76,8 @@ export default function MainMenuPage() {
       {/* Main content area that grows to fill space */}
       <div className="w-full max-w-xl mx-auto flex-grow flex flex-col">
         {/* Primary Menu Items in a 2x2 Grid - this grid should fill the flex-grow parent */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-6 flex-grow">
+        {/* Reduced gap from "gap-4 sm:gap-6" to "gap-4" */}
+        <div className="grid grid-cols-2 gap-4 flex-grow">
           {primaryMenuItems.map((item) => (
             <div key={item.title} className="h-full"> {/* Ensure grid item takes full height */}
               <MenuItem {...item} isPrimary />
