@@ -1,23 +1,23 @@
 import type { Metadata } from 'next';
-import { Shadows_Into_Light_Two, Open_Sans } from 'next/font/google';
+import { Lato, Open_Sans } from 'next/font/google';
 import './globals.css';
 // import { Toaster } from "@/components/ui/toaster"; // Toaster moved from here
 
-const shadowsIntoLightTwo = Shadows_Into_Light_Two({
+const lato = Lato({
   subsets: ['latin'],
   variable: '--font-heading',
-  weight: ['400'],
+  weight: ['400', '900'], // Load regular and black weights
 });
 
 const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-body',
-  weight: ['400', '600', '800'], // Added 800 weight
+  weight: ['400', '700'], // Load regular and bold weights
 });
 
 export const metadata: Metadata = {
-  title: 'Tree Services', // Changed from 'TreeService'
-  description: 'Secure login gateway.', // Generic description
+  title: 'Tree Services',
+  description: 'Secure login gateway.',
 };
 
 export default function RootLayout({
@@ -26,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${shadowsIntoLightTwo.variable} ${openSans.variable}`}>
+    <html lang="en" className={`${lato.variable} ${openSans.variable}`}>
       <body className={`antialiased`}>
         <main>
           {children}
