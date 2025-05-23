@@ -4,7 +4,6 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from "@/components/ui/card";
-// Separator removed as per new layout
 import AppHeader from '@/components/app-header'; 
 
 import {
@@ -28,12 +27,11 @@ interface MenuItemProps {
 const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true }) => (
   <Link href={href} passHref legacyBehavior>
     <a className={cn(
-      "block no-underline",
-      isPrimary && "w-full" // Primary items take full width of their grid cell
+      "block no-underline w-full", // Apply w-full to the anchor for both primary and secondary
     )}>
       <Card className={cn(
-        "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden flex",
-        isPrimary && "h-full" // Primary items take full height of their grid cell
+        "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden flex w-full", // Apply w-full to Card
+        isPrimary ? "h-full" : "h-auto" // Primary items take full height, secondary auto
       )}>
         <CardContent className={cn(
           "flex flex-col items-center justify-center w-full",
@@ -75,21 +73,22 @@ export default function MainMenuPage() {
     <div className="flex flex-col min-h-screen bg-background items-center p-4 pb-8 sm:p-6">
       <AppHeader className="mt-8 mb-6 sm:mb-8" />
       
-      {/* Main content area that grows */}
-      <div className="w-full max-w-xl mx-auto flex-grow flex flex-col space-y-6 sm:space-y-8">
-        {/* Primary Menu Items in a 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-4 sm:gap-6">
+      {/* Main content area that grows to fill space */}
+      <div className="w-full max-w-xl mx-auto flex-grow flex flex-col">
+        {/* Primary Menu Items in a 2x2 Grid - this grid should fill the flex-grow parent */}
+        <div className="grid grid-cols-2 gap-4 sm:gap-6 flex-grow">
           {primaryMenuItems.map((item) => (
-            <MenuItem key={item.title} {...item} isPrimary />
+            <div key={item.title} className="h-full"> {/* Ensure grid item takes full height */}
+              <MenuItem {...item} isPrimary />
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Footer area for secondary items */}
-      <div className="w-full max-w-xl mx-auto mt-auto pt-8 flex flex-row justify-center items-start gap-6 sm:gap-8">
+      {/* Footer area for secondary items, pushed to bottom */}
+      <div className="w-full max-w-xl mx-auto mt-auto pt-8 flex flex-row justify-center items-start gap-4 sm:gap-6">
         {secondaryMenuItems.map((item) => (
-          // Each secondary item will determine its own width based on content + padding
-          <div key={item.title} className="flex-shrink-0"> 
+          <div key={item.title} className="flex-1 min-w-0"> {/* flex-1 to share space, min-w-0 for proper flex shrinking */}
             <MenuItem {...item} />
           </div>
         ))}
