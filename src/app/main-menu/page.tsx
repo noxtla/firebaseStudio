@@ -30,11 +30,19 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true
     <a className="block w-full no-underline">
       <Card className={cn(
         "hover:bg-accent/50 transition-colors duration-150 ease-in-out cursor-pointer shadow-md hover:shadow-lg rounded-lg overflow-hidden h-full flex",
-        isPrimary ? "bg-card" : "bg-card" 
+        // isPrimary ? "bg-card" : "bg-card" // No background change needed for this request
       )}>
-        <CardContent className="flex flex-col items-center justify-center p-4 sm:p-6 space-y-2 sm:space-y-3 w-full">
-          <Icon className={cn("h-8 w-8 sm:h-10 sm:w-10", isPrimary ? 'text-primary' : 'text-muted-foreground')} />
-          <span className="text-base sm:text-lg font-medium text-center text-card-foreground">{title}</span>
+        <CardContent className={cn(
+          "flex flex-col items-center justify-center w-full",
+          isPrimary ? "p-4 sm:p-6 space-y-2 sm:space-y-3" : "p-3 sm:p-4 space-y-1 sm:space-y-2"
+        )}>
+          <Icon className={cn(
+            isPrimary ? 'h-8 w-8 sm:h-10 sm:w-10 text-primary' : 'h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground'
+          )} />
+          <span className={cn(
+            "font-medium text-center text-card-foreground",
+            isPrimary ? "text-base sm:text-lg" : "text-sm sm:text-base"
+          )}>{title}</span>
         </CardContent>
       </Card>
     </a>
@@ -43,15 +51,15 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, isPrimary = true
 
 export default function MainMenuPage() {
   const primaryMenuItems: MenuItemProps[] = [
-    { icon: CalendarCheck, title: "Attendance", href: "/attendance" }, // Updated href
-    { icon: Car, title: "Vehicles", href: "#vehicles" }, // Placeholder href
-    { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" }, // Placeholder href
-    { icon: ShieldCheck, title: "Safety", href: "#safety" }, // Placeholder href
+    { icon: CalendarCheck, title: "Attendance", href: "/attendance" },
+    { icon: Car, title: "Vehicles", href: "#vehicles" }, 
+    { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
+    { icon: ShieldCheck, title: "Safety", href: "#safety" },
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
-    { icon: MessageSquare, title: "Support", href: "#support" }, // Placeholder href
-    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support" }, // Placeholder href
+    { icon: MessageSquare, title: "Support", href: "#support" },
+    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support" },
   ];
 
   return (
