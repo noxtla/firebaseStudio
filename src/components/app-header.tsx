@@ -17,7 +17,7 @@ const AppHeader: FC<AppHeaderProps> = ({ className }) => {
           fontSize: 'clamp(2rem, 8vw, 4.5rem)',
         }}
       >
-        TreeService
+        Tree Services
       </h1>
     </div>
   );

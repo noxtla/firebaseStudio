@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Shadows_Into_Light_Two, Open_Sans } from 'next/font/google';
 import './globals.css';
-// import { Toaster } from "@/components/ui/toaster"; // Toaster removed from here
+// import { Toaster } from "@/components/ui/toaster"; // Toaster moved from here
 
 const shadowsIntoLightTwo = Shadows_Into_Light_Two({
   subsets: ['latin'],
@@ -16,7 +16,7 @@ const openSans = Open_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'TreeService', // Changed from 'MyApp'
+  title: 'Tree Services', // Changed from 'TreeService'
   description: 'Secure login gateway.', // Generic description
 };
 
