@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
@@ -19,15 +18,13 @@ import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
-// SSN, BirthDay, Photo, Completion steps are no longer directly used here
-// after the flow change to redirect to main-menu.
 
 import { Button } from '@/components/ui/button';
 import { Phone, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
-const initialFormData: Pick<FormData, 'phoneNumber'> = { // Only phoneNumber needed for this form now
+const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
@@ -38,22 +35,36 @@ const STEP_CONFIG = [
   { title: "Enter Your Phone Number", icon: Phone }, // Step 1
 ];
 
-const stepLabels = ["Phone"]; // Only "Phone" relevant for this form's stepper
-
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
-  const [formData, setFormData] = useState<FormData>(initialFormData as FormData); // Cast to full FormData
+  const [formData, setFormData] = useState<FormData>(initialFormData as FormData);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-
-  // userInitials state is no longer needed here as SSN/BirthDay/Photo steps moved
-  // const [userInitials, setUserInitials] = useState<string | null>(null);
+  const [userInitials, setUserInitials] = useState<string | null>(null); // For SSN, Birthday, Photo steps
 
   const { toast } = useToast();
   const router = useRouter();
+
+  const formatInitialsForDisplay = (initials: string): string => {
+    return initials
+      .split('')
+      .map(char => `${char}****`)
+      .join(' ');
+  };
+
+  useEffect(() => {
+    if (userData && userData.Name) {
+      const nameParts = userData.Name.split(' ');
+      const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
+      setUserInitials(initials);
+    } else {
+      setUserInitials(null);
+    }
+  }, [userData]);
+
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -75,17 +86,16 @@ export default function MultiStepForm() {
     }
   };
 
-  // handlePhotoCaptured is no longer needed in this component
 
   const getCanProceed = (): boolean => {
     if (isLoadingPhoneNumber && currentStep === 1) return false;
 
     switch (currentStep) {
-      case 0: // Initial Screen
+      case 0:
         return true;
-      case 1: // Phone Number
+      case 1:
         return formData.phoneNumber.replace(/\D/g, '').length === 10;
-      default: // Other steps (SSN, BirthDay, Photo) are no longer part of this form
+      default:
         return false;
     }
   };
@@ -111,7 +121,7 @@ export default function MultiStepForm() {
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }), // phoneNumberFlag removed
+          body: JSON.stringify({ phoneNumber: cleanedPhoneNumber, phoneNumberFlag: true }),
         });
 
         const responseText = await response.text();
@@ -128,10 +138,10 @@ export default function MultiStepForm() {
               } 
               else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const userDataInstance: UserData = parsedData[0];
-                setUserData(userDataInstance);
+                setUserData(userDataInstance); // Store fetched user data
                 sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                router.push('/main-menu');
+                router.push('/main-menu'); // Navigate to main menu
               } 
               else {
                 console.error('Unexpected JSON structure:', parsedData);
@@ -180,6 +190,7 @@ export default function MultiStepForm() {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       setApiError(null);
+      setUserInitials(null); // Clear initials when going back from SSN to Phone
     }
   };
 
@@ -190,34 +201,15 @@ export default function MultiStepForm() {
     setIsLoadingPhoneNumber(false);
     setApiError(null);
     setRawApiResponse(null);
-    // No need to clear photo/location/initials state here anymore
+    setUserInitials(null);
     sessionStorage.removeItem('userData');
-  };
-
-  // formattedUserInitialsForStep is no longer needed here
-
-  const renderActiveStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return <InitialScreen onNextStep={nextStep} />;
-      case 1:
-        return (
-          <PhoneNumberStep
-            formData={formData}
-            onInputChange={handleInputChange}
-            rawApiResponse={rawApiResponse}
-          />
-        );
-      default: // SSN, BirthDay, Photo, Complete steps are handled in AttendanceForm
-        return null;
-    }
   };
   
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   let activeTitle = STEP_CONFIG[currentStep]?.title;
   
   const showAppHeader = currentStep > 0 && currentStep <= MAX_STEPS;
-  const showStepper = currentStep > 0 && currentStep <= MAX_STEPS;
+  const showStepper = false; // Keep stepper hidden for phone only flow
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
@@ -239,27 +231,20 @@ export default function MultiStepForm() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
+      
       <div className={cn("w-full max-w-md mx-auto", {"pt-0": isPhoneStep })}>
-         {/* Conditional rendering of AppHeader for phone step vs other contexts */}
-        {isPhoneStep ? null : <AppHeader className="my-8" /> }
+        {!isPhoneStep ? <AppHeader className="my-8" /> : null}
+      </div>
+       
+      <div className="w-full max-w-md mx-auto mt-8">
+        {/* Toaster is now placed here to appear between AppHeader and ProgressStepper */}
       </div>
 
-      <div className="flex-grow overflow-y-auto p-4 pt-0">
+      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
         <div className="w-full max-w-md mx-auto">
-          
-          {!isPhoneStep && showStepper && (
-            <ProgressStepper
-              currentStepIndex={currentStep -1} 
-              steps={stepLabels}
-              className="mb-6 w-full"
-            />
-          )}
-          
-          {/* Special handling for AppHeader and Title on Phone Step */}
           {isPhoneStep && (
             <>
-              <AppHeader className="my-8" /> 
+              <AppHeader className="my-8" />
               {ActiveIcon && activeTitle && (
                 <div className={cn(
                   "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
@@ -271,17 +256,6 @@ export default function MultiStepForm() {
               )}
             </>
           )}
-
-          {!isPhoneStep && showStepTitle && ActiveIcon && activeTitle && (
-            <div className={cn(
-              "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-              "text-lg sm:text-xl" 
-            )}>
-              <ActiveIcon className={cn("h-6 w-6", "text-primary")} />
-              <span>{activeTitle}</span>
-            </div>
-          )}
-
 
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
@@ -314,4 +288,21 @@ export default function MultiStepForm() {
       </div>
     </div>
   );
+
+  function renderActiveStepContent() {
+    switch (currentStep) {
+      case 0:
+        return <InitialScreen onNextStep={nextStep} />;
+      case 1:
+        return (
+          <PhoneNumberStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            rawApiResponse={rawApiResponse}
+          />
+        );
+      default:
+        return null;
+    }
+  }
 }
