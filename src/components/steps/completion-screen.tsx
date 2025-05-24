@@ -45,9 +45,11 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
+  // Capitalize first letter of each word, rest lowercase, join with hyphen
   return nameStr
+    .toLowerCase()
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join('-');
 };
 
@@ -58,7 +60,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   captureTimestamp,
   capturedLocation,
   userData,
-  onRestart // Renamed from onRestart to make its purpose clearer
+  onRestart
 }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
   const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
@@ -91,7 +93,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     const payload: any = {
       step: "finalSubmission",
       name: transformNameForPayload(userData?.Name),
-      phoneNumber: formData.phoneNumber || '',
+      phoneNumber: formData.phoneNumber || (userData?.phoneNumber || ''),
       ssnLast4: formData.ssnLast4 || '',
       birthDay: formData.birthDay || '',
       capturedImageBase64: capturedImage,
@@ -102,7 +104,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', {
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', { // Updated webhook URL
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +133,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
+      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred. Please check your internet connection and try again.";
       setSubmissionResponse(`Fetch Error: ${errorMessage}`);
       toast({
         variant: "destructive",
@@ -191,7 +193,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               <h3 className="font-semibold text-lg mb-2">Summary:</h3>
               <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                 {userData && <li>Name: {userData.Name}</li>}
-                <li>Phone: {formData.phoneNumber}</li>
+                <li>Phone: {formData.phoneNumber || (userData?.phoneNumber || '')}</li>
                 <li>SSN (Last 4): ••••{formData.ssnLast4.slice(-4)}</li>
                 <li>Birth Day: {birthDayDisplay}</li>
                 {userData && <li>Position: {userData.Puesto}</li> }
