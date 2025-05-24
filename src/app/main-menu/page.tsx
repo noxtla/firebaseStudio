@@ -7,15 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import AppHeader from '@/components/app-header';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -131,8 +122,7 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
 export default function MainMenuPage() {
   const router = useRouter();
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-  const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
-  const [outOfHoursMessage, setOutOfHoursMessage] = useState<string>("Attendance is currently unavailable. You are outside the allowed schedule.");
+  // Removed isOutOfHoursAlertOpen and outOfHoursMessage state
   
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
   const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
@@ -164,27 +154,8 @@ export default function MainMenuPage() {
       });
 
       if (!response.ok) {
-        if (response.status === 500) {
-          try {
-            const errorText = await response.text();
-            if (errorText) {
-              const errorData = JSON.parse(errorText);
-              if (errorData && errorData.myField === "Fuera del horario") {
-                setOutOfHoursMessage(errorData.myField);
-                setIsOutOfHoursAlertOpen(true);
-                // Navigation will proceed after try-catch due to removed return
-              } else {
-                console.error("Attendance webhook returned 500, but not 'Fuera del horario'. Status:", response.status, "Body:", errorText);
-              }
-            } else {
-              console.error("Attendance webhook returned 500 with empty body. Status:", response.status);
-            }
-          } catch (e) {
-            console.error("Failed to parse body of 500 error from attendance webhook:", e);
-          }
-        } else {
-          console.error("Webhook call for Attendance failed with status:", response.status, await response.text());
-        }
+        // Simplified error handling: log the error status and text
+        console.error("Attendance webhook call failed. Status:", response.status, "Body:", await response.text());
       } else {
         console.log("Webhook called successfully for Attendance.");
       }
@@ -216,19 +187,7 @@ export default function MainMenuPage() {
 
   return (
     <>
-      <AlertDialog open={isOutOfHoursAlertOpen} onOpenChange={setIsOutOfHoursAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Out of Schedule</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription>
-            {outOfHoursMessage}
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setIsOutOfHoursAlertOpen(false)}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* AlertDialog for "out of schedule" removed */}
 
       <div className="flex flex-col h-screen bg-background p-2">
         <AppHeader className="my-2" />
@@ -262,4 +221,3 @@ export default function MainMenuPage() {
     </>
   );
 }
-
