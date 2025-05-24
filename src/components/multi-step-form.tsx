@@ -87,7 +87,7 @@ export default function MultiStepForm() {
       return;
     }
 
-    if (currentStep === 1 && canProceed) { // Phone to SSN (now Main Menu)
+    if (currentStep === 1 && canProceed) { 
       setIsLoadingPhoneNumber(true);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
@@ -95,7 +95,7 @@ export default function MultiStepForm() {
       }
       
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login'; // Changed back to test URL
       
       try {
         const response = await fetch(webhookUrl, {
@@ -118,18 +118,16 @@ export default function MultiStepForm() {
               if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
                 toast({ variant: "destructive", title: "Error", description: "User not found. Please check the phone number and try again." });
               } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
-                const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber }; // Add entered phone to userData
+                const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber }; 
                 if (typeof window !== 'undefined') {
                     sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
                 }
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
                 router.push('/main-menu');
               } else {
-                // console.error('Unexpected JSON structure:', parsedData);
                 toast({ variant: "destructive", title: "Error", description: "User not found or invalid data received." });
               }
             } catch (jsonError) {
-              // console.error('Error parsing JSON:', jsonError, 'Response text:', responseText);
               toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
             }
           } else { 
@@ -144,7 +142,6 @@ export default function MultiStepForm() {
           }
         }
       } catch (error: any) {
-        // console.error('Error sending phone number to webhook:', error);
         let errorMessage = "An unknown network error occurred.";
         if (error instanceof Error) {
           errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
