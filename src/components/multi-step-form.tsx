@@ -97,7 +97,7 @@ export default function MultiStepForm() {
       setRawApiResponse(null);
       setUserData(null);
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login'; // <-- UPDATED URL
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
       
       try {
         const response = await fetch(webhookUrl, {
@@ -108,6 +108,11 @@ export default function MultiStepForm() {
 
         const responseText = await response.text();
         setRawApiResponse(responseText); 
+        
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+        }
+
 
         if (response.ok) {
           if (responseText) {
@@ -121,7 +126,9 @@ export default function MultiStepForm() {
               else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const userDataInstance: UserData = parsedData[0];
                 setUserData(userDataInstance); 
-                sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                }
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
                 router.push('/main-menu'); 
               } 
@@ -183,7 +190,10 @@ export default function MultiStepForm() {
     setIsLoadingPhoneNumber(false);
     setApiError(null);
     setRawApiResponse(null);
-    sessionStorage.removeItem('userData');
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('loginWebhookStatus');
+    }
   };
   
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
@@ -191,7 +201,9 @@ export default function MultiStepForm() {
   
   const showAppHeader = currentStep === 1; 
   const shouldShowHeader = currentStep === 1; 
+  // const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
   const showNavButtons = currentStep === 1;
+
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
@@ -227,16 +239,12 @@ export default function MultiStepForm() {
         </AlertDialogContent>
       </AlertDialog>
       
-      <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0 })}>
+      <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0, "pt-8 md:pt-12": currentStep !==0 })}>
         {showAppHeader ? <AppHeader className="my-8" /> : null}
       </div>
        
-      <div className="w-full max-w-md mx-auto">
-      </div>
-
-      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
-        <div className="w-full max-w-md mx-auto">
-          {shouldShowHeader && ActiveIcon && activeTitle && (
+      <div className={cn("w-full max-w-md mx-auto", {"px-4": currentStep !==0 } )}>
+          {currentStep > 0 && ActiveIcon && activeTitle && (
                 <div className={cn(
                   "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
                   "text-2xl sm:text-3xl" 
@@ -245,6 +253,11 @@ export default function MultiStepForm() {
                   <span>{activeTitle}</span>
                 </div>
           )}
+      </div>
+
+      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
+        <div className="w-full max-w-md mx-auto">
+          
 
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}

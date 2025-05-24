@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import AppHeader from '@/components/app-header';
 import {
@@ -36,9 +36,12 @@ interface MenuItemProps {
   onClick?: () => Promise<void>;
   isPrimary?: boolean;
   isLoading?: boolean;
+  isDisabled?: boolean;
 }
 
-const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrimary = true, isLoading = false }) => {
+const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrimary = true, isLoading = false, isDisabled = false }) => {
+  const effectivelyDisabled = isDisabled || isLoading;
+
   const cardContent = (
     <CardContent className={cn(
       "flex flex-col items-center justify-center flex-1",
@@ -52,14 +55,16 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
         <Icon className={cn(
           isPrimary 
             ? 'h-10 w-10 text-primary' 
-            : 'h-6 w-6 text-muted-foreground' 
+            : 'h-6 w-6 text-muted-foreground',
+          isDisabled && !isLoading && "opacity-50" // Gray out icon if disabled and not loading
         )} />
       )}
       <span className={cn(
         "font-medium text-center text-card-foreground",
         isPrimary 
           ? "text-lg" 
-          : "text-sm" 
+          : "text-sm",
+        effectivelyDisabled && "opacity-50"
       )}>{title}</span>
     </CardContent>
   );
@@ -67,24 +72,25 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
   const cardClasses = cn(
     "hover:bg-accent/50 transition-colors duration-150 ease-in-out shadow-md hover:shadow-lg rounded-lg overflow-hidden flex flex-col", 
     isPrimary ? "h-full w-full" : "w-full" ,
-    isLoading ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
+    effectivelyDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
   );
 
   if (onClick) {
     return (
       <div
-        onClick={isLoading ? undefined : onClick}
+        onClick={effectivelyDisabled ? undefined : onClick}
         className={cn(
           "flex",
           isPrimary ? "h-full w-full" : "w-full"
         )}
         role="button"
-        tabIndex={0}
+        tabIndex={effectivelyDisabled ? -1 : 0}
         onKeyDown={(e) => {
-          if ((e.key === 'Enter' || e.key === ' ') && !isLoading) {
+          if ((e.key === 'Enter' || e.key === ' ') && !effectivelyDisabled) {
             onClick();
           }
         }}
+        aria-disabled={effectivelyDisabled}
       >
         <Card className={cardClasses}>
           {cardContent}
@@ -95,10 +101,11 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
 
   if (href) {
     return (
-      <Link href={href} passHref legacyBehavior>
+      <Link href={effectivelyDisabled ? "#" : href} passHref legacyBehavior aria-disabled={effectivelyDisabled}>
         <a className={cn(
           "no-underline flex",
-          isPrimary ? "h-full w-full" : "w-full" 
+          isPrimary ? "h-full w-full" : "w-full",
+           effectivelyDisabled && "pointer-events-none" 
         )}>
           <Card className={cardClasses}>
             {cardContent}
@@ -123,9 +130,23 @@ export default function MainMenuPage() {
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
   const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState<string>("Attendance is currently unavailable. You are outside the allowed schedule.");
+  const [isAttendanceButtonEnabled, setIsAttendanceButtonEnabled] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
+      if (loginStatus === '210') {
+        setIsAttendanceButtonEnabled(true);
+      } else {
+        setIsAttendanceButtonEnabled(false);
+      }
+      // Optionally clear the status after reading if it's a one-time check
+      // sessionStorage.removeItem('loginWebhookStatus');
+    }
+  }, []);
 
   const handleAttendanceClick = async () => {
-    if (isAttendanceLoading) return;
+    if (isAttendanceLoading || !isAttendanceButtonEnabled) return;
     setIsAttendanceLoading(true);
     console.log("Attendance clicked, calling webhook...");
     try {
@@ -146,34 +167,34 @@ export default function MainMenuPage() {
               setOutOfHoursMessage(errorData.myField);
               setIsOutOfHoursAlertOpen(true);
               setIsAttendanceLoading(false);
-              return; // Prevent navigation
+              return; 
             }
           }
         } catch (e) {
           console.error("Failed to parse body of 500 error from attendance webhook:", e);
         }
-        // If it's a 500 error but not the specific "Fuera del horario" JSON, or if parsing failed, log it.
-        // The flow will proceed to navigation as per current broader error handling.
         console.error("Webhook call for Attendance returned 500, but not the 'Fuera del horario' condition or body parse failed. Status:", response.status);
       } else if (!response.ok) {
-        // Handle other non-500 errors (e.g., 400, 401, 403, 404, etc.)
         console.error("Webhook call for Attendance failed:", response.status, await response.text());
       } else {
-        // Response is OK
         console.log("Webhook called successfully for Attendance.");
       }
     } catch (error) {
-      // Network errors or other issues with fetch itself
       console.error("Error calling webhook for Attendance:", error);
     }
 
-    // This part is reached if the call was successful or if an error occurred that doesn't trigger the specific alert.
     setIsAttendanceLoading(false);
     router.push('/attendance');
   };
 
   const primaryMenuItems: MenuItemProps[] = [
-    { icon: CalendarCheck, title: "Attendance", onClick: handleAttendanceClick, isLoading: isAttendanceLoading },
+    { 
+      icon: CalendarCheck, 
+      title: "Attendance", 
+      onClick: handleAttendanceClick, 
+      isLoading: isAttendanceLoading,
+      isDisabled: !isAttendanceButtonEnabled 
+    },
     { icon: Car, title: "Vehicles", href: "#vehicles" }, 
     { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
     { icon: ShieldCheck, title: "Safety", href: "#safety" },
