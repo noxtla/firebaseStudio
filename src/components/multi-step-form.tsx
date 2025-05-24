@@ -34,6 +34,8 @@ const STEP_CONFIG = [
   { title: "Enter Your Phone Number", icon: Phone }, // Step 1
 ];
 
+const MAX_STEPS: FormStep = 1; // 0:Initial, 1:Phone
+
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<FormData>(initialFormData as FormData);
@@ -84,7 +86,7 @@ export default function MultiStepForm() {
 
   const nextStep = async () => {
     setApiError(null);
-    setRawApiResponse(null); // Clear previous raw response
+    setRawApiResponse(null); 
 
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -93,7 +95,7 @@ export default function MultiStepForm() {
 
     if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
-      setUserData(null); // Clear previous user data
+      setUserData(null); 
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
@@ -123,28 +125,25 @@ export default function MultiStepForm() {
               } 
               else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const userDataInstance: UserData = parsedData[0];
-                setUserData(userDataInstance); 
+                setUserData(userDataInstance);
                 
-                if (response.status === 210) {
-                  if (typeof window !== 'undefined') {
-                      sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
-                      sessionStorage.setItem('loginWebhookStatus', '210');
-                  }
-                  toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                  router.push('/main-menu'); 
-                } else {
-                  // User found, but status is not 210
-                  if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance)); // Store data if needed for other purposes
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
                     sessionStorage.setItem('loginWebhookStatus', response.status.toString());
-                  }
-                  toast({ variant: "default", title: "Login Processed", description: "Access to certain features may be restricted at this time." });
-                  // Do NOT navigate to main-menu if status is not 210
                 }
+
+                if (response.status === 210) {
+                    toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
+                    router.push('/main-menu'); 
+                } else {
+                    toast({ variant: "default", title: "Info", description: "Login successful, but access to certain features is currently restricted." });
+                    // DO NOT NAVIGATE
+                }
+                
               } 
               else {
                 console.error('Unexpected JSON structure:', parsedData);
-                toast({ variant: "destructive", title: "Error", description: "Received an unexpected response from the server." });
+                toast({ variant: "destructive", title: "Error", description: "Received an unexpected response from the server. User data not found." });
                 setUserData(null);
               }
             } catch (jsonError) {
@@ -153,12 +152,10 @@ export default function MultiStepForm() {
               setUserData(null);
             }
           } else { 
-            // response.ok is true, but responseText is empty
             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
             setUserData(null);
           }
         } else { 
-          // response.ok is false
           if (response.status === 404) {
             setIsNotFoundAlertOpen(true);
           } else {
@@ -212,8 +209,8 @@ export default function MultiStepForm() {
   const activeTitle = STEP_CONFIG[currentStep]?.title;
   
   const showAppHeader = currentStep === 1; 
-  const showStepper = false; // Never show stepper for this simplified form
-  const showNavButtons = currentStep === 1; // Show nav buttons only on phone input screen
+  const showStepper = false; 
+  const showNavButtons = currentStep === MAX_STEPS; // Show only on the phone input step
 
 
   const renderActiveStepContent = () => {
@@ -250,7 +247,7 @@ export default function MultiStepForm() {
         </AlertDialogContent>
       </AlertDialog>
       
-      <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0, "pt-8 md:pt-12": currentStep !==0 })}>
+      <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !==0 })}>
         {showAppHeader ? <AppHeader className="my-8" /> : null}
       </div>
        
@@ -260,7 +257,7 @@ export default function MultiStepForm() {
                   "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
                   "text-2xl sm:text-3xl" 
                 )}>
-                  <ActiveIcon className={cn("h-7 w-7", "text-primary")} />
+                  <ActiveIcon className={cn("h-8 w-8", "text-primary")} />
                   <span>{activeTitle}</span>
                 </div>
           )}

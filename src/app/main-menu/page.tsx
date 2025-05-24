@@ -7,6 +7,15 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import AppHeader from '@/components/app-header';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -40,24 +49,24 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
     <CardContent className={cn(
       "flex flex-col items-center justify-center flex-1",
       isPrimary 
-        ? "p-4 space-y-3" 
-        : "p-3 space-y-1.5" 
+        ? "p-4 space-y-3" // Larger padding and space for primary
+        : "p-3 space-y-1.5" // Smaller padding and space for secondary
     )}>
       {isLoading ? (
         <Loader2 className={cn("animate-spin", isPrimary ? 'h-10 w-10 text-primary' : 'h-6 w-6 text-muted-foreground')} />
       ) : (
         <Icon className={cn(
           isPrimary 
-            ? 'h-10 w-10 text-primary' 
-            : 'h-6 w-6 text-muted-foreground',
+            ? 'h-10 w-10 text-primary' // Larger icon for primary
+            : 'h-6 w-6 text-muted-foreground', // Smaller icon for secondary
           effectivelyDisabled && !isLoading && "opacity-50" 
         )} />
       )}
       <span className={cn(
         "font-medium text-center text-card-foreground",
         isPrimary 
-          ? "text-lg" 
-          : "text-sm",
+          ? "text-lg" // Larger text for primary
+          : "text-sm", // Smaller text for secondary
         effectivelyDisabled && "opacity-50"
       )}>{title}</span>
     </CardContent>
@@ -65,7 +74,7 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
 
   const cardClasses = cn(
     "hover:bg-accent/50 transition-colors duration-150 ease-in-out shadow-md hover:shadow-lg rounded-lg overflow-hidden flex flex-col", 
-    isPrimary ? "h-full w-full" : "w-full" ,
+    isPrimary ? "h-full w-full" : "w-full" , 
     effectivelyDisabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
   );
 
@@ -122,28 +131,31 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
 export default function MainMenuPage() {
   const router = useRouter();
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true); // For initial auth check
+  const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
+  const [outOfHoursMessage, setOutOfHoursMessage] = useState("");
   
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
   const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+
 
   useEffect(() => {
-    // This effect runs once on mount to check if the user should be here
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
       if (loginStatus !== '210') {
-        router.replace('/'); // Redirect to login if not authorized
-        return; // Early exit
+        router.replace('/'); // Redirect if not 210
+        // No need to set other states as the component will unmount/re-render
+      } else {
+        setIsAttendanceFeatureEnabled(true);
+        setShowDisabledAttendanceMessage(false);
+        setIsLoadingMenu(false);
       }
-      // If status is 210, enable attendance feature
-      setIsAttendanceFeatureEnabled(true);
-      setShowDisabledAttendanceMessage(false);
     }
-    setIsLoadingMenu(false);
   }, [router]);
 
   const handleAttendanceClick = async () => {
-    if (isAttendanceLoading || !isAttendanceFeatureEnabled) return;
+    if (isAttendanceLoading || !isAttendanceFeatureEnabled) return; 
+
     setIsAttendanceLoading(true);
     console.log("Attendance clicked, calling webhook...");
     try {
@@ -156,8 +168,19 @@ export default function MainMenuPage() {
       });
 
       if (!response.ok) {
-        // Simplified error handling: log the error status and text
-        console.error("Attendance webhook call failed. Status:", response.status, "Body:", await response.text());
+        const errorText = await response.text();
+        console.error("Attendance webhook call failed. Status:", response.status, "Body:", errorText);
+        if (response.status === 500) {
+          try {
+            const errorData = JSON.parse(errorText);
+            if (errorData && errorData.myField === "Fuera del horario") {
+              setOutOfHoursMessage("The attendance system is currently out of schedule. Please try again during operating hours.");
+              setIsOutOfHoursAlertOpen(true);
+            }
+          } catch (e) {
+            console.error("Could not parse error response from attendance webhook:", e);
+          }
+        }
       } else {
         console.log("Webhook called successfully for Attendance.");
       }
@@ -175,16 +198,16 @@ export default function MainMenuPage() {
       title: "Attendance", 
       onClick: handleAttendanceClick, 
       isLoading: isAttendanceLoading,
-      isDisabled: !isAttendanceFeatureEnabled || isAttendanceLoading, // Disable if feature not enabled OR loading
+      isDisabled: !isAttendanceFeatureEnabled || isAttendanceLoading, 
     },
     { icon: Car, title: "Vehicles", href: "#vehicles" }, 
-    { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
-    { icon: ShieldCheck, title: "Safety", href: "#safety" },
+    { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" }, 
+    { icon: ShieldCheck, title: "Safety", href: "#safety" }, 
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
-    { icon: MessageSquare, title: "Support", href: "#support", isPrimary: false },
-    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false },
+    { icon: MessageSquare, title: "Support", href: "#support", isPrimary: false }, 
+    { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false }, 
   ];
 
   if (isLoadingMenu) {
@@ -199,22 +222,36 @@ export default function MainMenuPage() {
 
   return (
     <>
+      <AlertDialog open={isOutOfHoursAlertOpen} onOpenChange={setIsOutOfHoursAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Out of Schedule</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            {outOfHoursMessage}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setIsOutOfHoursAlertOpen(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex flex-col h-screen bg-background p-2">
         <AppHeader className="my-2" />
 
         {showDisabledAttendanceMessage && (
           <Alert variant="default" className="mb-4 mx-auto max-w-md border-primary/50 bg-primary/5">
             <InfoIcon className="h-5 w-5 text-primary" />
-            <AlertTitle className="text-primary font-semibold">Attendance Feature Disabled</AlertTitle>
+            <AlertTitle className="text-primary font-semibold">Attendance Feature Notice</AlertTitle>
             <AlertDescription className="text-primary/90">
-              Access to the attendance feature is currently unavailable. Please contact support if you believe this is an error.
+              Access is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
             </AlertDescription>
           </Alert>
         )}
 
         <div className="grid grid-cols-2 gap-2 flex-1 overflow-hidden">
           {primaryMenuItems.map((item) => (
-            <div key={item.title} className="flex">
+            <div key={item.title} className="flex"> 
               <MenuItem {...item} isPrimary />
             </div>
           ))}
@@ -222,7 +259,7 @@ export default function MainMenuPage() {
 
         <div className="w-full py-2 mt-2 flex flex-row gap-2">
           {secondaryMenuItems.map((item) => (
-            <div key={item.title} className="flex-1 min-w-0">
+            <div key={item.title} className="flex-1 min-w-0"> 
               <MenuItem {...item} isPrimary={false} />
             </div>
           ))}
