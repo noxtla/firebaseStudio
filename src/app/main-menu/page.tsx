@@ -11,14 +11,14 @@ import {
   ClipboardList, 
   ShieldCheck, 
   MessageSquare, 
-  AlertTriangle as AlertTriangleIcon, // Renamed to avoid conflict
+  AlertTriangle as AlertTriangleIcon, 
   type LucideIcon, 
   Loader2 
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardTitle
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+// import { Separator } from '@/components/ui/separator'; // No longer needed
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // Shadcn Alert
+// import { Alert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // No longer needed
 
 interface MenuItemProps {
   title: string;
@@ -53,9 +53,9 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
       )}
     >
       <CardContent className={cn(
-        "flex flex-col items-center justify-center text-center gap-2",
+        "flex-1 flex flex-col items-center justify-center text-center gap-2", // Added flex-1
          isPrimary ? "space-y-2 sm:space-y-3" : "space-y-1.5",
-         "p-0" // remove CardContent default padding
+         "p-0" 
       )}>
         {isLoading ? (
           <Loader2 className={cn("animate-spin text-primary", isPrimary ? "h-10 w-10 sm:h-12 sm:w-12" : "h-6 w-6")} />
@@ -73,7 +73,7 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
       return;
     }
     if (onClick) {
-      e.preventDefault(); // Prevent navigation if onClick is defined
+      e.preventDefault(); 
       await onClick();
     }
   };
@@ -82,7 +82,7 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
     return (
       <Link href={isDisabled || isLoading ? "#" : href} passHref legacyBehavior>
         <a 
-          className={cn("block", isPrimary ? "h-full w-full" : "", isDisabled || isLoading ? "pointer-events-none" : "")}
+          className={cn("flex h-full w-full", isDisabled || isLoading ? "pointer-events-none" : "")} //Ensure anchor takes full space
           onClick={isDisabled || isLoading ? (e) => e.preventDefault() : undefined}
           aria-disabled={isDisabled || isLoading}
         >
@@ -95,7 +95,7 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
   return (
     <div
       onClick={handleClick}
-      className={cn("block cursor-pointer", isPrimary ? "h-full w-full" : "", isDisabled || isLoading ? "pointer-events-none" : "")}
+      className={cn("flex h-full w-full cursor-pointer", isDisabled || isLoading ? "pointer-events-none" : "")} //Ensure div takes full space
       role="button"
       tabIndex={isDisabled || isLoading ? -1 : 0}
       aria-disabled={isDisabled || isLoading}
@@ -111,25 +111,9 @@ export default function MainMenuPage() {
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
   const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState("");
-  
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
-  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+  const [isLoadingMenu, setIsLoadingMenu] = useState(false); // Default to false, no sessionStorage check needed now for this
 
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const status = sessionStorage.getItem('loginWebhookStatus');
-      if (status === '210') { // Assuming '210' means attendance is enabled
-        setIsAttendanceFeatureEnabled(true);
-        setShowDisabledAttendanceMessage(false);
-      } else {
-        setIsAttendanceFeatureEnabled(false);
-        setShowDisabledAttendanceMessage(true);
-      }
-      setIsLoadingMenu(false);
-    }
-  }, []);
+  // Removed: isAttendanceFeatureEnabled, showDisabledAttendanceMessage states and related useEffect
 
 
   const handleAttendanceClick = async () => {
@@ -143,14 +127,12 @@ export default function MainMenuPage() {
       });
       
       if (!response.ok) {
-        // Try to parse error if it's a specific known error
         if (response.status === 500) {
             try {
                 const errorData = await response.json();
                 if (errorData && errorData.myField === "Fuera del horario") {
                     setOutOfHoursMessage("Attendance is currently outside of allowed hours. Please try again later.");
                     setIsOutOfHoursAlertOpen(true);
-                    // No return here, will navigate after alert
                 } else {
                   console.error('Attendance webhook error:', response.status, errorData);
                 }
@@ -161,25 +143,24 @@ export default function MainMenuPage() {
           console.error('Attendance webhook call failed:', response.status, await response.text());
         }
       }
-      // Proceed to navigation even if there was an error or "out of hours"
     } catch (error) {
       console.error('Error calling attendance webhook:', error);
     } finally {
       setIsAttendanceLoading(false);
-      router.push('/attendance'); // Navigate regardless of webhook pre-check outcome
+      router.push('/attendance'); 
     }
   };
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isDisabled: !isAttendanceFeatureEnabled, isLoading: isAttendanceLoading },
-    { title: 'Vehicles', icon: Car, href: '#' , isDisabled: true}, // Example: disabled
-    { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: true },
-    { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: true },
+    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: isAttendanceLoading }, // isDisabled only depends on its own loading state
+    { title: 'Vehicles', icon: Car, href: '#' , isDisabled: false}, 
+    { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
+    { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
-    { title: 'Support', icon: MessageSquare, href: '#', isPrimary: false, isDisabled: true },
-    { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: true },
+    { title: 'Support', icon: MessageSquare, href: '#', isPrimary: false, isDisabled: false },
+    { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: false },
   ];
   
   if (isLoadingMenu) {
@@ -209,35 +190,24 @@ export default function MainMenuPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AppHeader className="my-4 sm:my-6" />
+      <AppHeader className="my-2 sm:my-4" /> 
       
-      {showDisabledAttendanceMessage && (
-        <Alert variant="default" className="mb-4 mx-auto max-w-xl bg-amber-100 border-amber-300 text-amber-800">
-          <AlertTriangleIcon className="h-5 w-5 text-amber-600" />
-          <AlertTitleUi>Access Information</AlertTitleUi>
-          <AlertDescUi>
-            Access to certain features like Attendance is currently disabled. 
-            Registration might be restricted to specific times (e.g., 7:00 a.m. to 7:15 a.m.).
-          </AlertDescUi>
-        </Alert>
-      )}
+      {/* Removed conditional Alert for "Access Information" */}
 
 
-      {/* Primary Menu Items - Taking up most of the space */}
-      <div className="w-full flex-1 flex flex-col items-center justify-center">
-        <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
+      <div className="w-full flex-1 flex flex-col items-center justify-center"> {/* Main content area */}
+        <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2"> {/* Primary items grid */}
           {primaryMenuItems.map((item) => (
-            <div key={item.title} className="flex"> {/* Ensure cell itself is flex for h-full on MenuItem */}
+            <div key={item.title} className="flex"> 
               <MenuItem {...item} />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Secondary Menu Items - Footer */}
-      <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
+      <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4"> {/* Footer for secondary items */}
         {secondaryMenuItems.map((item) => (
-          <div key={item.title} className="flex-1 max-w-[200px] sm:max-w-[240px]"> {/* flex-1 to share space */}
+          <div key={item.title} className="flex-1 max-w-[200px] sm:max-w-[240px]"> 
             <MenuItem {...item} />
           </div>
         ))}
@@ -245,5 +215,3 @@ export default function MainMenuPage() {
     </div>
   );
 }
-
-    
