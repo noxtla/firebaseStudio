@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
@@ -43,7 +44,7 @@ export default function MultiStepForm() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-  const [userInitials, setUserInitials] = useState<string | null>(null); // For SSN, Birthday, Photo steps
+  const [userInitials, setUserInitials] = useState<string | null>(null);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -71,7 +72,7 @@ export default function MultiStepForm() {
 
     if (name === "phoneNumber") {
       const cleaned = ('' + value).replace(/\D/g, '');
-      if (cleaned.length > 10) return;
+      if (cleaned.length > 10) return; // Max 10 digits for phone number
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
         let formatted = '';
@@ -121,11 +122,11 @@ export default function MultiStepForm() {
         const response = await fetch(webhookUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: cleanedPhoneNumber, phoneNumberFlag: true }),
+          body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
         });
 
         const responseText = await response.text();
-        setRawApiResponse(responseText);
+        setRawApiResponse(responseText); // Store raw response for display
 
         if (response.ok) {
           if (responseText) {
@@ -190,7 +191,8 @@ export default function MultiStepForm() {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       setApiError(null);
-      setUserInitials(null); // Clear initials when going back from SSN to Phone
+      setUserInitials(null);
+      setRawApiResponse(null);
     }
   };
 
@@ -207,13 +209,44 @@ export default function MultiStepForm() {
   
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   let activeTitle = STEP_CONFIG[currentStep]?.title;
+
+  if (userInitials && (currentStep === 2 || currentStep === 3 || currentStep === 4)) {
+    const formattedInitials = formatInitialsForDisplay(userInitials);
+    // This logic is now handled inside the step components themselves.
+    // activeTitle = `${formattedInitials} - ${activeTitle}`; 
+  }
   
-  const showAppHeader = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepper = false; // Keep stepper hidden for phone only flow
+  const showAppHeader = currentStep > 0 && currentStep <= MAX_STEPS;
   const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS;
   const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
   const isPhoneStep = currentStep === 1;
+  
+  // Conditional rendering for elements based on the current step
+  const shouldShowHeader = currentStep === 1;
+
+  let formattedUserInitialsForStep: string | null = null;
+  if (userInitials && currentStep === 4) { // Only for photo step
+    formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
+  }
+
+  const renderActiveStepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return <InitialScreen onNextStep={nextStep} />;
+      case 1:
+        return (
+          <PhoneNumberStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            rawApiResponse={rawApiResponse}
+          />
+        );
+      default:
+        return null;
+    }
+  };
   
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -232,29 +265,24 @@ export default function MultiStepForm() {
         </AlertDialogContent>
       </AlertDialog>
       
-      <div className={cn("w-full max-w-md mx-auto", {"pt-0": isPhoneStep })}>
-        {!isPhoneStep ? <AppHeader className="my-8" /> : null}
+      <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0 })}>
+        {currentStep === 0 ? null : <AppHeader className="my-8" />}
       </div>
        
-      <div className="w-full max-w-md mx-auto mt-8">
-        {/* Toaster is now placed here to appear between AppHeader and ProgressStepper */}
+      <div className="w-full max-w-md mx-auto">
+        {/* Toaster moved here to appear above step content */}
       </div>
 
       <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
         <div className="w-full max-w-md mx-auto">
-          {isPhoneStep && (
-            <>
-              <AppHeader className="my-8" />
-              {ActiveIcon && activeTitle && (
+          {shouldShowHeader && ActiveIcon && activeTitle && (
                 <div className={cn(
                   "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-                  "text-2xl sm:text-3xl"
+                  "text-2xl sm:text-3xl" 
                 )}>
                   <ActiveIcon className={cn("h-7 w-7", "text-primary")} />
                   <span>{activeTitle}</span>
                 </div>
-              )}
-            </>
           )}
 
           <div className="animate-step-enter w-full" key={currentStep}>
@@ -288,21 +316,4 @@ export default function MultiStepForm() {
       </div>
     </div>
   );
-
-  function renderActiveStepContent() {
-    switch (currentStep) {
-      case 0:
-        return <InitialScreen onNextStep={nextStep} />;
-      case 1:
-        return (
-          <PhoneNumberStep
-            formData={formData}
-            onInputChange={handleInputChange}
-            rawApiResponse={rawApiResponse}
-          />
-        );
-      default:
-        return null;
-    }
-  }
 }
