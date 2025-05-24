@@ -31,7 +31,7 @@ export default function EnterTruckNumberPage() {
       try {
         // Assuming a GET request to fetch the list.
         // If your N8N requires a POST with a specific body, adjust this fetch call.
-        const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles');
+        const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook/vehicles'); // Updated URL
         if (!response.ok) {
           throw new Error(`Failed to fetch vehicle numbers: ${response.status}`);
         }
