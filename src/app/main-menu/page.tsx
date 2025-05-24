@@ -16,9 +16,9 @@ import {
   Loader2 
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
-import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardTitle
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-// import { Separator } from '@/components/ui/separator'; // No longer needed
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 import {
@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-// import { Alert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // No longer needed
+import { Alert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert";
 
 interface MenuItemProps {
   title: string;
@@ -111,9 +111,26 @@ export default function MainMenuPage() {
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
   const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState("");
-  const [isLoadingMenu, setIsLoadingMenu] = useState(false); // Default to false, no sessionStorage check needed now for this
+  
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
+  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
 
-  // Removed: isAttendanceFeatureEnabled, showDisabledAttendanceMessage states and related useEffect
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const status = sessionStorage.getItem('loginWebhookStatus');
+      if (status === '200') {
+        setIsAttendanceFeatureEnabled(true);
+        setShowDisabledAttendanceMessage(false);
+      } else {
+        // For 503 or any other status, or if status is not set
+        setIsAttendanceFeatureEnabled(false);
+        setShowDisabledAttendanceMessage(true);
+      }
+      setIsLoadingMenu(false);
+    }
+  }, []);
 
 
   const handleAttendanceClick = async () => {
@@ -152,7 +169,7 @@ export default function MainMenuPage() {
   };
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: isAttendanceLoading }, // isDisabled only depends on its own loading state
+    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled || isAttendanceLoading },
     { title: 'Vehicles', icon: Car, href: '#' , isDisabled: false}, 
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
@@ -192,7 +209,15 @@ export default function MainMenuPage() {
 
       <AppHeader className="my-2 sm:my-4" /> 
       
-      {/* Removed conditional Alert for "Access Information" */}
+      {showDisabledAttendanceMessage && (
+        <Alert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5">
+          <AlertTriangleIcon className="h-5 w-5 text-primary" />
+          <AlertTitleUi className="text-primary">Access Information</AlertTitleUi>
+          <AlertDescUi className="text-foreground/80">
+            Access is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
+          </AlertDescUi>
+        </Alert>
+      )}
 
 
       <div className="w-full flex-1 flex flex-col items-center justify-center"> {/* Main content area */}
@@ -215,3 +240,4 @@ export default function MainMenuPage() {
     </div>
   );
 }
+
