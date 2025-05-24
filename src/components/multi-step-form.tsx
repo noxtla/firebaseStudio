@@ -122,21 +122,13 @@ export default function MultiStepForm() {
                 const userDataInstance: UserData = parsedData[0];
                 setUserData(userDataInstance); 
                 
-                if (response.status === 210) {
-                  if (typeof window !== 'undefined') {
-                      sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
-                      sessionStorage.setItem('loginWebhookStatus', '210');
-                  }
-                  toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                  router.push('/main-menu'); 
-                } else {
-                  toast({ variant: "destructive", title: "Access Restricted", description: "Login successful, but access to the main menu is currently restricted." });
-                  // User data might be stored if needed for other non-menu purposes, or cleared.
-                  // For now, we just don't redirect.
-                   if (typeof window !== 'undefined') { // Still store status if not 210 but ok
-                      sessionStorage.setItem('loginWebhookStatus', response.status.toString());
-                   }
+                // Always store user data and status, then navigate
+                if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                    sessionStorage.setItem('loginWebhookStatus', response.status.toString());
                 }
+                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
+                router.push('/main-menu'); 
               } 
               else {
                 console.error('Unexpected JSON structure:', parsedData);
@@ -151,6 +143,10 @@ export default function MultiStepForm() {
           } else { 
             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
             setUserData(null);
+             if (typeof window !== 'undefined') { // Store status even if empty response but ok
+                sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+             }
+             router.push('/main-menu'); // Still navigate as per new requirement
           }
         } else { 
           if (response.status === 404) {
@@ -160,6 +156,10 @@ export default function MultiStepForm() {
             toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. ${errorDetails}.` });
           }
           setUserData(null);
+           if (typeof window !== 'undefined') { // Store status on error
+                sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+           }
+           // router.push('/main-menu'); // Decide if to navigate on error or stay
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
@@ -174,6 +174,10 @@ export default function MultiStepForm() {
           description: errorMessage
         });
         setUserData(null);
+        if (typeof window !== 'undefined') { // Store a generic error status or clear it
+            sessionStorage.setItem('loginWebhookStatus', 'error');
+        }
+        // router.push('/main-menu'); // Decide if to navigate on fetch error or stay
       } finally {
         setIsLoadingPhoneNumber(false);
       }
@@ -206,7 +210,7 @@ export default function MultiStepForm() {
   const activeTitle = STEP_CONFIG[currentStep]?.title;
   
   const showAppHeader = currentStep === 1; 
-  const shouldShowHeader = currentStep === 1; 
+  const showStepper = false; // Never show stepper for this simplified form
   const showNavButtons = currentStep === 1;
 
 
@@ -262,7 +266,9 @@ export default function MultiStepForm() {
 
       <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
         <div className="w-full max-w-md mx-auto">
-          
+          {showStepper && (
+             <div className="mb-6 w-full" /> // Placeholder if stepper was to be shown
+          )}
 
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
@@ -296,3 +302,4 @@ export default function MultiStepForm() {
     </div>
   );
 }
+

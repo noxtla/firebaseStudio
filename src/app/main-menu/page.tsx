@@ -16,6 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 import {
   CalendarCheck,
@@ -26,6 +28,7 @@ import {
   AlertTriangle,
   type LucideProps,
   Loader2,
+  InfoIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -130,25 +133,25 @@ export default function MainMenuPage() {
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
   const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState<string>("Attendance is currently unavailable. You are outside the allowed schedule.");
-  // const [isAttendanceButtonEnabled, setIsAttendanceButtonEnabled] = useState(false); // No longer needed for 210 status
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
-
+  
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
+  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus !== '210') {
-        router.replace('/'); // Redirect to login if status is not 210
+      if (loginStatus === '210') {
+        setIsAttendanceFeatureEnabled(true);
+        setShowDisabledAttendanceMessage(false);
       } else {
-        setIsLoadingMenu(false); // Allow menu to render
+        setIsAttendanceFeatureEnabled(false);
+        setShowDisabledAttendanceMessage(true);
       }
-    } else {
-       setIsLoadingMenu(false); // In SSR or non-browser, allow rendering (or handle differently)
     }
-  }, [router]);
+  }, []);
 
   const handleAttendanceClick = async () => {
-    if (isAttendanceLoading) return;
+    if (isAttendanceLoading || !isAttendanceFeatureEnabled) return; // Also check feature enabled here
     setIsAttendanceLoading(true);
     console.log("Attendance clicked, calling webhook...");
     try {
@@ -195,8 +198,7 @@ export default function MainMenuPage() {
       title: "Attendance", 
       onClick: handleAttendanceClick, 
       isLoading: isAttendanceLoading,
-      // isDisabled is now primarily controlled by isLoading for this button
-      // The "Fuera del horario" check provides a functional block via an alert.
+      isDisabled: !isAttendanceFeatureEnabled, // Disable based on feature flag
     },
     { icon: Car, title: "Vehicles", href: "#vehicles" }, 
     { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
@@ -207,15 +209,6 @@ export default function MainMenuPage() {
     { icon: MessageSquare, title: "Support", href: "#support", isPrimary: false },
     { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false },
   ];
-
-  if (isLoadingMenu) {
-    return (
-      <div className="flex flex-col h-screen bg-background items-center justify-center p-2">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Verifying access...</p>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -236,6 +229,16 @@ export default function MainMenuPage() {
       <div className="flex flex-col h-screen bg-background p-2">
         <AppHeader className="my-2" />
 
+        {showDisabledAttendanceMessage && (
+          <Alert variant="default" className="mb-4 mx-auto max-w-md border-primary/50 bg-primary/5">
+            <InfoIcon className="h-5 w-5 text-primary" />
+            <AlertTitle className="text-primary font-semibold">Attendance Unavailable</AlertTitle>
+            <AlertDescription className="text-primary/90">
+              Access is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid grid-cols-2 gap-2 flex-1 overflow-hidden">
           {primaryMenuItems.map((item) => (
             <div key={item.title} className="flex">
@@ -255,3 +258,4 @@ export default function MainMenuPage() {
     </>
   );
 }
+
