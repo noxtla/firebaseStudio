@@ -30,14 +30,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert";
-import { Toaster } from '@/components/ui/toaster'; // Added Toaster
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from '@/components/ui/toaster';
 
 interface MenuItemProps {
   title: string;
   icon: LucideIcon;
   href?: string;
   isPrimary?: boolean;
-  onClick?: () => void; // Changed to simple void for direct navigation or simple actions
+  onClick?: () => Promise<void>;
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -74,7 +75,7 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
     }
     if (onClick) {
       e.preventDefault();
-      onClick(); // Execute the onClick function
+      onClick();
     }
   };
 
@@ -107,16 +108,70 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 
 export default function MainMenuPage() {
   const router = useRouter();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); // Default to true
-  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false); // Default to false
-  const [isLoadingMenu, setIsLoadingMenu] = useState(false); // Removed initial true
-  // Removed attendance webhook related states: isAttendanceLoading, isOutOfHoursAlertOpen, outOfHoursMessage
+  const { toast } = useToast();
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
+  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
+  const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
 
-  // Removed useEffect that handled loginWebhookStatus as per previous rollback
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
+      if (loginStatus === '200') { // Or your specific success code for enabling attendance
+        setIsAttendanceFeatureEnabled(true);
+        setShowDisabledAttendanceMessage(false);
+      } else if (loginStatus === '503') {
+        setIsAttendanceFeatureEnabled(false);
+        setShowDisabledAttendanceMessage(true);
+      } else {
+        // Default or other statuses
+        setIsAttendanceFeatureEnabled(true); // Default to enabled if no specific logic applies
+        setShowDisabledAttendanceMessage(false);
+      }
+    }
+  }, []);
+
+  const handleVehiclesClick = async () => {
+    setIsVehiclesLoading(true);
+    try {
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'vehicles_menu_clicked' }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Vehicles webhook call failed:', response.status, errorText);
+        toast({
+          variant: "destructive",
+          title: "Vehicles Action Error",
+          description: `Could not contact vehicles service. Status: ${response.status}. ${errorText ? `Details: ${errorText}`: ''}`,
+        });
+      } else {
+        console.log('Vehicles webhook call successful');
+        // Optionally handle successful response data here
+      }
+    } catch (error) {
+      console.error('Error calling vehicles webhook:', error);
+      let errorMessage = "An unknown network error occurred.";
+      if (error instanceof Error) {
+        errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
+      }
+      toast({
+        variant: "destructive",
+        title: "Network Error",
+        description: errorMessage,
+      });
+    } finally {
+      setIsVehiclesLoading(false);
+      router.push('/vehicles/enter-truck-number');
+    }
+  };
+
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: () => router.push('/attendance'), isDisabled: !isAttendanceFeatureEnabled },
-    { title: 'Vehicles', icon: Car, href: '/vehicles/enter-truck-number', isDisabled: false }, // Updated href
+    { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
+    { title: 'Vehicles', icon: Car, onClick: handleVehiclesClick, isLoading: isVehiclesLoading },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -126,23 +181,20 @@ export default function MainMenuPage() {
     { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: false },
   ];
 
-  if (isLoadingMenu) { // Should ideally not be true now unless set elsewhere
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading menu...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
-      <Toaster /> {/* Added Toaster here for potential general use */}
-      {/* Removed AlertDialog for OutOfHours */}
-
+      <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
-      {/* Removed conditional Alert based on showDisabledAttendanceMessage */}
+      {showDisabledAttendanceMessage && (
+        <ShadAlert variant="default" className="mb-4 mx-auto max-w-md bg-muted border-primary/30">
+          <AlertTriangle className="h-5 w-5 text-primary" />
+          <AlertTitleUi className="font-semibold text-primary">Attendance Access Information</AlertTitleUi>
+          <AlertDescUi className="text-muted-foreground">
+            Access to certain features like Attendance is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
+          </AlertDescUi>
+        </ShadAlert>
+      )}
 
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
