@@ -3,10 +3,19 @@
 
 import type { FC } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation'; // Added for programmatic navigation
-import { useState } from 'react'; // Added, though not used in this simplified version
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import AppHeader from '@/components/app-header'; 
+import AppHeader from '@/components/app-header';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import {
   CalendarCheck,
@@ -16,17 +25,17 @@ import {
   MessageSquare,
   AlertTriangle,
   type LucideProps,
-  Loader2, // For potential loading state
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface MenuItemProps {
   icon: React.ElementType<LucideProps>;
   title: string;
-  href?: string; // Optional: used if onClick is not provided
-  onClick?: () => Promise<void>; // Optional: used for custom actions
+  href?: string;
+  onClick?: () => Promise<void>;
   isPrimary?: boolean;
-  isLoading?: boolean; // Optional: for visual feedback
+  isLoading?: boolean;
 }
 
 const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrimary = true, isLoading = false }) => {
@@ -64,7 +73,7 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
   if (onClick) {
     return (
       <div
-        onClick={isLoading ? undefined : onClick} // Prevent click while loading
+        onClick={isLoading ? undefined : onClick}
         className={cn(
           "flex",
           isPrimary ? "h-full w-full" : "w-full"
@@ -99,7 +108,6 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
     );
   }
 
-  // Fallback if neither href nor onClick is provided (should not happen with proper config)
   return (
     <div className={cn("flex", isPrimary ? "h-full w-full" : "w-full")}>
       <Card className={cn(cardClasses, "opacity-50")}>
@@ -113,6 +121,8 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
 export default function MainMenuPage() {
   const router = useRouter();
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
+  const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
+  const [outOfHoursMessage, setOutOfHoursMessage] = useState<string>("Attendance is currently unavailable. You are outside the allowed schedule.");
 
   const handleAttendanceClick = async () => {
     if (isAttendanceLoading) return;
@@ -126,17 +136,40 @@ export default function MainMenuPage() {
         },
         body: JSON.stringify({ action: "attendance_clicked" }),
       });
-      if (response.ok) {
-        console.log("Webhook called successfully for Attendance.");
-      } else {
+
+      if (!response.ok && response.status === 500) {
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            const errorData = JSON.parse(errorText);
+            if (errorData && errorData.myField === "Fuera del horario") {
+              setOutOfHoursMessage(errorData.myField);
+              setIsOutOfHoursAlertOpen(true);
+              setIsAttendanceLoading(false);
+              return; // Prevent navigation
+            }
+          }
+        } catch (e) {
+          console.error("Failed to parse body of 500 error from attendance webhook:", e);
+        }
+        // If it's a 500 error but not the specific "Fuera del horario" JSON, or if parsing failed, log it.
+        // The flow will proceed to navigation as per current broader error handling.
+        console.error("Webhook call for Attendance returned 500, but not the 'Fuera del horario' condition or body parse failed. Status:", response.status);
+      } else if (!response.ok) {
+        // Handle other non-500 errors (e.g., 400, 401, 403, 404, etc.)
         console.error("Webhook call for Attendance failed:", response.status, await response.text());
+      } else {
+        // Response is OK
+        console.log("Webhook called successfully for Attendance.");
       }
     } catch (error) {
+      // Network errors or other issues with fetch itself
       console.error("Error calling webhook for Attendance:", error);
-    } finally {
-      setIsAttendanceLoading(false);
-      router.push('/attendance');
     }
+
+    // This part is reached if the call was successful or if an error occurred that doesn't trigger the specific alert.
+    setIsAttendanceLoading(false);
+    router.push('/attendance');
   };
 
   const primaryMenuItems: MenuItemProps[] = [
@@ -152,24 +185,40 @@ export default function MainMenuPage() {
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-background p-2">
-      <AppHeader className="my-2" />
+    <>
+      <AlertDialog open={isOutOfHoursAlertOpen} onOpenChange={setIsOutOfHoursAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Out of Schedule</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription>
+            {outOfHoursMessage}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setIsOutOfHoursAlertOpen(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-      <div className="grid grid-cols-2 gap-2 flex-1 overflow-hidden">
-        {primaryMenuItems.map((item) => (
-          <div key={item.title} className="flex">
-            <MenuItem {...item} isPrimary />
-          </div>
-        ))}
-      </div>
+      <div className="flex flex-col h-screen bg-background p-2">
+        <AppHeader className="my-2" />
 
-      <div className="w-full py-2 mt-2 flex flex-row gap-2">
-        {secondaryMenuItems.map((item) => (
-          <div key={item.title} className="flex-1 min-w-0">
-            <MenuItem {...item} isPrimary={false} />
-          </div>
-        ))}
+        <div className="grid grid-cols-2 gap-2 flex-1 overflow-hidden">
+          {primaryMenuItems.map((item) => (
+            <div key={item.title} className="flex">
+              <MenuItem {...item} isPrimary />
+            </div>
+          ))}
+        </div>
+
+        <div className="w-full py-2 mt-2 flex flex-row gap-2">
+          {secondaryMenuItems.map((item) => (
+            <div key={item.title} className="flex-1 min-w-0">
+              <MenuItem {...item} isPrimary={false} />
+            </div>
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
