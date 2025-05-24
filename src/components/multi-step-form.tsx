@@ -25,15 +25,14 @@ import { Phone, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
-const initialFormData: FormData = {
+const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
-  ssnLast4: '', // Kept for type consistency, but not used in this form
-  birthDay: '', // Kept for type consistency, but not used in this form
 };
 
 const MAX_PHONE_FORM_STEP: FormStep = 1; // 0:Initial, 1:Phone (then navigate)
 
-const phoneStepLabels = ["Initial", "Phone"]; // Only "Phone" will be shown in stepper if active
+// phoneStepLabels is not used if ProgressStepper is always hidden
+// const phoneStepLabels = ["Initial", "Phone"];
 const PHONE_STEP_CONFIG = [
   { title: "Welcome", icon: null }, // Step 0 (Initial)
   { title: "Enter Your Phone Number", icon: Phone }, // Step 1 (Phone)
@@ -43,7 +42,6 @@ export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
   
@@ -82,7 +80,6 @@ export default function MultiStepForm() {
   const canProceed = getCanProceed();
 
   const nextStep = async () => {
-    setApiError(null);
     setRawApiResponse(null);
 
     if (currentStep === 0) { // Initial to Phone
@@ -90,7 +87,7 @@ export default function MultiStepForm() {
       return;
     }
 
-    if (currentStep === 1 && canProceed) { // Phone to SSN
+    if (currentStep === 1 && canProceed) { // Phone to SSN (now Main Menu)
       setIsLoadingPhoneNumber(true);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
@@ -121,18 +118,18 @@ export default function MultiStepForm() {
               if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
                 toast({ variant: "destructive", title: "Error", description: "User not found. Please check the phone number and try again." });
               } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
-                const fetchedUserData: UserData = parsedData[0];
+                const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber }; // Add entered phone to userData
                 if (typeof window !== 'undefined') {
                     sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
                 }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
+                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
                 router.push('/main-menu');
               } else {
-                console.error('Unexpected JSON structure:', parsedData);
-                toast({ variant: "destructive", title: "Error", description: "Received an unexpected response. User data not found." });
+                // console.error('Unexpected JSON structure:', parsedData);
+                toast({ variant: "destructive", title: "Error", description: "User not found or invalid data received." });
               }
             } catch (jsonError) {
-              console.error('Error parsing JSON:', jsonError, 'Response text:', responseText);
+              // console.error('Error parsing JSON:', jsonError, 'Response text:', responseText);
               toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
             }
           } else { 
@@ -146,8 +143,8 @@ export default function MultiStepForm() {
             toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. ${errorDetails}.` });
           }
         }
-      } catch (error) {
-        console.error('Error sending phone number to webhook:', error);
+      } catch (error: any) {
+        // console.error('Error sending phone number to webhook:', error);
         let errorMessage = "An unknown network error occurred.";
         if (error instanceof Error) {
           errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
@@ -168,7 +165,6 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      setApiError(null);
       setRawApiResponse(null);
     }
   };
@@ -177,7 +173,6 @@ export default function MultiStepForm() {
     setCurrentStep(0);
     setFormData({ phoneNumber: ''});
     setIsLoadingPhoneNumber(false);
-    setApiError(null);
     setRawApiResponse(null);
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
@@ -189,7 +184,7 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 ? PHONE_STEP_CONFIG[currentStep]?.title : "";
   
   const showAppHeader = currentStep !== 0; 
-  const showStepper = currentStep === 1; // Only show stepper on phone input step
+  const showStepper = false; // Always false to remove the stepper
   const showStepTitle = currentStep === 1; // Only show title on phone input step
   const showNavButtons = currentStep === 1;
 
@@ -234,15 +229,15 @@ export default function MultiStepForm() {
       <div className={cn("w-full max-w-md mx-auto", {"px-4": currentStep !==0 } )}>
         {showStepper && (
           <ProgressStepper
-            currentStepIndex={0} // Always 0 for "Phone" as it's the only step shown in stepper
-            steps={["Phone"]} // Only "Phone" label
+            currentStepIndex={0} 
+            steps={["Phone"]} 
             className="mb-6 w-full"
           />
         )}
         {showStepTitle && ActiveIcon && activeTitle && (
               <div className={cn(
                 "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-                "text-2xl sm:text-3xl" // Enlarged title
+                "text-2xl sm:text-3xl" 
               )}>
                 <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
                 <span>{activeTitle}</span>
@@ -284,5 +279,3 @@ export default function MultiStepForm() {
     </div>
   );
 }
-
-    
