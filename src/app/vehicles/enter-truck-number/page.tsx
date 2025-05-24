@@ -1,21 +1,62 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ChevronLeft, Truck } from 'lucide-react';
+import { ChevronLeft, Truck, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
 
+interface Vehicle {
+  VehicleNumber: string;
+}
+
 export default function EnterTruckNumberPage() {
   const [truckNumber, setTruckNumber] = useState('');
+  const [validVehicleNumbers, setValidVehicleNumbers] = useState<string[]>([]);
+  const [isLoadingNumbers, setIsLoadingNumbers] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchValidNumbers = async () => {
+      setIsLoadingNumbers(true);
+      setFetchError(null);
+      try {
+        // Assuming a GET request to fetch the list.
+        // If your N8N requires a POST with a specific body, adjust this fetch call.
+        const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch vehicle numbers: ${response.status}`);
+        }
+        const data: Vehicle[] = await response.json();
+        if (Array.isArray(data)) {
+          setValidVehicleNumbers(data.map(v => v.VehicleNumber.replace(/\D/g, ''))); // Store only digits
+        } else {
+          throw new Error("Invalid data format for vehicle numbers.");
+        }
+      } catch (error) {
+        console.error("Error fetching valid truck numbers:", error);
+        const errorMessage = error instanceof Error ? error.message : "Could not load vehicle list.";
+        setFetchError(errorMessage);
+        toast({
+          title: "Error",
+          description: `Could not load vehicle list: ${errorMessage}`,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingNumbers(false);
+      }
+    };
+
+    fetchValidNumbers();
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
@@ -35,8 +76,15 @@ export default function EnterTruckNumberPage() {
     setTruckNumber(formattedNumber);
   };
 
+  const isTruckNumberValid = useMemo(() => {
+    if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
+      return false;
+    }
+    const numericTruckNumber = truckNumber.replace(/-/g, '');
+    return validVehicleNumbers.includes(numericTruckNumber);
+  }, [truckNumber, validVehicleNumbers]);
+
   const handleSubmit = () => {
-    // Validate for NNN-NNNN format (7 digits + 1 hyphen)
     if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
       toast({
         title: "Invalid Format",
@@ -45,9 +93,31 @@ export default function EnterTruckNumberPage() {
       });
       return;
     }
+
+    const numericTruckNumber = truckNumber.replace(/-/g, '');
+    if (!validVehicleNumbers.includes(numericTruckNumber)) {
+      toast({
+        title: "Invalid Truck Number",
+        description: "The entered truck number is not recognized. Please check and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (fetchError) {
+         toast({
+            title: "Error",
+            description: `Cannot proceed: ${fetchError}`,
+            variant: "destructive",
+        });
+        return;
+    }
+    
     sessionStorage.setItem('currentTruckNumber', truckNumber);
     router.push('/vehicles/actions');
   };
+
+  const isButtonDisabled = isLoadingNumbers || !isTruckNumberValid || !!fetchError;
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -66,6 +136,17 @@ export default function EnterTruckNumberPage() {
             <CardTitle className="text-2xl text-center font-heading-style">Enter Truck Number</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-2">
+            {isLoadingNumbers && (
+              <div className="flex items-center justify-center text-muted-foreground">
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Loading valid truck numbers...
+              </div>
+            )}
+            {fetchError && !isLoadingNumbers && (
+              <p className="text-sm text-center text-destructive">
+                Error: {fetchError}. Please try again later.
+              </p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="truckNumber" className="sr-only">Truck Number</Label>
               <Input
@@ -75,13 +156,19 @@ export default function EnterTruckNumberPage() {
                 placeholder="e.g., 123-4567"
                 className="text-base text-center"
                 aria-label="Truck Number"
-                inputMode="numeric" // Helps mobile users get numeric keyboard
-                maxLength={8} // NNN-NNNN (7 digits + 1 hyphen)
+                inputMode="numeric" 
+                maxLength={8} 
+                disabled={isLoadingNumbers || !!fetchError}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button onClick={handleSubmit} className="w-full" size="lg">
+            <Button 
+              onClick={handleSubmit} 
+              className="w-full" 
+              size="lg"
+              disabled={isButtonDisabled}
+            >
               Continue
             </Button>
           </CardFooter>
