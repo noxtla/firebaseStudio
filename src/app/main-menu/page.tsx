@@ -17,13 +17,15 @@ import {
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button'; // Ensure Button is imported if used elsewhere, not directly in MenuItem now.
+// Button import removed as it's not directly used in MenuItem props anymore for this specific page's use case
+// import { Button } from '@/components/ui/button'; 
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { Toaster } from "@/components/ui/toaster";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+// Toaster and useToast removed as they are no longer used on this page
+// import { Toaster } from "@/components/ui/toaster";
+// import { useToast } from "@/hooks/use-toast"; 
 import {
-  AlertDialog,
+  AlertDialog, // Kept in case other menu items might need it in the future, but not used now
   AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
@@ -39,7 +41,7 @@ interface MenuItemProps {
   icon: LucideIcon;
   href?: string;
   isPrimary?: boolean;
-  onClick?: () => Promise<void>;
+  onClick?: () => void; // Changed from Promise<void> to void as it might not be async
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -76,7 +78,8 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
     }
     if (onClick) {
       e.preventDefault(); 
-      await onClick();
+      // onClick might not be async, await is fine but not strictly necessary if all onClicks are sync
+      onClick(); 
     }
   };
 
@@ -110,90 +113,30 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 
 export default function MainMenuPage() {
   const router = useRouter();
-  const { toast } = useToast(); // Initialize useToast
-  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-  const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
-  const [outOfHoursMessage, setOutOfHoursMessage] = useState("");
+  // const { toast } = useToast(); // Removed, no toasts on this page currently
   
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
   const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true); // Initial loading state for the menu
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true); 
 
 
   useEffect(() => {
-    // Check session storage for login status
     if (typeof window !== 'undefined') {
       const status = sessionStorage.getItem('loginWebhookStatus');
-      if (status === '200') { // Changed from '210' to '200' for general success
+      if (status === '200') { 
         setIsAttendanceFeatureEnabled(true);
         setShowDisabledAttendanceMessage(false);
       } else {
-        // For 503 or any other status, or if status is not set
         setIsAttendanceFeatureEnabled(false);
         setShowDisabledAttendanceMessage(true);
       }
-      setIsLoadingMenu(false); // Done loading menu logic
+      setIsLoadingMenu(false); 
     }
   }, []);
 
 
-  const handleAttendanceClick = async () => {
-    setIsAttendanceLoading(true);
-    setOutOfHoursMessage("");
-    try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/attendence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'attendance_clicked' }),
-      });
-      
-      if (!response.ok) {
-        if (response.status === 500) {
-            try {
-                const errorData = await response.json();
-                if (errorData && errorData.myField === "Fuera del horario") {
-                    setOutOfHoursMessage("Attendance is currently outside of allowed hours. Please try again later.");
-                    setIsOutOfHoursAlertOpen(true);
-                } else {
-                  console.error('Attendance webhook error (500):', response.status, errorData);
-                  toast({
-                    variant: "destructive",
-                    title: "Attendance Service Error",
-                    description: `An error occurred with the attendance service. Status: ${response.status}`,
-                  });
-                }
-            } catch (e) {
-                console.error('Attendance webhook error (500), could not parse JSON:', response.status, await response.text());
-                toast({
-                  variant: "destructive",
-                  title: "Attendance Service Error",
-                  description: `Received an invalid response from the attendance service. Status: ${response.status}`,
-                });
-            }
-        } else {
-          console.error('Attendance webhook call failed:', response.status, await response.text());
-           toast({
-            variant: "destructive",
-            title: "Attendance Service Unavailable",
-            description: `Could not connect to attendance service. Status: ${response.status}`,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error calling attendance webhook:', error);
-      toast({ // Added toast for "Failed to fetch"
-        variant: "destructive",
-        title: "Network Error",
-        description: "Could not connect to the attendance service. Please check your internet connection.",
-      });
-    } finally {
-      setIsAttendanceLoading(false);
-      router.push('/attendance'); 
-    }
-  };
-
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled || isAttendanceLoading },
+    { title: 'Attendance', icon: Users, onClick: () => router.push('/attendance'), isDisabled: !isAttendanceFeatureEnabled },
     { title: 'Vehicles', icon: Car, href: '#', isDisabled: false}, 
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
@@ -216,20 +159,8 @@ export default function MainMenuPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
-      <Toaster />
-      <AlertDialog open={isOutOfHoursAlertOpen} onOpenChange={setIsOutOfHoursAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Out of Schedule</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription>
-            {outOfHoursMessage || "Attendance recording is currently outside of allowed hours."}
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setIsOutOfHoursAlertOpen(false)}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* <Toaster /> Removed */}
+      {/* AlertDialog for "Out of Schedule" removed */}
 
       <AppHeader className="my-2 sm:my-4" /> 
       
@@ -264,4 +195,3 @@ export default function MainMenuPage() {
     </div>
   );
 }
-
