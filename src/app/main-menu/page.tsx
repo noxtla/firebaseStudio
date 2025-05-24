@@ -16,8 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
+// Alert component for informational message is removed as per request
 
 import {
   CalendarCheck,
@@ -28,7 +27,7 @@ import {
   AlertTriangle,
   type LucideProps,
   Loader2,
-  InfoIcon,
+  // InfoIcon, // No longer needed for the access disabled message
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -134,27 +133,12 @@ export default function MainMenuPage() {
   const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState("");
   
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
-  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
-
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus !== '210') {
-        router.replace('/'); // Redirect if not 210
-        // No need to set other states as the component will unmount/re-render
-      } else {
-        setIsAttendanceFeatureEnabled(true);
-        setShowDisabledAttendanceMessage(false);
-        setIsLoadingMenu(false);
-      }
-    }
-  }, [router]);
+  // Removed isAttendanceFeatureEnabled and showDisabledAttendanceMessage
+  // as the 210 status validation is being removed.
+  // The isLoadingMenu state is also removed as there's no initial check to redirect.
 
   const handleAttendanceClick = async () => {
-    if (isAttendanceLoading || !isAttendanceFeatureEnabled) return; 
+    if (isAttendanceLoading) return; 
 
     setIsAttendanceLoading(true);
     console.log("Attendance clicked, calling webhook...");
@@ -198,7 +182,7 @@ export default function MainMenuPage() {
       title: "Attendance", 
       onClick: handleAttendanceClick, 
       isLoading: isAttendanceLoading,
-      isDisabled: !isAttendanceFeatureEnabled || isAttendanceLoading, 
+      isDisabled: isAttendanceLoading, // Only disabled while its own webhook is loading
     },
     { icon: Car, title: "Vehicles", href: "#vehicles" }, 
     { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" }, 
@@ -210,16 +194,7 @@ export default function MainMenuPage() {
     { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false }, 
   ];
 
-  if (isLoadingMenu) {
-    return (
-      <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4">
-        <AppHeader className="mb-8" />
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Loading menu...</p>
-      </div>
-    );
-  }
-
+  // Removed isLoadingMenu check
   return (
     <>
       <AlertDialog open={isOutOfHoursAlertOpen} onOpenChange={setIsOutOfHoursAlertOpen}>
@@ -239,15 +214,7 @@ export default function MainMenuPage() {
       <div className="flex flex-col h-screen bg-background p-2">
         <AppHeader className="my-2" />
 
-        {showDisabledAttendanceMessage && (
-          <Alert variant="default" className="mb-4 mx-auto max-w-md border-primary/50 bg-primary/5">
-            <InfoIcon className="h-5 w-5 text-primary" />
-            <AlertTitle className="text-primary font-semibold">Attendance Feature Notice</AlertTitle>
-            <AlertDescription className="text-primary/90">
-              Access is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
-            </AlertDescription>
-          </Alert>
-        )}
+        {/* Removed the Alert for "Access is currently disabled" */}
 
         <div className="grid grid-cols-2 gap-2 flex-1 overflow-hidden">
           {primaryMenuItems.map((item) => (

@@ -29,10 +29,8 @@ const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-const STEP_CONFIG = [
-  { title: "", icon: null }, // Initial Screen (Step 0)
-  { title: "Enter Your Phone Number", icon: Phone }, // Step 1
-];
+// STEP_CONFIG for title and icon when currentStep is 1
+const STEP_CONFIG_PHONE = { title: "Enter Your Phone Number", icon: Phone };
 
 const MAX_STEPS: FormStep = 1; // 0:Initial, 1:Phone
 
@@ -98,7 +96,6 @@ export default function MultiStepForm() {
       setUserData(null); 
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('loginWebhookStatus');
       }
       
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
@@ -129,16 +126,9 @@ export default function MultiStepForm() {
                 
                 if (typeof window !== 'undefined') {
                     sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
-                    sessionStorage.setItem('loginWebhookStatus', response.status.toString());
                 }
-
-                if (response.status === 210) {
-                    toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
-                    router.push('/main-menu'); 
-                } else {
-                    toast({ variant: "default", title: "Info", description: "Login successful, but access to certain features is currently restricted." });
-                    // DO NOT NAVIGATE
-                }
+                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
+                router.push('/main-menu'); 
                 
               } 
               else {
@@ -201,16 +191,15 @@ export default function MultiStepForm() {
     setRawApiResponse(null);
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('loginWebhookStatus');
     }
   };
   
-  const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
-  const activeTitle = STEP_CONFIG[currentStep]?.title;
+  const ActiveIcon = currentStep === 1 ? STEP_CONFIG_PHONE.icon : null;
+  const activeTitle = currentStep === 1 ? STEP_CONFIG_PHONE.title : "";
   
   const showAppHeader = currentStep === 1; 
   const showStepper = false; 
-  const showNavButtons = currentStep === MAX_STEPS; // Show only on the phone input step
+  const showNavButtons = currentStep === 1; // Show only on the phone input step
 
 
   const renderActiveStepContent = () => {
