@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ChevronLeft, Truck } from 'lucide-react'; // Added Truck icon for title
-import { useToast } from "@/hooks/use-toast"; // For notifications
+import { ChevronLeft, Truck } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
 
 export default function EnterTruckNumberPage() {
@@ -17,17 +17,36 @@ export default function EnterTruckNumberPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    const numbers = rawValue.replace(/\D/g, ''); // Remove all non-digits
+    let formattedNumber = '';
+
+    if (numbers.length > 0) {
+      if (numbers.length <= 3) {
+        formattedNumber = numbers;
+      } else if (numbers.length <= 7) {
+        formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+      } else {
+        // Limit to 7 digits (NNN-NNNN)
+        formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}`;
+      }
+    }
+    setTruckNumber(formattedNumber);
+  };
+
   const handleSubmit = () => {
-    if (truckNumber.trim() === '') {
+    // Validate for NNN-NNNN format (7 digits + 1 hyphen)
+    if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
       toast({
-        title: "Input Required",
-        description: "Please enter a truck number.",
+        title: "Invalid Format",
+        description: "Please enter the truck number in NNN-NNNN format.",
         variant: "destructive",
       });
       return;
     }
     sessionStorage.setItem('currentTruckNumber', truckNumber);
-    router.push('/vehicles/actions'); 
+    router.push('/vehicles/actions');
   };
 
   return (
@@ -37,8 +56,7 @@ export default function EnterTruckNumberPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        {/* Using AppHeader which displays "Tree Services" */}
-        <AppHeader className="flex-grow !text-left ml-0 pl-0" /> 
+        <AppHeader className="flex-grow !text-left ml-0 pl-0" />
       </div>
 
       <div className="flex-grow flex items-center justify-center">
@@ -53,10 +71,12 @@ export default function EnterTruckNumberPage() {
               <Input
                 id="truckNumber"
                 value={truckNumber}
-                onChange={(e) => setTruckNumber(e.target.value.toUpperCase())} // Convert to uppercase for consistency
-                placeholder="e.g., T-123, Unit 45"
+                onChange={handleInputChange}
+                placeholder="e.g., 123-4567"
                 className="text-base text-center"
                 aria-label="Truck Number"
+                inputMode="numeric" // Helps mobile users get numeric keyboard
+                maxLength={8} // NNN-NNNN (7 digits + 1 hyphen)
               />
             </div>
           </CardContent>
