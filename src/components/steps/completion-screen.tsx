@@ -12,12 +12,12 @@ import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
 
 interface CompletionScreenProps {
-  formData: Pick<FormData, 'phoneNumber' | 'ssnLast4' | 'birthDay'>; // Ensure this matches what's passed
+  formData: Pick<FormData, 'phoneNumber' | 'ssnLast4' | 'birthDay'>;
   capturedImage: string | null;
   captureTimestamp: string | null;
   capturedLocation: CapturedLocation | null;
-  userData: UserData | null; // This will be initialUserData in AttendanceForm context
-  onRestart: () => void; // Action after completion (e.g., go to main menu or restart login)
+  userData: UserData | null; 
+  onRestart: () => void;
 }
 
 const getMonthNameFromDate = (dateString: string | undefined): string => {
@@ -29,7 +29,7 @@ const getMonthNameFromDate = (dateString: string | undefined): string => {
     date.setMonth(monthNum - 1);
     return date.toLocaleString('en-US', { month: 'long' });
   } catch {
-    return "Month"; // Fallback
+    return "Month";
   }
 };
 
@@ -39,13 +39,12 @@ const getYearFromDate = (dateString: string | undefined): string => {
     const [yearStr] = dateString.split('-');
     return yearStr;
   } catch {
-    return "Year"; // Fallback
+    return "Year";
   }
 };
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
-  // Capitalize first letter of each word, rest lowercase, join with hyphen
   return nameStr
     .toLowerCase()
     .split(' ')
@@ -104,7 +103,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/v1', { // Updated webhook URL
+      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,10 +143,10 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
   };
 
-  // Use userData.dataBirth for month/year if available, otherwise fallback
-  const displayMonth = getMonthNameFromDate(userData?.dataBirth);
-  const displayYear = getYearFromDate(userData?.dataBirth);
-  const birthDayDisplay = `${formData.birthDay} ${displayMonth} ${displayYear}`;
+  const birthDayDisplay = userData?.dataBirth 
+    ? `${formData.birthDay} ${getMonthNameFromDate(userData.dataBirth)} ${getYearFromDate(userData.dataBirth)}`
+    : `${formData.birthDay}`;
+
 
   return (
     <Card className="w-full border-none shadow-none">
@@ -171,8 +170,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             </CardContent>
           )}
           <CardFooter className="flex justify-center pt-6">
-             <Button onClick={onRestart} size="lg" aria-label="Return to Menu or Start Over">
-              Done
+             <Button onClick={onRestart} size="lg" aria-label="Start Over">
+              Start Over
             </Button>
           </CardFooter>
         </>

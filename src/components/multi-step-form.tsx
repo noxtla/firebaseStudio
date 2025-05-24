@@ -3,7 +3,7 @@
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData } from '@/types';
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -16,42 +16,59 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import AppHeader from './app-header';
-// ProgressStepper is no longer needed for this simplified form
+import ProgressStepper from './progress-stepper';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
+import SsnStep from './steps/ssn-step';
+import BirthDayStep from './steps/birth-day-step';
+import PhotoStep from './steps/photo-step';
+import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Phone, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Phone, Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
-const initialFormData: Pick<FormData, 'phoneNumber'> = {
+const initialFormData: FormData = {
   phoneNumber: '',
+  ssnLast4: '',
+  birthDay: '',
 };
 
-// STEP_CONFIG for title and icon when currentStep is 1
-const STEP_CONFIG_PHONE = { title: "Enter Your Phone Number", icon: Phone };
+const MAX_STEPS: FormStep = 5; // 0:Initial, 1:Phone, 2:SSN, 3:BirthDay, 4:Photo, 5:Done
 
-const MAX_STEPS: FormStep = 1; // 0:Initial, 1:Phone
+const stepLabels = ["Initial", "Phone", "SSN", "Birth Day", "Photo", "Done"];
+const STEP_CONFIG = [
+  { title: "Welcome", icon: null }, // Step 0 (Initial) - No icon/title needed here as InitialScreen has its own
+  { title: "Enter Your Phone Number", icon: Phone }, // Step 1 (Phone)
+  { title: "Enter Last 4 of SSN", icon: Info },       // Step 2 (SSN)
+  { title: "Day of Birth", icon: CalendarDays },    // Step 3 (Birth Day)
+  { title: "Take a Photo", icon: CameraIconLucide },  // Step 4 (Photo)
+  { title: "Send Your Information", icon: CheckCircle2 }, // Step 5 (Done)
+];
 
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
-  const [formData, setFormData] = useState<FormData>(initialFormData as FormData);
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null); // Not actively used for display, but good for debugging
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-  
+
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
+  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
+  const [userInitials, setUserInitials] = useState<string | null>(null);
+
   const { toast } = useToast();
-  const router = useRouter();
+  const router = useRouter(); // Keep for potential future use, though not used for navigation in this flow
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
     if (name === "phoneNumber") {
       const cleaned = ('' + value).replace(/\D/g, '');
-      if (cleaned.length > 10) return; // Max 10 digits for phone number
+      if (cleaned.length > 10) return;
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
         let formatted = '';
@@ -61,22 +78,55 @@ export default function MultiStepForm() {
         setFormData((prev) => ({ ...prev, [name]: formatted.trim() }));
         return;
       }
+    } else if (name === "birthDay") {
+        const numericValue = value.replace(/\D/g, '');
+        setFormData((prev) => ({ ...prev, [name]: numericValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
+  const handlePhotoCaptured = (
+    imageDataUrl: string | null,
+    timestamp?: string,
+    location?: CapturedLocation | null
+  ) => {
+    setCapturedImage(imageDataUrl);
+    setCaptureTimestamp(timestamp || null);
+    setCapturedLocation(location || null);
+  };
 
   const getCanProceed = (): boolean => {
     if (isLoadingPhoneNumber && currentStep === 1) return false;
 
     switch (currentStep) {
-      case 0:
+      case 0: // Initial Screen
         return true;
-      case 1:
+      case 1: // Phone Number
         return formData.phoneNumber.replace(/\D/g, '').length === 10;
-      default:
-        return false;
+      case 2: // SSN
+        if (!userData || formData.ssnLast4.length !== 4 || !/^\d{4}$/.test(formData.ssnLast4)) {
+          return false;
+        }
+        return String(userData.NSS) === formData.ssnLast4;
+      case 3: // Birth Day
+        if (!userData || !userData.dataBirth) return false;
+        const day = parseInt(formData.birthDay, 10);
+        if (isNaN(day) || day < 1 || day > 31 || formData.birthDay.length === 0 || formData.birthDay.length > 2) {
+          return false;
+        }
+        try {
+          const [year, month] = userData.dataBirth.split('-').map(Number);
+          const paddedDay = String(day).padStart(2, '0');
+          const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${paddedDay}`;
+          return userEnteredFullDate === userData.dataBirth;
+        } catch (e) {
+          return false;
+        }
+      case 4: // Photo
+        return !!capturedImage && !!capturedLocation;
+      default: // Completion Screen or beyond
+        return true;
     }
   };
 
@@ -84,18 +134,18 @@ export default function MultiStepForm() {
 
   const nextStep = async () => {
     setApiError(null);
-    setRawApiResponse(null); 
+    setRawApiResponse(null);
 
-    if (currentStep === 0) {
+    if (currentStep === 0) { // Initial to Phone
       setCurrentStep(1);
       return;
     }
 
-    if (currentStep === 1 && canProceed) {
+    if (currentStep === 1 && canProceed) { // Phone to SSN
       setIsLoadingPhoneNumber(true);
-      setUserData(null); 
+      setUserData(null);
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('userData'); // Clear any old session data
       }
       
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
@@ -115,25 +165,22 @@ export default function MultiStepForm() {
           if (responseText) {
             try {
               const parsedData = JSON.parse(responseText);
-
               if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
                 toast({ variant: "destructive", title: "Error", description: "User not found. Please check the phone number and try again." });
                 setUserData(null);
-              } 
-              else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
-                const userDataInstance: UserData = parsedData[0];
-                setUserData(userDataInstance);
-                
-                if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+              } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
+                const fetchedUserData: UserData = parsedData[0];
+                setUserData(fetchedUserData);
+                if (fetchedUserData.Name) {
+                  const nameParts = fetchedUserData.Name.split(' ');
+                  const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
+                  setUserInitials(initials);
                 }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                router.push('/main-menu'); 
-                
-              } 
-              else {
+                toast({ variant: "success", title: "Success", description: "Phone number verified." });
+                setCurrentStep(2); // Proceed to SSN step
+              } else {
                 console.error('Unexpected JSON structure:', parsedData);
-                toast({ variant: "destructive", title: "Error", description: "Received an unexpected response from the server. User data not found." });
+                toast({ variant: "destructive", title: "Error", description: "Received an unexpected response. User data not found." });
                 setUserData(null);
               }
             } catch (jsonError) {
@@ -172,6 +219,16 @@ export default function MultiStepForm() {
       }
       return;
     }
+
+    if (currentStep === 2 && canProceed) { // SSN to BirthDay
+      toast({ variant: "success", title: "Success", description: "SSN verified." });
+      setCurrentStep(3);
+    } else if (currentStep === 3 && canProceed) { // BirthDay to Photo
+      toast({ variant: "success", title: "Success", description: "Birth day verified." });
+      setCurrentStep(4);
+    } else if (currentStep < MAX_STEPS && canProceed) { // Photo to Completion or other steps if any
+      setCurrentStep((prev) => (prev + 1) as FormStep);
+    }
   };
 
   const prevStep = () => {
@@ -179,28 +236,58 @@ export default function MultiStepForm() {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       setApiError(null);
       setRawApiResponse(null);
+      if (currentStep === 2) { // Going back from SSN to Phone
+        setUserData(null);
+        setUserInitials(null);
+        setFormData(prev => ({...prev, ssnLast4: '', birthDay: ''})); // Clear subsequent form data
+      }
+      if (currentStep === 3) { // Going back from BirthDay to SSN
+         setFormData(prev => ({...prev, birthDay: ''}));
+      }
+      if (currentStep === 4) { // Going back from Photo to BirthDay
+        setCapturedImage(null);
+        setCaptureTimestamp(null);
+        setCapturedLocation(null);
+      }
+      // If going back from completion (step 5 to 4), photo data is already cleared by the above.
     }
   };
 
   const restartForm = () => {
     setCurrentStep(0);
-    setFormData(initialFormData as FormData);
+    setFormData(initialFormData);
     setUserData(null);
     setIsLoadingPhoneNumber(false);
     setApiError(null);
     setRawApiResponse(null);
+    setCapturedImage(null);
+    setCaptureTimestamp(null);
+    setCapturedLocation(null);
+    setUserInitials(null);
     if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('userData'); // Just in case
     }
   };
   
-  const ActiveIcon = currentStep === 1 ? STEP_CONFIG_PHONE.icon : null;
-  const activeTitle = currentStep === 1 ? STEP_CONFIG_PHONE.title : "";
+  const ActiveIcon = currentStep > 0 ? STEP_CONFIG[currentStep]?.icon : null;
+  const activeTitle = currentStep > 0 ? STEP_CONFIG[currentStep]?.title : "";
   
-  const showAppHeader = currentStep === 1; 
-  const showStepper = false; 
-  const showNavButtons = currentStep === 1; // Show only on the phone input step
+  const showAppHeader = currentStep !== 0; 
+  const showStepper = currentStep > 0 && currentStep <= MAX_STEPS; // Show for Phone, SSN, BD, Photo, Done
+  const showStepTitle = currentStep > 0 && currentStep < MAX_STEPS; // Show for Phone, SSN, BD, Photo
+  const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
 
+  const formatInitialsForDisplay = (initials: string): string => {
+    return initials
+      .split('')
+      .map(char => `${char}****`)
+      .join(' ');
+  };
+
+  let formattedUserInitialsForStep: string | null = null;
+  if (userInitials && currentStep === 4) { // Only for photo step
+    formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
+  }
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
@@ -212,6 +299,46 @@ export default function MultiStepForm() {
             formData={formData}
             onInputChange={handleInputChange}
             rawApiResponse={rawApiResponse}
+          />
+        );
+      case 2:
+        return (
+          <SsnStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            // No initials on SSN step as per last user request
+          />
+        );
+      case 3:
+        return (
+          <BirthDayStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            userData={userData}
+            // No initials on BirthDay step
+          />
+        );
+      case 4: // Photo
+        return (
+          <PhotoStep
+            onPhotoCaptured={handlePhotoCaptured}
+            capturedImage={capturedImage}
+            formattedUserInitials={formattedUserInitialsForStep}
+          />
+        );
+      case 5: // Completion
+        return (
+          <CompletionScreen
+            formData={{
+              phoneNumber: formData.phoneNumber, // Send current phone from form
+              ssnLast4: formData.ssnLast4,
+              birthDay: formData.birthDay,
+            }}
+            capturedImage={capturedImage}
+            captureTimestamp={captureTimestamp}
+            capturedLocation={capturedLocation}
+            userData={userData} // Pass the full userData (contains Name, Puesto etc.)
+            onRestart={restartForm}
           />
         );
       default:
@@ -237,27 +364,31 @@ export default function MultiStepForm() {
       </AlertDialog>
       
       <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !==0 })}>
-        {showAppHeader ? <AppHeader className="my-8" /> : null}
+        {showAppHeader && <AppHeader className="my-8" />}
       </div>
        
       <div className={cn("w-full max-w-md mx-auto", {"px-4": currentStep !==0 } )}>
-          {currentStep > 0 && ActiveIcon && activeTitle && (
-                <div className={cn(
-                  "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-                  "text-2xl sm:text-3xl" 
-                )}>
-                  <ActiveIcon className={cn("h-8 w-8", "text-primary")} />
-                  <span>{activeTitle}</span>
-                </div>
-          )}
+        {showStepper && (
+          <ProgressStepper
+            currentStepIndex={currentStep -1} // Adjust index for 0-based stepper
+            steps={stepLabels.slice(1)} // Exclude "Initial" from stepper labels
+            className="mb-6 w-full"
+          />
+        )}
+        {showStepTitle && ActiveIcon && activeTitle && (
+              <div className={cn(
+                "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
+                // Responsive text size for step titles
+                "text-lg sm:text-xl" 
+              )}>
+                <ActiveIcon className={cn("h-6 w-6 sm:h-7 sm:w-7", "text-primary")} />
+                <span>{activeTitle}</span>
+              </div>
+        )}
       </div>
 
-      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
+      <div className={cn("flex-grow flex flex-col items-center justify-start p-4 pt-0", {"px-0": currentStep === 0})}>
         <div className="w-full max-w-md mx-auto">
-          {showStepper && (
-             <div className="mb-6 w-full" /> 
-          )}
-
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
           </div>
