@@ -95,7 +95,7 @@ export default function MultiStepForm() {
       setIsLoadingPhoneNumber(true);
       
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
       
       try {
         const response = await fetch(webhookUrl, {
@@ -112,6 +112,7 @@ export default function MultiStepForm() {
 
           if (responseStatus === 200) {
             responseText = await response.text();
+            setRawApiResponse(responseText);
             if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
             
             if (responseText) {
@@ -147,10 +148,12 @@ export default function MultiStepForm() {
           }
         } else if (responseStatus === 404) {
           responseText = await response.text();
+          setRawApiResponse(responseText);
           if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
           setIsNotFoundAlertOpen(true);
         } else { 
           responseText = await response.text();
+          setRawApiResponse(responseText);
           if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
           toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : ''}` });
         }
@@ -159,6 +162,7 @@ export default function MultiStepForm() {
         if (error instanceof Error) {
           errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
         }
+        setRawApiResponse(`Fetch Error: ${errorMessage}`);
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', `Fetch Error: ${errorMessage}`);
         toast({
           variant: "destructive",
