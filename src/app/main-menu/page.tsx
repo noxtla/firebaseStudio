@@ -29,14 +29,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // Renamed Alert to ShadAlert
+import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert";
+import { Toaster } from '@/components/ui/toaster'; // Added Toaster
 
 interface MenuItemProps {
   title: string;
   icon: LucideIcon;
   href?: string;
   isPrimary?: boolean;
-  onClick?: () => void;
+  onClick?: () => void; // Changed to simple void for direct navigation or simple actions
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -46,14 +47,14 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
     <Card
       className={cn(
         "w-full flex flex-col items-center justify-center transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-lg border-none shadow-none",
-        isPrimary ? "bg-card p-4 sm:p-6 h-full" : "bg-secondary p-3", // secondary items have smaller padding
+        isPrimary ? "bg-card p-4 sm:p-6 h-full" : "bg-secondary p-3",
         isDisabled && "opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none",
         isLoading && "cursor-wait"
       )}
     >
       <CardContent className={cn(
         "flex-1 flex flex-col items-center justify-center text-center gap-2",
-        isPrimary ? "space-y-2 sm:space-y-3" : "space-y-1.5", // secondary items have less internal spacing
+        isPrimary ? "space-y-2 sm:space-y-3" : "space-y-1.5",
         "p-0"
       )}>
         {isLoading ? (
@@ -73,7 +74,7 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
     }
     if (onClick) {
       e.preventDefault();
-      onClick();
+      onClick(); // Execute the onClick function
     }
   };
 
@@ -106,32 +107,16 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 
 export default function MainMenuPage() {
   const router = useRouter();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
-  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
-  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
-  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-  const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
-  const [outOfHoursMessage, setOutOfHoursMessage] = useState("");
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); // Default to true
+  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false); // Default to false
+  const [isLoadingMenu, setIsLoadingMenu] = useState(false); // Removed initial true
+  // Removed attendance webhook related states: isAttendanceLoading, isOutOfHoursAlertOpen, outOfHoursMessage
 
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const status = sessionStorage.getItem('loginWebhookStatus');
-      if (status === '200' || status === '210') { // Allow 200 or 210 for enabling attendance
-        setIsAttendanceFeatureEnabled(true);
-        setShowDisabledAttendanceMessage(false);
-      } else {
-        setIsAttendanceFeatureEnabled(false);
-        setShowDisabledAttendanceMessage(true);
-      }
-      setIsLoadingMenu(false);
-    }
-  }, []);
-
+  // Removed useEffect that handled loginWebhookStatus as per previous rollback
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: () => router.push('/attendance'), isDisabled: !isAttendanceFeatureEnabled, isLoading: isAttendanceLoading },
-    { title: 'Vehicles', icon: Car, href: '/vehicles', isDisabled: false },
+    { title: 'Attendance', icon: Users, onClick: () => router.push('/attendance'), isDisabled: !isAttendanceFeatureEnabled },
+    { title: 'Vehicles', icon: Car, href: '/vehicles/enter-truck-number', isDisabled: false }, // Updated href
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -141,7 +126,7 @@ export default function MainMenuPage() {
     { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: false },
   ];
 
-  if (isLoadingMenu) {
+  if (isLoadingMenu) { // Should ideally not be true now unless set elsewhere
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -152,29 +137,12 @@ export default function MainMenuPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
-      <AlertDialog open={isOutOfHoursAlertOpen} onOpenChange={setIsOutOfHoursAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Out of Schedule</AlertDialogTitle>
-            <AlertDialogDescription>{outOfHoursMessage}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setIsOutOfHoursAlertOpen(false)}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Toaster /> {/* Added Toaster here for potential general use */}
+      {/* Removed AlertDialog for OutOfHours */}
 
       <AppHeader className="my-2 sm:my-4" />
 
-      {showDisabledAttendanceMessage && (
-        <ShadAlert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5">
-          <AlertTriangle className="h-5 w-5 text-primary" />
-          <AlertTitleUi className="text-primary">Access Information</AlertTitleUi>
-          <AlertDescUi className="text-foreground/80">
-            Access is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
-          </AlertDescUi>
-        </ShadAlert>
-      )}
+      {/* Removed conditional Alert based on showDisabledAttendanceMessage */}
 
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
