@@ -29,18 +29,17 @@ const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-const MAX_PHONE_FORM_STEP: FormStep = 1; // 0:Initial, 1:Phone (then navigate)
+const MAX_PHONE_FORM_STEP: FormStep = 1; 
 
-// phoneStepLabels is not used if ProgressStepper is always hidden
-// const phoneStepLabels = ["Initial", "Phone"];
 const PHONE_STEP_CONFIG = [
-  { title: "Welcome", icon: null }, // Step 0 (Initial)
-  { title: "Enter Your Phone Number", icon: Phone }, // Step 1 (Phone)
+  { title: "Welcome", icon: null }, 
+  { title: "Enter Your Phone Number", icon: Phone }, 
 ];
 
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
@@ -68,9 +67,9 @@ export default function MultiStepForm() {
   const getCanProceed = (): boolean => {
     if (isLoadingPhoneNumber) return false;
     switch (currentStep) {
-      case 0: // Initial Screen
+      case 0: 
         return true;
-      case 1: // Phone Number
+      case 1: 
         return formData.phoneNumber.replace(/\D/g, '').length === 10;
       default:
         return false;
@@ -80,22 +79,23 @@ export default function MultiStepForm() {
   const canProceed = getCanProceed();
 
   const nextStep = async () => {
-    setRawApiResponse(null);
+    setRawApiResponse(null); 
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('userData');
+      sessionStorage.removeItem('loginWebhookStatus');
+      sessionStorage.removeItem('rawApiResponse');
+    }
 
-    if (currentStep === 0) { // Initial to Phone
+    if (currentStep === 0) { 
       setCurrentStep(1);
       return;
     }
 
     if (currentStep === 1 && canProceed) { 
       setIsLoadingPhoneNumber(true);
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('loginWebhookStatus');
-      }
       
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login'; // Changed back to test URL
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login';
       
       try {
         const response = await fetch(webhookUrl, {
@@ -104,49 +104,62 @@ export default function MultiStepForm() {
           body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
         });
 
-        const responseText = await response.text();
-        setRawApiResponse(responseText); 
-        
-        if (typeof window !== 'undefined') {
-            sessionStorage.setItem('loginWebhookStatus', response.status.toString());
-        }
+        const responseStatus = response.status;
+        let responseText = ""; 
 
-        if (response.ok) {
-          if (responseText) {
-            try {
-              const parsedData = JSON.parse(responseText);
-              if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
-                toast({ variant: "destructive", title: "Error", description: "User not found. Please check the phone number and try again." });
-              } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
-                const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber }; 
-                if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
+        if (responseStatus === 200 || responseStatus === 503) {
+          sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
+
+          if (responseStatus === 200) {
+            responseText = await response.text();
+            if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
+            
+            if (responseText) {
+              try {
+                const parsedData = JSON.parse(responseText);
+                if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
+                  toast({ variant: "destructive", title: "Error", description: "User not found. Please check the phone number and try again." });
+                } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
+                  const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber }; 
+                  setUserData(fetchedUserData);
+                  if (typeof window !== 'undefined') {
+                      sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
+                  }
+                  toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
+                  router.push('/main-menu');
+                } else {
+                  toast({ variant: "destructive", title: "Error", description: "User not found or invalid data received." });
                 }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
-                router.push('/main-menu');
-              } else {
-                toast({ variant: "destructive", title: "Error", description: "User not found or invalid data received." });
+              } catch (jsonError) {
+                toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
               }
-            } catch (jsonError) {
-              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
+            } else { 
+              toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
             }
-          } else { 
-            toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
+          } else if (responseStatus === 503) {
+             if (typeof window !== 'undefined') sessionStorage.removeItem('userData'); // Clear stale user data
+            toast({
+                variant: "default", 
+                title: "Service Unavailable",
+                description: "The service is temporarily unavailable. Proceeding to main menu, some features may be limited."
+            });
+            router.push('/main-menu');
           }
+        } else if (responseStatus === 404) {
+          responseText = await response.text();
+          if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
+          setIsNotFoundAlertOpen(true);
         } else { 
-          if (response.status === 404) {
-            setIsNotFoundAlertOpen(true);
-          } else {
-            const errorDetails = responseText || `Status: ${response.status}`;
-            toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. ${errorDetails}.` });
-          }
+          responseText = await response.text();
+          if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
+          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : ''}` });
         }
       } catch (error: any) {
         let errorMessage = "An unknown network error occurred.";
         if (error instanceof Error) {
           errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
         }
-        setRawApiResponse(`Fetch Error: ${errorMessage}`);
+        if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', `Fetch Error: ${errorMessage}`);
         toast({
           variant: "destructive",
           title: "Error Verifying Phone",
@@ -163,17 +176,20 @@ export default function MultiStepForm() {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       setRawApiResponse(null);
+       if (typeof window !== 'undefined') sessionStorage.removeItem('rawApiResponse');
     }
   };
 
   const restartForm = () => {
     setCurrentStep(0);
-    setFormData({ phoneNumber: ''});
+    setFormData(initialFormData);
+    setUserData(null);
     setIsLoadingPhoneNumber(false);
     setRawApiResponse(null);
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
+        sessionStorage.removeItem('rawApiResponse');
     }
   };
   
@@ -181,8 +197,8 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 ? PHONE_STEP_CONFIG[currentStep]?.title : "";
   
   const showAppHeader = currentStep !== 0; 
-  const showStepper = false; // Always false to remove the stepper
-  const showStepTitle = currentStep === 1; // Only show title on phone input step
+  const showStepper = false; 
+  const showStepTitle = currentStep === 1; 
   const showNavButtons = currentStep === 1;
 
   const renderActiveStepContent = () => {
