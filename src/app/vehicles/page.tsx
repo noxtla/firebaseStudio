@@ -4,16 +4,16 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; // For potential back button or actions
-import { Gauge, Trailer, Fuel, TriangleAlert, ChevronLeft, type LucideIcon } from 'lucide-react';
+import { Gauge, Truck, Fuel, TriangleAlert, ChevronLeft, type LucideIcon } from 'lucide-react'; // Changed Trailer to Truck
 import AppHeader from '@/components/app-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card'; // Removed CardHeader, CardTitle as they are not used
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+// import { cn } from '@/lib/utils'; // cn is not used
 
 interface VehicleMenuItemProps {
   title: string;
   icon: LucideIcon;
-  href: string; // For now, all will be href="#"
+  href: string;
   description?: string;
 }
 
@@ -40,7 +40,7 @@ export default function VehiclesMenuPage() {
 
   const menuItems: VehicleMenuItemProps[] = [
     { title: 'Add Miles', icon: Gauge, href: '#', description: "Log vehicle mileage" },
-    { title: 'Add Trailer', icon: Trailer, href: '#', description: "Record trailer attachment" },
+    { title: 'Add Trailer', icon: Truck, href: '#', description: "Record trailer attachment" }, // Changed Trailer to Truck
     { title: 'Add Gas', icon: Fuel, href: '#', description: "Input fuel consumption" },
     { title: 'Add Defects', icon: TriangleAlert, href: '#', description: "Report vehicle issues" },
   ];
@@ -51,7 +51,7 @@ export default function VehiclesMenuPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <AppHeader className="flex-grow !text-left ml-0 pl-0" /> {/* Modified AppHeader usage */}
+        <AppHeader className="flex-grow !text-left ml-0 pl-0" />
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 flex-grow">
@@ -62,3 +62,4 @@ export default function VehiclesMenuPage() {
     </div>
   );
 }
+
