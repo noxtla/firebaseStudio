@@ -29,7 +29,7 @@ const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-const MAX_STEPS: FormStep = 1; // 0: Initial, 1: Phone (then redirect)
+// const MAX_STEPS: FormStep = 1; // 0: Initial, 1: Phone (then redirect)
 
 const STEP_CONFIG = [
   { title: "", icon: null }, // Initial Screen (Step 0)
@@ -122,7 +122,6 @@ export default function MultiStepForm() {
                 const userDataInstance: UserData = parsedData[0];
                 setUserData(userDataInstance); 
                 
-                // Always store user data and status, then navigate
                 if (typeof window !== 'undefined') {
                     sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
                     sessionStorage.setItem('loginWebhookStatus', response.status.toString());
@@ -143,10 +142,10 @@ export default function MultiStepForm() {
           } else { 
             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
             setUserData(null);
-             if (typeof window !== 'undefined') { // Store status even if empty response but ok
+             if (typeof window !== 'undefined') { 
                 sessionStorage.setItem('loginWebhookStatus', response.status.toString());
              }
-             router.push('/main-menu'); // Still navigate as per new requirement
+             // router.push('/main-menu'); // Removed: Do not navigate if user not found (empty response)
           }
         } else { 
           if (response.status === 404) {
@@ -156,10 +155,9 @@ export default function MultiStepForm() {
             toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. ${errorDetails}.` });
           }
           setUserData(null);
-           if (typeof window !== 'undefined') { // Store status on error
+           if (typeof window !== 'undefined') { 
                 sessionStorage.setItem('loginWebhookStatus', response.status.toString());
            }
-           // router.push('/main-menu'); // Decide if to navigate on error or stay
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
@@ -174,10 +172,9 @@ export default function MultiStepForm() {
           description: errorMessage
         });
         setUserData(null);
-        if (typeof window !== 'undefined') { // Store a generic error status or clear it
+        if (typeof window !== 'undefined') { 
             sessionStorage.setItem('loginWebhookStatus', 'error');
         }
-        // router.push('/main-menu'); // Decide if to navigate on fetch error or stay
       } finally {
         setIsLoadingPhoneNumber(false);
       }
@@ -267,7 +264,7 @@ export default function MultiStepForm() {
       <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
         <div className="w-full max-w-md mx-auto">
           {showStepper && (
-             <div className="mb-6 w-full" /> // Placeholder if stepper was to be shown
+             <div className="mb-6 w-full" /> 
           )}
 
           <div className="animate-step-enter w-full" key={currentStep}>
