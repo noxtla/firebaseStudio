@@ -29,8 +29,6 @@ const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-// const MAX_STEPS: FormStep = 1; // 0: Initial, 1: Phone (then redirect)
-
 const STEP_CONFIG = [
   { title: "", icon: null }, // Initial Screen (Step 0)
   { title: "Enter Your Phone Number", icon: Phone }, // Step 1
@@ -86,6 +84,7 @@ export default function MultiStepForm() {
 
   const nextStep = async () => {
     setApiError(null);
+    setRawApiResponse(null); // Clear previous raw response
 
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -94,8 +93,12 @@ export default function MultiStepForm() {
 
     if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
-      setRawApiResponse(null);
-      setUserData(null);
+      setUserData(null); // Clear previous user data
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('loginWebhookStatus');
+      }
+      
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
       
@@ -122,12 +125,22 @@ export default function MultiStepForm() {
                 const userDataInstance: UserData = parsedData[0];
                 setUserData(userDataInstance); 
                 
-                if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                if (response.status === 210) {
+                  if (typeof window !== 'undefined') {
+                      sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                      sessionStorage.setItem('loginWebhookStatus', '210');
+                  }
+                  toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
+                  router.push('/main-menu'); 
+                } else {
+                  // User found, but status is not 210
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance)); // Store data if needed for other purposes
                     sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+                  }
+                  toast({ variant: "default", title: "Login Processed", description: "Access to certain features may be restricted at this time." });
+                  // Do NOT navigate to main-menu if status is not 210
                 }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                router.push('/main-menu'); 
               } 
               else {
                 console.error('Unexpected JSON structure:', parsedData);
@@ -140,14 +153,12 @@ export default function MultiStepForm() {
               setUserData(null);
             }
           } else { 
+            // response.ok is true, but responseText is empty
             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
             setUserData(null);
-             if (typeof window !== 'undefined') { 
-                sessionStorage.setItem('loginWebhookStatus', response.status.toString());
-             }
-             // router.push('/main-menu'); // Removed: Do not navigate if user not found (empty response)
           }
         } else { 
+          // response.ok is false
           if (response.status === 404) {
             setIsNotFoundAlertOpen(true);
           } else {
@@ -155,9 +166,6 @@ export default function MultiStepForm() {
             toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. ${errorDetails}.` });
           }
           setUserData(null);
-           if (typeof window !== 'undefined') { 
-                sessionStorage.setItem('loginWebhookStatus', response.status.toString());
-           }
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
@@ -172,9 +180,6 @@ export default function MultiStepForm() {
           description: errorMessage
         });
         setUserData(null);
-        if (typeof window !== 'undefined') { 
-            sessionStorage.setItem('loginWebhookStatus', 'error');
-        }
       } finally {
         setIsLoadingPhoneNumber(false);
       }
@@ -208,7 +213,7 @@ export default function MultiStepForm() {
   
   const showAppHeader = currentStep === 1; 
   const showStepper = false; // Never show stepper for this simplified form
-  const showNavButtons = currentStep === 1;
+  const showNavButtons = currentStep === 1; // Show nav buttons only on phone input screen
 
 
   const renderActiveStepContent = () => {
@@ -299,4 +304,3 @@ export default function MultiStepForm() {
     </div>
   );
 }
-

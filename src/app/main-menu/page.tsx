@@ -122,23 +122,25 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
 export default function MainMenuPage() {
   const router = useRouter();
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-  // Removed isOutOfHoursAlertOpen and outOfHoursMessage state
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true); // For initial auth check
   
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
   const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
 
   useEffect(() => {
+    // This effect runs once on mount to check if the user should be here
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus === '210') {
-        setIsAttendanceFeatureEnabled(true);
-        setShowDisabledAttendanceMessage(false);
-      } else {
-        setIsAttendanceFeatureEnabled(false);
-        setShowDisabledAttendanceMessage(true);
+      if (loginStatus !== '210') {
+        router.replace('/'); // Redirect to login if not authorized
+        return; // Early exit
       }
+      // If status is 210, enable attendance feature
+      setIsAttendanceFeatureEnabled(true);
+      setShowDisabledAttendanceMessage(false);
     }
-  }, []);
+    setIsLoadingMenu(false);
+  }, [router]);
 
   const handleAttendanceClick = async () => {
     if (isAttendanceLoading || !isAttendanceFeatureEnabled) return;
@@ -173,7 +175,7 @@ export default function MainMenuPage() {
       title: "Attendance", 
       onClick: handleAttendanceClick, 
       isLoading: isAttendanceLoading,
-      isDisabled: !isAttendanceFeatureEnabled, // Disable based on feature flag
+      isDisabled: !isAttendanceFeatureEnabled || isAttendanceLoading, // Disable if feature not enabled OR loading
     },
     { icon: Car, title: "Vehicles", href: "#vehicles" }, 
     { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
@@ -185,19 +187,27 @@ export default function MainMenuPage() {
     { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false },
   ];
 
+  if (isLoadingMenu) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center p-4">
+        <AppHeader className="mb-8" />
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Loading menu...</p>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* AlertDialog for "out of schedule" removed */}
-
       <div className="flex flex-col h-screen bg-background p-2">
         <AppHeader className="my-2" />
 
         {showDisabledAttendanceMessage && (
           <Alert variant="default" className="mb-4 mx-auto max-w-md border-primary/50 bg-primary/5">
             <InfoIcon className="h-5 w-5 text-primary" />
-            <AlertTitle className="text-primary font-semibold">Attendance Unavailable</AlertTitle>
+            <AlertTitle className="text-primary font-semibold">Attendance Feature Disabled</AlertTitle>
             <AlertDescription className="text-primary/90">
-              Access is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
+              Access to the attendance feature is currently unavailable. Please contact support if you believe this is an error.
             </AlertDescription>
           </Alert>
         )}
