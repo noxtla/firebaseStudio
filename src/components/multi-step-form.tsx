@@ -44,13 +44,9 @@ export default function MultiStepForm() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-  // userInitials is no longer needed in this form
-  // const [userInitials, setUserInitials] = useState<string | null>(null);
-
+  
   const { toast } = useToast();
   const router = useRouter();
-
-  // formatInitialsForDisplay and related useEffect are no longer needed here
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -101,7 +97,7 @@ export default function MultiStepForm() {
       setRawApiResponse(null);
       setUserData(null);
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login'; // <-- UPDATED URL
       
       try {
         const response = await fetch(webhookUrl, {
@@ -176,7 +172,6 @@ export default function MultiStepForm() {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       setApiError(null);
-      // setUserInitials(null); // No longer needed
       setRawApiResponse(null);
     }
   };
@@ -188,18 +183,14 @@ export default function MultiStepForm() {
     setIsLoadingPhoneNumber(false);
     setApiError(null);
     setRawApiResponse(null);
-    // setUserInitials(null); // No longer needed
     sessionStorage.removeItem('userData');
   };
   
   const ActiveIcon = STEP_CONFIG[currentStep]?.icon;
   const activeTitle = STEP_CONFIG[currentStep]?.title;
   
-  // Show "Tree Services" header only on the phone input step (step 1)
   const showAppHeader = currentStep === 1; 
-  // Show "Enter Your Phone Number" title only on the phone input step (step 1)
   const shouldShowHeader = currentStep === 1; 
-  // Show navigation buttons (Previous/Next) only on the phone input step (step 1)
   const showNavButtons = currentStep === 1;
 
   const renderActiveStepContent = () => {
@@ -241,7 +232,6 @@ export default function MultiStepForm() {
       </div>
        
       <div className="w-full max-w-md mx-auto">
-        {/* ToastViewport moved to be within MultiStepForm for specific positioning */}
       </div>
 
       <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
@@ -249,7 +239,7 @@ export default function MultiStepForm() {
           {shouldShowHeader && ActiveIcon && activeTitle && (
                 <div className={cn(
                   "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-                  "text-2xl sm:text-3xl" // Larger title
+                  "text-2xl sm:text-3xl" 
                 )}>
                   <ActiveIcon className={cn("h-7 w-7", "text-primary")} />
                   <span>{activeTitle}</span>
