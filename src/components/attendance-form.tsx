@@ -1,8 +1,271 @@
 
 "use client";
 
-// This file is effectively removed/emptied by the rollback.
-// It was the separate Attendance form.
-export default function AttendanceForm_Empty() {
-  return null;
+import { useState, type ChangeEvent, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
+import { useToast } from "@/hooks/use-toast";
+
+import AppHeader from './app-header';
+import ProgressStepper from './progress-stepper';
+import SsnStep from './steps/ssn-step';
+import BirthDayStep from './steps/birth-day-step';
+import PhotoStep from './steps/photo-step';
+import CompletionScreen from './steps/completion-screen';
+
+import { Button } from '@/components/ui/button';
+import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Toaster } from "@/components/ui/toaster";
+
+
+const MAX_ATTENDANCE_STEPS: FormStep = 3; // 0:SSN, 1:BirthDay, 2:Photo, 3:Done
+
+const attendanceStepLabels = ["SSN", "Birth Day", "Photo", "Done"];
+const ATTENDANCE_STEP_CONFIG = [
+  { title: "Enter Last 4 of SSN", icon: Info },       // Step 0 (SSN)
+  { title: "Day of Birth", icon: CalendarDays },    // Step 1 (Birth Day)
+  { title: "Take a Photo", icon: CameraIconLucide },  // Step 2 (Photo)
+  { title: "Send Your Information", icon: CheckCircle2 }, // Step 3 (Done) - This title is for CompletionScreen
+];
+
+interface AttendanceFormProps {
+    initialUserData: UserData;
 }
+
+export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
+  const [currentStep, setCurrentStep] = useState<FormStep>(0); // Start at SSN step
+  const [formData, setFormData] = useState<Pick<FormData, 'ssnLast4' | 'birthDay'>>({
+    ssnLast4: '',
+    birthDay: '',
+  });
+
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
+  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
+  const [userInitials, setUserInitials] = useState<string | null>(null);
+
+  const { toast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (initialUserData && initialUserData.Name) {
+      const nameParts = initialUserData.Name.split(' ');
+      const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
+      setUserInitials(initials);
+    }
+  }, [initialUserData]);
+
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === "birthDay") {
+        const numericValue = value.replace(/\D/g, '');
+        setFormData((prev) => ({ ...prev, [name]: numericValue }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handlePhotoCaptured = (
+    imageDataUrl: string | null,
+    timestamp?: string,
+    location?: CapturedLocation | null
+  ) => {
+    setCapturedImage(imageDataUrl);
+    setCaptureTimestamp(timestamp || null);
+    setCapturedLocation(location || null);
+  };
+
+  const getCanProceed = (): boolean => {
+    switch (currentStep) {
+      case 0: // SSN
+        if (!initialUserData || formData.ssnLast4.length !== 4 || !/^\d{4}$/.test(formData.ssnLast4)) {
+          return false;
+        }
+        return String(initialUserData.NSS) === formData.ssnLast4;
+      case 1: // Birth Day
+        if (!initialUserData || !initialUserData.dataBirth) return false;
+        const day = parseInt(formData.birthDay, 10);
+        if (isNaN(day) || day < 1 || day > 31 || formData.birthDay.length === 0 || formData.birthDay.length > 2) {
+          return false;
+        }
+        try {
+          const [year, month] = initialUserData.dataBirth.split('-').map(Number);
+          const paddedDay = String(day).padStart(2, '0');
+          const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${paddedDay}`;
+          return userEnteredFullDate === initialUserData.dataBirth;
+        } catch (e) {
+          return false;
+        }
+      case 2: // Photo
+        return !!capturedImage && !!capturedLocation;
+      default: // Completion Screen or beyond
+        return true;
+    }
+  };
+
+  const canProceed = getCanProceed();
+
+  const nextStep = async () => {
+    if (currentStep === 0 && canProceed) { // SSN to BirthDay
+      toast({ variant: "success", title: "Success", description: "SSN verified." });
+      setCurrentStep(1);
+    } else if (currentStep === 1 && canProceed) { // BirthDay to Photo
+      toast({ variant: "success", title: "Success", description: "Birth day verified." });
+      setCurrentStep(2);
+    } else if (currentStep < MAX_ATTENDANCE_STEPS && canProceed) { // Photo to Completion or other steps if any
+      setCurrentStep((prev) => (prev + 1) as FormStep);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => (prev - 1) as FormStep);
+      if (currentStep === 1) { // Going back from BirthDay to SSN
+         setFormData(prev => ({...prev, birthDay: ''}));
+      }
+      if (currentStep === 2) { // Going back from Photo to BirthDay
+        setCapturedImage(null);
+        setCaptureTimestamp(null);
+        setCapturedLocation(null);
+      }
+    }
+  };
+
+  const handleRestartFromCompletion = () => {
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('loginWebhookStatus');
+    }
+    router.push('/main-menu');
+  };
+  
+  const ActiveIcon = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.icon : null;
+  const activeTitle = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.title : "";
+  
+  const showAppHeader = true; 
+  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS; // Show for SSN, BD, Photo, Done
+  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS; // Show for SSN, BD, Photo
+  const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
+
+  const formatInitialsForDisplay = (initials: string): string => {
+    return initials
+      .split('')
+      .map(char => `${char}****`)
+      .join(' ');
+  };
+
+  let formattedUserInitialsForStep: string | null = null;
+  if (userInitials && currentStep === 2) { // Only for photo step
+    formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
+  }
+
+  const renderActiveStepContent = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <SsnStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            // No initials here, handled by `attendance-form`
+          />
+        );
+      case 1:
+        return (
+          <BirthDayStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            userData={initialUserData} // Pass full initialUserData for month/year display
+            // No initials here, handled by `attendance-form`
+          />
+        );
+      case 2: // Photo
+        return (
+          <PhotoStep
+            onPhotoCaptured={handlePhotoCaptured}
+            capturedImage={capturedImage}
+            formattedUserInitials={formattedUserInitialsForStep}
+          />
+        );
+      case 3: // Completion
+        return (
+          <CompletionScreen
+            formData={{
+              // For completion screen, we need phone from initialUserData if not in attendance form's formData
+              phoneNumber: initialUserData.phoneNumber, 
+              ssnLast4: formData.ssnLast4,
+              birthDay: formData.birthDay,
+            }}
+            capturedImage={capturedImage}
+            captureTimestamp={captureTimestamp}
+            capturedLocation={capturedLocation}
+            userData={initialUserData} 
+            onRestart={handleRestartFromCompletion}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+  
+  return (
+    <div className="flex flex-col min-h-screen bg-background">
+       <Toaster />
+      
+      <div className="w-full max-w-md mx-auto pt-6 sm:pt-8 md:pt-12">
+        {showAppHeader && <AppHeader className="my-8" />}
+      </div>
+       
+      <div className="w-full max-w-md mx-auto px-4">
+        {showStepper && (
+          <ProgressStepper
+            currentStepIndex={currentStep} 
+            steps={attendanceStepLabels.slice(0, -1)} // Exclude "Done" from stepper labels
+            className="mb-6 w-full"
+          />
+        )}
+        {showStepTitle && ActiveIcon && activeTitle && (
+              <div className={cn(
+                "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
+                "text-lg sm:text-xl" 
+              )}>
+                <ActiveIcon className={cn("h-6 w-6 sm:h-7 sm:w-7", "text-primary")} />
+                <span>{activeTitle}</span>
+              </div>
+        )}
+         {/* Display initials for SSN and Birth Day steps directly in AttendanceForm */}
+         {(currentStep === 0 || currentStep === 1) && userInitials && (
+            <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
+              {formatInitialsForDisplay(userInitials)}
+            </p>
+          )}
+      </div>
+
+      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
+        <div className="w-full max-w-md mx-auto">
+          <div className="animate-step-enter w-full" key={currentStep}>
+            {renderActiveStepContent()}
+          </div>
+
+          {showNavButtons && (
+            <div className="w-full mt-8 flex justify-between">
+              <Button
+                variant="ghost"
+                onClick={prevStep}
+                disabled={currentStep === 0}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+              </Button>
+              <Button onClick={nextStep} disabled={!canProceed}>
+                 Next <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+    

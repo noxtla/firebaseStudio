@@ -2,7 +2,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Added useEffect
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin } from 'lucide-react';
@@ -45,6 +45,8 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
+  // Example: "jesus salvador cortes gutierrez" -> "Jesus-Salvador-Cortes-Gutierrez"
+  // Example: "SAMY" -> "Samy"
   return nameStr
     .toLowerCase()
     .split(' ')
@@ -64,6 +66,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
   const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true); // Component has mounted
+  }, []);
+
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
@@ -103,6 +111,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
+      // The webhook URL for attendance submission
       const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', {
         method: 'POST',
         headers: {
@@ -170,8 +179,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             </CardContent>
           )}
           <CardFooter className="flex justify-center pt-6">
-             <Button onClick={onRestart} size="lg" aria-label="Start Over">
-              Start Over
+             <Button onClick={onRestart} size="lg" aria-label="Done"> {/* Changed from Start Over to Done */}
+              Done
             </Button>
           </CardFooter>
         </>
@@ -181,11 +190,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <CardTitle
               className={cn(
                 "text-xl sm:text-2xl text-center font-heading-style",
-                "animate-title-pulse" 
+                 isMounted && "animate-title-pulse" // Apply animation only on client
               )}
             >
               Send Your Information
             </CardTitle>
+            {/* Removed: "Please review your details below before submitting." */}
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>
@@ -263,3 +273,5 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+
+    
