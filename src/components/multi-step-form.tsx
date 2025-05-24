@@ -109,11 +109,6 @@ export default function MultiStepForm() {
         const responseText = await response.text();
         setRawApiResponse(responseText); 
         
-        if (typeof window !== 'undefined') {
-          sessionStorage.setItem('loginWebhookStatus', response.status.toString());
-        }
-
-
         if (response.ok) {
           if (responseText) {
             try {
@@ -126,11 +121,22 @@ export default function MultiStepForm() {
               else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const userDataInstance: UserData = parsedData[0];
                 setUserData(userDataInstance); 
-                if (typeof window !== 'undefined') {
-                    sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                
+                if (response.status === 210) {
+                  if (typeof window !== 'undefined') {
+                      sessionStorage.setItem('userData', JSON.stringify(userDataInstance));
+                      sessionStorage.setItem('loginWebhookStatus', '210');
+                  }
+                  toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
+                  router.push('/main-menu'); 
+                } else {
+                  toast({ variant: "destructive", title: "Access Restricted", description: "Login successful, but access to the main menu is currently restricted." });
+                  // User data might be stored if needed for other non-menu purposes, or cleared.
+                  // For now, we just don't redirect.
+                   if (typeof window !== 'undefined') { // Still store status if not 210 but ok
+                      sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+                   }
                 }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                router.push('/main-menu'); 
               } 
               else {
                 console.error('Unexpected JSON structure:', parsedData);
@@ -147,10 +153,10 @@ export default function MultiStepForm() {
             setUserData(null);
           }
         } else { 
-          const errorDetails = responseText || `Status: ${response.status}`;
           if (response.status === 404) {
             setIsNotFoundAlertOpen(true);
           } else {
+            const errorDetails = responseText || `Status: ${response.status}`;
             toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. ${errorDetails}.` });
           }
           setUserData(null);
@@ -201,7 +207,6 @@ export default function MultiStepForm() {
   
   const showAppHeader = currentStep === 1; 
   const shouldShowHeader = currentStep === 1; 
-  // const showNavButtons = currentStep > 0 && currentStep < MAX_STEPS;
   const showNavButtons = currentStep === 1;
 
 

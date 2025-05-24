@@ -56,7 +56,7 @@ const MenuItem: FC<MenuItemProps> = ({ icon: Icon, title, href, onClick, isPrima
           isPrimary 
             ? 'h-10 w-10 text-primary' 
             : 'h-6 w-6 text-muted-foreground',
-          isDisabled && !isLoading && "opacity-50" // Gray out icon if disabled and not loading
+          effectivelyDisabled && !isLoading && "opacity-50" 
         )} />
       )}
       <span className={cn(
@@ -130,23 +130,25 @@ export default function MainMenuPage() {
   const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
   const [isOutOfHoursAlertOpen, setIsOutOfHoursAlertOpen] = useState(false);
   const [outOfHoursMessage, setOutOfHoursMessage] = useState<string>("Attendance is currently unavailable. You are outside the allowed schedule.");
-  const [isAttendanceButtonEnabled, setIsAttendanceButtonEnabled] = useState(false);
+  // const [isAttendanceButtonEnabled, setIsAttendanceButtonEnabled] = useState(false); // No longer needed for 210 status
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus === '210') {
-        setIsAttendanceButtonEnabled(true);
+      if (loginStatus !== '210') {
+        router.replace('/'); // Redirect to login if status is not 210
       } else {
-        setIsAttendanceButtonEnabled(false);
+        setIsLoadingMenu(false); // Allow menu to render
       }
-      // Optionally clear the status after reading if it's a one-time check
-      // sessionStorage.removeItem('loginWebhookStatus');
+    } else {
+       setIsLoadingMenu(false); // In SSR or non-browser, allow rendering (or handle differently)
     }
-  }, []);
+  }, [router]);
 
   const handleAttendanceClick = async () => {
-    if (isAttendanceLoading || !isAttendanceButtonEnabled) return;
+    if (isAttendanceLoading) return;
     setIsAttendanceLoading(true);
     console.log("Attendance clicked, calling webhook...");
     try {
@@ -193,7 +195,8 @@ export default function MainMenuPage() {
       title: "Attendance", 
       onClick: handleAttendanceClick, 
       isLoading: isAttendanceLoading,
-      isDisabled: !isAttendanceButtonEnabled 
+      // isDisabled is now primarily controlled by isLoading for this button
+      // The "Fuera del horario" check provides a functional block via an alert.
     },
     { icon: Car, title: "Vehicles", href: "#vehicles" }, 
     { icon: ClipboardList, title: "Job Briefing", href: "#job-briefing" },
@@ -204,6 +207,15 @@ export default function MainMenuPage() {
     { icon: MessageSquare, title: "Support", href: "#support", isPrimary: false },
     { icon: AlertTriangle, title: "Emergency Support", href: "#emergency-support", isPrimary: false },
   ];
+
+  if (isLoadingMenu) {
+    return (
+      <div className="flex flex-col h-screen bg-background items-center justify-center p-2">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Verifying access...</p>
+      </div>
+    );
+  }
 
   return (
     <>
