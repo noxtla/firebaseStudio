@@ -151,7 +151,7 @@ export default function MainMenuPage() {
   }, []);
 
   const handleAttendanceClick = async () => {
-    if (isAttendanceLoading || !isAttendanceFeatureEnabled) return; // Also check feature enabled here
+    if (isAttendanceLoading || !isAttendanceFeatureEnabled) return;
     setIsAttendanceLoading(true);
     console.log("Attendance clicked, calling webhook...");
     try {
@@ -163,24 +163,28 @@ export default function MainMenuPage() {
         body: JSON.stringify({ action: "attendance_clicked" }),
       });
 
-      if (!response.ok && response.status === 500) {
-        try {
-          const errorText = await response.text();
-          if (errorText) {
-            const errorData = JSON.parse(errorText);
-            if (errorData && errorData.myField === "Fuera del horario") {
-              setOutOfHoursMessage(errorData.myField);
-              setIsOutOfHoursAlertOpen(true);
-              setIsAttendanceLoading(false);
-              return; 
+      if (!response.ok) {
+        if (response.status === 500) {
+          try {
+            const errorText = await response.text();
+            if (errorText) {
+              const errorData = JSON.parse(errorText);
+              if (errorData && errorData.myField === "Fuera del horario") {
+                setOutOfHoursMessage(errorData.myField);
+                setIsOutOfHoursAlertOpen(true);
+                // Navigation will proceed after try-catch due to removed return
+              } else {
+                console.error("Attendance webhook returned 500, but not 'Fuera del horario'. Status:", response.status, "Body:", errorText);
+              }
+            } else {
+              console.error("Attendance webhook returned 500 with empty body. Status:", response.status);
             }
+          } catch (e) {
+            console.error("Failed to parse body of 500 error from attendance webhook:", e);
           }
-        } catch (e) {
-          console.error("Failed to parse body of 500 error from attendance webhook:", e);
+        } else {
+          console.error("Webhook call for Attendance failed with status:", response.status, await response.text());
         }
-        console.error("Webhook call for Attendance returned 500, but not the 'Fuera del horario' condition or body parse failed. Status:", response.status);
-      } else if (!response.ok) {
-        console.error("Webhook call for Attendance failed:", response.status, await response.text());
       } else {
         console.log("Webhook called successfully for Attendance.");
       }
