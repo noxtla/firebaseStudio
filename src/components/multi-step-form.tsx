@@ -23,15 +23,13 @@ import { Button } from '@/components/ui/button';
 import { Phone, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
-// ProgressStepper is not used here anymore
 
 const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-const MAX_STEPS: FormStep = 1; // 0: Initial, 1: Phone (then redirect)
+const MAX_STEPS: FormStep = 1; 
 
-// STEP_CONFIG simplified as stepper and titles are mostly for phone step here
 const STEP_CONFIG = [
   { title: "Welcome", icon: null },
   { title: "Enter Your Phone Number", icon: Phone },
@@ -43,6 +41,7 @@ export default function MultiStepForm() {
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null); // Added for storing fetched user data
 
   const { toast } = useToast();
   const router = useRouter();
@@ -97,7 +96,7 @@ export default function MultiStepForm() {
       setIsLoadingPhoneNumber(true);
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'http://3.145.55.33/webhook-test/phoneNumber';
+      const webhookUrl = 'http://3.145.55.33:5678/webhook-test/phoneNumber';
 
       try {
         const response = await fetch(webhookUrl, {
@@ -115,10 +114,11 @@ export default function MultiStepForm() {
           if (responseText) {
             try {
               const parsedData = JSON.parse(responseText);
-              if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
-                toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
+              if (typeof parsedData === 'object' && parsedData !== null && 'myField' in parsedData && parsedData.myField === "NO EXISTE") {
+                 toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
               } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
+                setUserData(fetchedUserData);
                 if (typeof window !== 'undefined') {
                   sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
                   sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
@@ -149,12 +149,17 @@ export default function MultiStepForm() {
           toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : ''}` });
         }
       } catch (error: any) {
-        let userFriendlyMessage = "Network Error: Could not connect to the verification service. Please check the server status and your browser's developer console for more details. Ensure the server at http://3.145.55.33 is running and CORS is configured if necessary.";
+        let userFriendlyMessage = "Network Error: Could not connect to the verification service. Please check the server status and your browser's developer console for more details. Ensure the server at http://3.145.55.33:5678 is running and CORS is configured if necessary.";
         if (error instanceof Error && error.message) {
-          userFriendlyMessage = `Network Error: ${error.message}. This might be due to an issue with the server at http://3.145.55.33, your internet connection, or a CORS policy. Please check the server status and your browser's developer console.`;
+          // For "Failed to fetch" specifically, provide more context.
+          if (error.message.toLowerCase().includes('failed to fetch')) {
+             userFriendlyMessage = `Network Error: Failed to connect to the server at http://3.145.55.33:5678. This might be due to the server not running, a network issue, or a CORS policy. Please check the server status and your browser's developer console.`;
+          } else {
+            userFriendlyMessage = `Network Error: ${error.message}. This might be due to an issue with the server at http://3.145.55.33:5678, your internet connection, or a CORS policy. Please check the server status and your browser's developer console.`;
+          }
         }
         console.error("Phone Verification Fetch Error:", error);
-        setRawApiResponse(error.message || "Fetch failed"); // Store the actual error message for debugging
+        setRawApiResponse(error.message || "Fetch failed"); 
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', error.message || "Fetch failed");
         
         toast({
@@ -224,7 +229,7 @@ export default function MultiStepForm() {
       </div>
       
       <div className="w-full max-w-md mx-auto px-4">
-        {/* Toasts appear in the viewport managed by Toaster, not directly here */}
+         {/* Toasts appear in the viewport managed by Toaster, not directly here */}
       </div>
 
       <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 })}>
@@ -273,3 +278,5 @@ export default function MultiStepForm() {
     </div>
   );
 }
+
+    
