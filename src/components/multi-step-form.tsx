@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import AppHeader from './app-header';
-import ProgressStepper from './progress-stepper';
+// Removed ProgressStepper import as it's no longer used here based on previous changes
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
 
@@ -29,11 +29,12 @@ const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-const MAX_PHONE_FORM_STEP: FormStep = 1; 
+const MAX_PHONE_FORM_STEP: FormStep = 1;
 
+// Simplified STEP_CONFIG for the phone-only flow
 const PHONE_STEP_CONFIG = [
-  { title: "Welcome", icon: null }, 
-  { title: "Enter Your Phone Number", icon: Phone }, 
+  { title: "Welcome", icon: null },
+  { title: "Enter Your Phone Number", icon: Phone },
 ];
 
 export default function MultiStepForm() {
@@ -43,7 +44,7 @@ export default function MultiStepForm() {
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-  
+
   const { toast } = useToast();
   const router = useRouter();
 
@@ -67,9 +68,9 @@ export default function MultiStepForm() {
   const getCanProceed = (): boolean => {
     if (isLoadingPhoneNumber) return false;
     switch (currentStep) {
-      case 0: 
+      case 0:
         return true;
-      case 1: 
+      case 1:
         return formData.phoneNumber.replace(/\D/g, '').length === 10;
       default:
         return false;
@@ -79,24 +80,24 @@ export default function MultiStepForm() {
   const canProceed = getCanProceed();
 
   const nextStep = async () => {
-    setRawApiResponse(null); 
+    setRawApiResponse(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('userData');
       sessionStorage.removeItem('loginWebhookStatus');
       sessionStorage.removeItem('rawApiResponse');
     }
 
-    if (currentStep === 0) { 
+    if (currentStep === 0) {
       setCurrentStep(1);
       return;
     }
 
-    if (currentStep === 1 && canProceed) { 
+    if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
-      
+
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
-      
+
       try {
         const response = await fetch(webhookUrl, {
           method: 'POST',
@@ -105,56 +106,48 @@ export default function MultiStepForm() {
         });
 
         const responseStatus = response.status;
-        let responseText = ""; 
+        const responseText = await response.text();
+        setRawApiResponse(responseText);
+        if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
 
         if (responseStatus === 200 || responseStatus === 503) {
           sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
 
           if (responseStatus === 200) {
-            responseText = await response.text();
-            setRawApiResponse(responseText);
-            if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
-            
             if (responseText) {
               try {
                 const parsedData = JSON.parse(responseText);
                 if (typeof parsedData === 'object' && parsedData !== null && parsedData.myField === "NO EXISTE") {
                   toast({ variant: "destructive", title: "Error", description: "User not found. Please check the phone number and try again." });
                 } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
-                  const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber }; 
+                  const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
                   setUserData(fetchedUserData);
                   if (typeof window !== 'undefined') {
-                      sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
+                    sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
                   }
                   toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
                   router.push('/main-menu');
                 } else {
-                  toast({ variant: "destructive", title: "Error", description: "User not found or invalid data received." });
+                  toast({ variant: "destructive", title: "Error", description: "User not found or invalid data received from server." });
                 }
               } catch (jsonError) {
                 toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server." });
               }
-            } else { 
+            } else {
               toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
             }
           } else if (responseStatus === 503) {
-             if (typeof window !== 'undefined') sessionStorage.removeItem('userData'); // Clear stale user data
+            if (typeof window !== 'undefined') sessionStorage.removeItem('userData');
             toast({
-                variant: "default", 
-                title: "Service Unavailable",
-                description: "The service is temporarily unavailable. Proceeding to main menu, some features may be limited."
+              variant: "default",
+              title: "Service Unavailable",
+              description: "The service is temporarily unavailable. Proceeding to main menu, some features may be limited."
             });
             router.push('/main-menu');
           }
         } else if (responseStatus === 404) {
-          responseText = await response.text();
-          setRawApiResponse(responseText);
-          if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
           setIsNotFoundAlertOpen(true);
-        } else { 
-          responseText = await response.text();
-          setRawApiResponse(responseText);
-          if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
+        } else {
           toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : ''}` });
         }
       } catch (error: any) {
@@ -162,8 +155,8 @@ export default function MultiStepForm() {
         if (error instanceof Error) {
           errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
         }
-        setRawApiResponse(`Fetch Error: ${errorMessage}`);
-        if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', `Fetch Error: ${errorMessage}`);
+        setRawApiResponse(errorMessage); // Display fetch error message
+        if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', errorMessage);
         toast({
           variant: "destructive",
           title: "Error Verifying Phone",
@@ -180,7 +173,7 @@ export default function MultiStepForm() {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       setRawApiResponse(null);
-       if (typeof window !== 'undefined') sessionStorage.removeItem('rawApiResponse');
+      if (typeof window !== 'undefined') sessionStorage.removeItem('rawApiResponse');
     }
   };
 
@@ -191,18 +184,18 @@ export default function MultiStepForm() {
     setIsLoadingPhoneNumber(false);
     setRawApiResponse(null);
     if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('loginWebhookStatus');
-        sessionStorage.removeItem('rawApiResponse');
+      sessionStorage.removeItem('userData');
+      sessionStorage.removeItem('loginWebhookStatus');
+      sessionStorage.removeItem('rawApiResponse');
     }
   };
-  
+
   const ActiveIcon = currentStep > 0 ? PHONE_STEP_CONFIG[currentStep]?.icon : null;
   const activeTitle = currentStep > 0 ? PHONE_STEP_CONFIG[currentStep]?.title : "";
-  
-  const showAppHeader = currentStep !== 0; 
-  const showStepper = false; 
-  const showStepTitle = currentStep === 1; 
+
+  const showAppHeader = currentStep !== 0;
+  const showStepper = false; // Stepper is always hidden in this simplified flow
+  const showStepTitle = currentStep === 1;
   const showNavButtons = currentStep === 1;
 
   const renderActiveStepContent = () => {
@@ -221,11 +214,11 @@ export default function MultiStepForm() {
         return null;
     }
   };
-  
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-       <Toaster />
-       <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
+      <Toaster /> {/* Moved Toaster to MultiStepForm in a previous change */}
+      <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>User Not Found</AlertDialogTitle>
@@ -238,31 +231,29 @@ export default function MultiStepForm() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
-      <div className={cn("w-full max-w-md mx-auto", {"pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !==0 })}>
+
+      <div className={cn("w-full max-w-md mx-auto", { "pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !== 0 })}>
         {showAppHeader && <AppHeader className="my-8" />}
       </div>
-       
-      <div className={cn("w-full max-w-md mx-auto", {"px-4": currentStep !==0 } )}>
-        {showStepper && (
-          <ProgressStepper
-            currentStepIndex={0} 
-            steps={["Phone"]} 
-            className="mb-6 w-full"
-          />
-        )}
+
+      {/* Toast container moved to be above step title */}
+      {/* This placement is for toasts related to this form's actions */}
+
+
+      <div className={cn("w-full max-w-md mx-auto", { "px-4": currentStep !== 0 })}>
+        {/* ProgressStepper is not shown in this simplified flow */}
         {showStepTitle && ActiveIcon && activeTitle && (
-              <div className={cn(
-                "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-                "text-2xl sm:text-3xl" 
-              )}>
-                <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
-                <span>{activeTitle}</span>
-              </div>
+          <div className={cn(
+            "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
+            "text-2xl sm:text-3xl" // Kept larger title for phone step
+          )}>
+            <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
+            <span>{activeTitle}</span>
+          </div>
         )}
       </div>
 
-      <div className={cn("flex-grow flex flex-col items-center justify-start p-4 pt-0", {"px-0": currentStep === 0})}>
+      <div className={cn("flex-grow flex flex-col items-center justify-start p-4 pt-0", { "px-0": currentStep === 0 })}>
         <div className="w-full max-w-md mx-auto">
           <div className="animate-step-enter w-full" key={currentStep}>
             {renderActiveStepContent()}
@@ -296,4 +287,3 @@ export default function MultiStepForm() {
     </div>
   );
 }
-

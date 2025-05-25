@@ -79,14 +79,10 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
     }
   };
 
-  if (href && !onClick) {
+  if (href && !onClick && !isDisabled && !isLoading) {
     return (
-      <Link href={isDisabled || isLoading ? "#" : href} passHref legacyBehavior>
-        <a
-          className={cn("flex h-full w-full", isDisabled || isLoading ? "pointer-events-none" : "")}
-          onClick={isDisabled || isLoading ? (e) => e.preventDefault() : undefined}
-          aria-disabled={isDisabled || isLoading}
-        >
+      <Link href={href} passHref legacyBehavior>
+        <a className="flex h-full w-full">
           {content}
         </a>
       </Link>
@@ -111,52 +107,59 @@ export default function MainMenuPage() {
   const { toast } = useToast();
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
   const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
+  
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
+  const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
 
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus === '200') { // Or your specific success code for enabling attendance
+      if (loginStatus === '200') { 
         setIsAttendanceFeatureEnabled(true);
         setShowDisabledAttendanceMessage(false);
       } else if (loginStatus === '503') {
         setIsAttendanceFeatureEnabled(false);
         setShowDisabledAttendanceMessage(true);
       } else {
-        // Default or other statuses
-        setIsAttendanceFeatureEnabled(true); // Default to enabled if no specific logic applies
-        setShowDisabledAttendanceMessage(false);
+        // Default behavior if status is not 200 or 503 (e.g. user landed here directly)
+        // This might need adjustment based on desired behavior for unauthenticated/unverified access
+        setIsAttendanceFeatureEnabled(false); 
+        setShowDisabledAttendanceMessage(true);
       }
     }
   }, []);
 
   const handleVehiclesClick = async () => {
     setIsVehiclesLoading(true);
+    setVehiclesWebhookResponse(null); // Clear previous response
     try {
       const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'vehicles_menu_clicked' }),
       });
+      
+      const responseText = await response.text();
+      setVehiclesWebhookResponse(responseText);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Vehicles webhook call failed:', response.status, errorText);
+        console.error('Vehicles webhook call failed:', response.status, responseText);
         toast({
           variant: "destructive",
           title: "Vehicles Action Error",
-          description: `Could not contact vehicles service. Status: ${response.status}. ${errorText ? `Details: ${errorText}`: ''}`,
+          description: `Could not contact vehicles service. Status: ${response.status}. ${responseText ? `Details: ${responseText}`: ''}`,
         });
       } else {
         console.log('Vehicles webhook call successful');
-        // Optionally handle successful response data here
       }
     } catch (error) {
-      console.error('Error calling vehicles webhook:', error);
-      let errorMessage = "An unknown network error occurred.";
+      let errorMessage = "An unknown network error occurred while calling vehicles service.";
       if (error instanceof Error) {
-        errorMessage = `Could not connect: ${error.message}. Check internet or try again.`;
+        errorMessage = `Could not connect to vehicles service: ${error.message}. Check internet or try again.`;
       }
+      console.error('Error calling vehicles webhook:', error);
+      setVehiclesWebhookResponse(errorMessage);
       toast({
         variant: "destructive",
         title: "Network Error",
@@ -205,6 +208,15 @@ export default function MainMenuPage() {
           ))}
         </div>
       </div>
+
+      {vehiclesWebhookResponse && (
+        <div className="mt-4 p-3 bg-muted rounded-md w-full max-w-xl mx-auto overflow-x-auto">
+          <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Vehicles Webhook Response (Debug):</h4>
+          <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
+            {vehiclesWebhookResponse}
+          </pre>
+        </div>
+      )}
 
       <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
         {secondaryMenuItems.map((item) => (

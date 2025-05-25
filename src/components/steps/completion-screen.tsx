@@ -2,7 +2,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { useState, useEffect } from 'react'; // Added useEffect
+import { useState, useEffect } from 'react'; 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin } from 'lucide-react';
@@ -45,12 +45,9 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
-  // Example: "jesus salvador cortes gutierrez" -> "Jesus-Salvador-Cortes-Gutierrez"
-  // Example: "SAMY" -> "Samy"
   return nameStr
-    .toLowerCase()
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join('-');
 };
 
@@ -69,13 +66,13 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true); // Component has mounted
+    setIsMounted(true); 
   }, []);
 
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
-    setSubmissionResponse(null);
+    setSubmissionResponse(null); // Clear previous response
 
     if (!capturedImage) {
       toast({
@@ -111,7 +108,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     };
 
     try {
-      // The webhook URL for attendance submission
       const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', {
         method: 'POST',
         headers: {
@@ -121,7 +117,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       });
 
       const responseText = await response.text();
-      setSubmissionResponse(responseText);
+      setSubmissionResponse(responseText); // Store raw response text
 
       if (response.ok) {
         setSubmissionState('submitted');
@@ -137,12 +133,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           title: "Submission Error",
           description: `Failed to submit data. Status: ${response.status}. ${responseText ? `Details: ${responseText}` : ''}`,
         });
-        setSubmissionState('reviewing');
+        setSubmissionState('reviewing'); 
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred. Please check your internet connection and try again.";
-      setSubmissionResponse(`Fetch Error: ${errorMessage}`);
+      setSubmissionResponse(errorMessage); // Store fetch error message
       toast({
         variant: "destructive",
         title: "Submission Error",
@@ -152,9 +148,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
   };
 
-  const birthDayDisplay = userData?.dataBirth 
+  const birthDayDisplay = userData?.dataBirth && formData.birthDay
     ? `${formData.birthDay} ${getMonthNameFromDate(userData.dataBirth)} ${getYearFromDate(userData.dataBirth)}`
-    : `${formData.birthDay}`;
+    : `${formData.birthDay || 'N/A'}`;
 
 
   return (
@@ -179,7 +175,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             </CardContent>
           )}
           <CardFooter className="flex justify-center pt-6">
-             <Button onClick={onRestart} size="lg" aria-label="Done"> {/* Changed from Start Over to Done */}
+             <Button onClick={onRestart} size="lg" aria-label="Done">
               Done
             </Button>
           </CardFooter>
@@ -190,7 +186,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <CardTitle
               className={cn(
                 "text-xl sm:text-2xl text-center font-heading-style",
-                 isMounted && "animate-title-pulse" // Apply animation only on client
+                 isMounted && "animate-title-pulse" 
               )}
             >
               Send Your Information
@@ -203,7 +199,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                 {userData && <li>Name: {userData.Name}</li>}
                 <li>Phone: {formData.phoneNumber || (userData?.phoneNumber || '')}</li>
-                <li>SSN (Last 4): ••••{formData.ssnLast4.slice(-4)}</li>
+                <li>SSN (Last 4): ••••{formData.ssnLast4 ? formData.ssnLast4.slice(-4) : '****'}</li>
                 <li>Birth Day: {birthDayDisplay}</li>
                 {userData && <li>Position: {userData.Puesto}</li> }
               </ul>
@@ -237,9 +233,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
               )}
             </div>
-            {submissionState === 'reviewing' && submissionResponse && (
+            {submissionState === 'reviewing' && submissionResponse && ( // Show response on review screen if submission failed but we got a response
                <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30 w-full overflow-x-auto">
-                <h4 className="text-sm font-semibold mb-1 text-destructive">Webhook Submission Error Details:</h4>
+                <h4 className="text-sm font-semibold mb-1 text-destructive">Webhook Submission Response/Error:</h4>
                 <pre className="text-xs whitespace-pre-wrap break-all text-destructive/80 p-2 rounded">
                   {submissionResponse}
                 </pre>
@@ -273,5 +269,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-
-    

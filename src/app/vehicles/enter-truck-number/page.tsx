@@ -21,6 +21,7 @@ export default function EnterTruckNumberPage() {
   const [validVehicleNumbers, setValidVehicleNumbers] = useState<string[]>([]);
   const [isLoadingNumbers, setIsLoadingNumbers] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [truckListApiResponse, setTruckListApiResponse] = useState<string | null>(null); // For debugging
   const router = useRouter();
   const { toast } = useToast();
 
@@ -28,16 +29,19 @@ export default function EnterTruckNumberPage() {
     const fetchValidNumbers = async () => {
       setIsLoadingNumbers(true);
       setFetchError(null);
+      setTruckListApiResponse(null); // Clear previous response
       try {
-        // Assuming a GET request to fetch the list.
-        // If your N8N requires a POST with a specific body, adjust this fetch call.
-        const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles'); // Reverted to test URL
+        const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles');
+        const responseText = await response.text();
+        setTruckListApiResponse(responseText); // Store raw response for debugging
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch vehicle numbers: ${response.status}`);
+          throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText}`);
         }
-        const data: Vehicle[] = await response.json();
+        
+        const data: Vehicle[] = JSON.parse(responseText);
         if (Array.isArray(data)) {
-          setValidVehicleNumbers(data.map(v => v.VehicleNumber.replace(/\D/g, ''))); // Store only digits
+          setValidVehicleNumbers(data.map(v => v.VehicleNumber.replace(/\D/g, ''))); 
         } else {
           throw new Error("Invalid data format for vehicle numbers.");
         }
@@ -45,6 +49,10 @@ export default function EnterTruckNumberPage() {
         console.error("Error fetching valid truck numbers:", error);
         const errorMessage = error instanceof Error ? error.message : "Could not load vehicle list.";
         setFetchError(errorMessage);
+        // Also set truckListApiResponse to the error message if fetch itself failed or parsing failed
+        if (!truckListApiResponse && error instanceof Error) setTruckListApiResponse(error.message);
+        else if (!truckListApiResponse) setTruckListApiResponse("Error processing vehicle list response.");
+        
         toast({
           title: "Error",
           description: `Could not load vehicle list: ${errorMessage}`,
@@ -56,11 +64,11 @@ export default function EnterTruckNumberPage() {
     };
 
     fetchValidNumbers();
-  }, [toast]);
+  }, [toast]); // Removed truckListApiResponse from dependency array to avoid re-fetch on its change
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
-    const numbers = rawValue.replace(/\D/g, ''); // Remove all non-digits
+    const numbers = rawValue.replace(/\D/g, ''); 
     let formattedNumber = '';
 
     if (numbers.length > 0) {
@@ -69,7 +77,6 @@ export default function EnterTruckNumberPage() {
       } else if (numbers.length <= 7) {
         formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
       } else {
-        // Limit to 7 digits (NNN-NNNN)
         formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}`;
       }
     }
@@ -104,7 +111,7 @@ export default function EnterTruckNumberPage() {
       return;
     }
 
-    if (fetchError) {
+    if (fetchError && !isLoadingNumbers) { // Check !isLoadingNumbers to avoid premature error on initial load
          toast({
             title: "Error",
             description: `Cannot proceed: ${fetchError}`,
@@ -117,7 +124,7 @@ export default function EnterTruckNumberPage() {
     router.push('/vehicles/actions');
   };
 
-  const isButtonDisabled = isLoadingNumbers || !isTruckNumberValid || !!fetchError;
+  const isButtonDisabled = isLoadingNumbers || !isTruckNumberValid || (!!fetchError && !isLoadingNumbers);
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -158,9 +165,17 @@ export default function EnterTruckNumberPage() {
                 aria-label="Truck Number"
                 inputMode="numeric" 
                 maxLength={8} 
-                disabled={isLoadingNumbers || !!fetchError}
+                disabled={isLoadingNumbers || (!!fetchError && !isLoadingNumbers)}
               />
             </div>
+            {truckListApiResponse && (
+              <div className="mt-4 p-3 bg-muted rounded-md w-full overflow-x-auto">
+                <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Truck List API Response (Debug):</h4>
+                <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
+                  {truckListApiResponse}
+                </pre>
+              </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button 
