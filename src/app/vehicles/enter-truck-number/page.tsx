@@ -29,28 +29,32 @@ export default function EnterTruckNumberPage() {
     const fetchValidNumbers = async () => {
       setIsLoadingNumbers(true);
       setFetchError(null);
-      setTruckListApiResponse(null); // Clear previous response
+      setTruckListApiResponse(null); 
       try {
         const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles');
         const responseText = await response.text();
-        setTruckListApiResponse(responseText); // Store raw response for debugging
+        setTruckListApiResponse(responseText); 
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText}`);
+          throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText || "No response body"}`);
+        }
+        
+        if (!responseText.trim()) { // Explicitly check for empty or whitespace-only response
+          throw new Error("Empty response received from server when fetching vehicle numbers.");
         }
         
         const data: Vehicle[] = JSON.parse(responseText);
         if (Array.isArray(data)) {
           setValidVehicleNumbers(data.map(v => v.VehicleNumber.replace(/\D/g, ''))); 
         } else {
-          throw new Error("Invalid data format for vehicle numbers.");
+          throw new Error("Invalid data format for vehicle numbers. Expected an array.");
         }
       } catch (error) {
         console.error("Error fetching valid truck numbers:", error);
         const errorMessage = error instanceof Error ? error.message : "Could not load vehicle list.";
         setFetchError(errorMessage);
-        // Also set truckListApiResponse to the error message if fetch itself failed or parsing failed
-        if (!truckListApiResponse && error instanceof Error) setTruckListApiResponse(error.message);
+        
+        if (!truckListApiResponse && error instanceof Error) setTruckListApiResponse(errorMessage);
         else if (!truckListApiResponse) setTruckListApiResponse("Error processing vehicle list response.");
         
         toast({
@@ -64,7 +68,7 @@ export default function EnterTruckNumberPage() {
     };
 
     fetchValidNumbers();
-  }, [toast]); // Removed truckListApiResponse from dependency array to avoid re-fetch on its change
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
@@ -77,13 +81,14 @@ export default function EnterTruckNumberPage() {
       } else if (numbers.length <= 7) {
         formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
       } else {
+        // Limit to 7 digits for NNN-NNNN format
         formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}`;
       }
     }
     setTruckNumber(formattedNumber);
   };
 
-  const isTruckNumberValid = useMemo(() => {
+  const isTruckNumberValidForSubmission = useMemo(() => {
     if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
       return false;
     }
@@ -111,7 +116,7 @@ export default function EnterTruckNumberPage() {
       return;
     }
 
-    if (fetchError && !isLoadingNumbers) { // Check !isLoadingNumbers to avoid premature error on initial load
+    if (fetchError && !isLoadingNumbers) { 
          toast({
             title: "Error",
             description: `Cannot proceed: ${fetchError}`,
@@ -124,7 +129,7 @@ export default function EnterTruckNumberPage() {
     router.push('/vehicles/actions');
   };
 
-  const isButtonDisabled = isLoadingNumbers || !isTruckNumberValid || (!!fetchError && !isLoadingNumbers);
+  const isButtonDisabled = isLoadingNumbers || !isTruckNumberValidForSubmission || (!!fetchError && !isLoadingNumbers);
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -137,7 +142,7 @@ export default function EnterTruckNumberPage() {
       </div>
 
       <div className="flex-grow flex items-center justify-center">
-        <Card className="w-full max-w-md shadow-lg rounded-lg">
+        <Card className="w-full max-w-md shadow-lg rounded-lg border-none">
           <CardHeader className="items-center">
             <Truck className="h-12 w-12 text-primary mb-2" />
             <CardTitle className="text-2xl text-center font-heading-style">Enter Truck Number</CardTitle>
