@@ -99,7 +99,7 @@ export default function MultiStepForm() {
       setIsLoadingPhoneNumber(true);
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/2ae8793f-0fe3-4a62-8472-323e4bcdcf0e';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login'; // Updated URL
 
       try {
         const response = await fetch(webhookUrl, {
@@ -112,7 +112,7 @@ export default function MultiStepForm() {
         const responseText = await response.text();
         setRawApiResponse(responseText);
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
-        if (typeof window !== 'undefined') sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
+        
 
         if (response.ok) {
           if (responseText) {
@@ -122,21 +122,20 @@ export default function MultiStepForm() {
                  toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
               } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
-                // setUserData(fetchedUserData); // Not storing in local state anymore
                 if (typeof window !== 'undefined') {
                   sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
+                  sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
                 }
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
                 router.push('/main-menu');
               } else {
-                 // Fallback for unexpected successful responses that don't match expected structures
                  toast({ variant: "destructive", title: "User Not Found", description: "User data not found or invalid data received from server." });
               }
             } catch (jsonError) {
               console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
               toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server. Check the raw response display." });
             }
-          } else { // response.ok but responseText is empty
+          } else { 
              toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server." });
           }
         } else if (responseStatus === 404) {
@@ -144,6 +143,7 @@ export default function MultiStepForm() {
         } else if (responseStatus === 503) {
           if (typeof window !== 'undefined') {
             sessionStorage.removeItem('userData');
+            sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
           }
           toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to menu, some features may be limited."});
           router.push('/main-menu');
@@ -187,9 +187,9 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
 
   const showAppHeader = currentStep !== 0;
-  const showStepper = false; // currentStep > 0 && currentStep < MAX_STEPS;
+  const showStepper = false; 
   const showStepTitle = currentStep === 1;
-  const showNavButtons = currentStep === 1; // Show nav buttons only on the phone number step
+  const showNavButtons = currentStep === 1; 
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
