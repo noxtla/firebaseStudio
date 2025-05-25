@@ -99,7 +99,7 @@ export default function MultiStepForm() {
       setIsLoadingPhoneNumber(true);
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'http://3.145.55.33:5678/webhook-test/phoneNumber';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/2ae8793f-0fe3-4a62-8472-323e4bcdcf0e';
 
       try {
         const response = await fetch(webhookUrl, {
@@ -113,7 +113,6 @@ export default function MultiStepForm() {
         setRawApiResponse(responseText);
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
         if (typeof window !== 'undefined') sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
-
 
         if (response.ok) {
           if (responseText) {
@@ -130,14 +129,15 @@ export default function MultiStepForm() {
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
                 router.push('/main-menu');
               } else {
+                 // Fallback for unexpected successful responses that don't match expected structures
                  toast({ variant: "destructive", title: "User Not Found", description: "User data not found or invalid data received from server." });
               }
             } catch (jsonError) {
               console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
               toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server. Check the raw response display." });
             }
-          } else {
-             toast({ variant: "destructive", title: "Error", description: "User not found or empty response from server." });
+          } else { // response.ok but responseText is empty
+             toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server." });
           }
         } else if (responseStatus === 404) {
           setIsNotFoundAlertOpen(true);
@@ -147,16 +147,14 @@ export default function MultiStepForm() {
           }
           toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to menu, some features may be limited."});
           router.push('/main-menu');
-        }
-        else {
+        } else {
           toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : 'No details in response.'}` });
         }
       } catch (error: any) {
-        let userFriendlyMessage = `Network Error: Could not connect to the verification service at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check that the server at 3.145.55.33:5678 is accessible and properly configured for CORS. Check your browser's developer console for more details.`;
+        let userFriendlyMessage = `Network Error: Could not connect to the verification service at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check that the server is accessible and properly configured for CORS. Check your browser's developer console for more details.`;
         if (error instanceof Error && error.message) {
-          // For "Failed to fetch" specifically, provide more context.
           if (error.message.toLowerCase().includes('failed to fetch')) {
-             userFriendlyMessage = `Network Error: Failed to connect to the server at ${webhookUrl}. This might be due to the server at 3.145.55.33:5678 not running, a network issue, or a CORS policy. Please check the server status, CORS configuration, and your browser's developer console.`;
+             userFriendlyMessage = `Network Error: Failed to connect to the server at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check the server status, CORS configuration, and your browser's developer console.`;
           } else {
             userFriendlyMessage = `Network Error: ${error.message}. This might be due to an issue with the server at ${webhookUrl}, your internet connection, or a CORS policy. Please check the server status and your browser's developer console.`;
           }
@@ -239,7 +237,7 @@ export default function MultiStepForm() {
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
             "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
-            "text-2xl sm:text-3xl font-heading-style" // Use font-heading-style for Lato
+            "text-2xl sm:text-3xl font-heading-style" 
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
