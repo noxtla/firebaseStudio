@@ -2,7 +2,7 @@
 "use client";
 
 import type { FC } from 'react';
-import { useState, useEffect } from 'react'; 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin } from 'lucide-react';
@@ -16,7 +16,7 @@ interface CompletionScreenProps {
   capturedImage: string | null;
   captureTimestamp: string | null;
   capturedLocation: CapturedLocation | null;
-  userData: UserData | null; 
+  userData: UserData | null;
   onRestart: () => void;
 }
 
@@ -45,7 +45,6 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
-  // Capitalize first letter of each word, rest lowercase, join with hyphen
   return nameStr
     .toLowerCase()
     .split(' ')
@@ -68,7 +67,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    setIsMounted(true); 
+    setIsMounted(true);
   }, []);
 
 
@@ -108,11 +107,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         locationInfo: locationInfoPayload,
       }
     };
-    
-    // Use the correct webhook URL based on where CompletionScreen is used
-    // Defaulting to /photo for attendance, but could be made dynamic if needed elsewhere
-    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/photo';
 
+    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/photo';
 
     try {
       const response = await fetch(webhookUrl, {
@@ -123,8 +119,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const responseText = await response.text();
-      setSubmissionResponse(responseText); 
+      const responseText = await response.text(); // Always get text first
+      setSubmissionResponse(responseText);
 
       if (response.ok) {
         setSubmissionState('submitted');
@@ -138,17 +134,17 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         toast({
           variant: "destructive",
           title: "Submission Error",
-          description: `Failed to submit data. Status: ${response.status}. ${responseText ? `Details: ${responseText}` : ''}`,
+          description: `Failed to submit data. Status: ${response.status}. ${responseText ? `Details: ${responseText}` : 'Server did not provide details.'}`,
         });
-        setSubmissionState('reviewing'); 
+        setSubmissionState('reviewing');
       }
     } catch (error) {
       console.error('Error submitting form:', error);
       const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred. Please check your internet connection and try again.";
-      setSubmissionResponse(errorMessage); 
+      setSubmissionResponse(errorMessage);
       toast({
         variant: "destructive",
-        title: "Submission Error",
+        title: "Submission Network Error",
         description: `Could not submit your information. Error: ${errorMessage}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`,
       });
       setSubmissionState('reviewing');
@@ -193,10 +189,10 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <CardTitle
               className={cn(
                 "text-xl sm:text-2xl text-center font-heading-style",
-                 isMounted && "animate-title-pulse" 
+                 isMounted && submissionState === 'reviewing' && "animate-title-pulse"
               )}
             >
-              Send Your Information
+              {submissionState === 'submitting' ? 'Processing...' : 'Send Your Information'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
@@ -239,9 +235,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
               )}
             </div>
-            {submissionState === 'reviewing' && submissionResponse && ( 
+            {submissionState === 'reviewing' && submissionResponse && (
                <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30 w-full overflow-x-auto">
-                <h4 className="text-sm font-semibold mb-1 text-destructive">Webhook Submission Response/Error:</h4>
+                <h4 className="text-sm font-semibold mb-1 text-destructive">Last Webhook Submission Response/Error:</h4>
                 <pre className="text-xs whitespace-pre-wrap break-all text-destructive/80 p-2 rounded">
                   {submissionResponse}
                 </pre>
@@ -261,7 +257,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               {submissionState === 'submitting' ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Submitting...
+                  Please wait, validating data...
                 </>
               ) : (
                 'Submit'
@@ -275,4 +271,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-    
