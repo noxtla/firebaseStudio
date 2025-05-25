@@ -45,9 +45,11 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
+  // Capitalize first letter of each word, rest lowercase, join with hyphen
   return nameStr
+    .toLowerCase()
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join('-');
 };
 
@@ -72,7 +74,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
   const handleSubmit = async () => {
     setSubmissionState('submitting');
-    setSubmissionResponse(null); // Clear previous response
+    setSubmissionResponse(null);
 
     if (!capturedImage) {
       toast({
@@ -84,9 +86,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       return;
     }
 
-    let locationInfo: any = "Precise location not available or permission denied.";
+    let locationInfoPayload: any = "Precise location not available or permission denied.";
     if (capturedLocation) {
-      locationInfo = {
+      locationInfoPayload = {
         latitude: capturedLocation.latitude,
         longitude: capturedLocation.longitude,
         accuracy: capturedLocation.accuracy,
@@ -96,19 +98,24 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
     const payload: any = {
       step: "finalSubmission",
-      name: transformNameForPayload(userData?.Name),
+      name: userData?.Name ? transformNameForPayload(userData.Name) : '',
       phoneNumber: formData.phoneNumber || (userData?.phoneNumber || ''),
       ssnLast4: formData.ssnLast4 || '',
       birthDay: formData.birthDay || '',
       capturedImageBase64: capturedImage,
       metadata: {
         captureTimestamp: captureTimestamp || new Date().toISOString(),
-        locationInfo: locationInfo,
+        locationInfo: locationInfoPayload,
       }
     };
+    
+    // Use the correct webhook URL based on where CompletionScreen is used
+    // Defaulting to /photo for attendance, but could be made dynamic if needed elsewhere
+    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/photo';
+
 
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/photo', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +124,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       });
 
       const responseText = await response.text();
-      setSubmissionResponse(responseText); // Store raw response text
+      setSubmissionResponse(responseText); 
 
       if (response.ok) {
         setSubmissionState('submitted');
@@ -138,7 +145,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     } catch (error) {
       console.error('Error submitting form:', error);
       const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred. Please check your internet connection and try again.";
-      setSubmissionResponse(errorMessage); // Store fetch error message
+      setSubmissionResponse(errorMessage); 
       toast({
         variant: "destructive",
         title: "Submission Error",
@@ -191,7 +198,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             >
               Send Your Information
             </CardTitle>
-            {/* Removed: "Please review your details below before submitting." */}
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div>
@@ -233,7 +239,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
               )}
             </div>
-            {submissionState === 'reviewing' && submissionResponse && ( // Show response on review screen if submission failed but we got a response
+            {submissionState === 'reviewing' && submissionResponse && ( 
                <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30 w-full overflow-x-auto">
                 <h4 className="text-sm font-semibold mb-1 text-destructive">Webhook Submission Response/Error:</h4>
                 <pre className="text-xs whitespace-pre-wrap break-all text-destructive/80 p-2 rounded">
@@ -269,3 +275,4 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+    

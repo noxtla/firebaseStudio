@@ -145,8 +145,8 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const activeTitle = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.title : "";
   
   const showAppHeader = true; 
-  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS; // Show for SSN, BD, Photo, Done
-  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS; // Show for SSN, BD, Photo
+  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS; 
+  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS; 
   const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
 
   const formatInitialsForDisplay = (initials: string): string => {
@@ -168,7 +168,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            // No initials here, handled by `attendance-form`
+            formattedUserInitials={(userInitials && (currentStep === 0)) ? formatInitialsForDisplay(userInitials) : null}
           />
         );
       case 1:
@@ -176,11 +176,11 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           <BirthDayStep
             formData={formData}
             onInputChange={handleInputChange}
-            userData={initialUserData} // Pass full initialUserData for month/year display
-            // No initials here, handled by `attendance-form`
+            userData={initialUserData} 
+            formattedUserInitials={(userInitials && (currentStep === 1)) ? formatInitialsForDisplay(userInitials) : null}
           />
         );
-      case 2: // Photo
+      case 2: 
         return (
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
@@ -188,11 +188,10 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formattedUserInitials={formattedUserInitialsForStep}
           />
         );
-      case 3: // Completion
+      case 3: 
         return (
           <CompletionScreen
             formData={{
-              // For completion screen, we need phone from initialUserData if not in attendance form's formData
               phoneNumber: initialUserData.phoneNumber, 
               ssnLast4: formData.ssnLast4,
               birthDay: formData.birthDay,
@@ -221,7 +220,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
         {showStepper && (
           <ProgressStepper
             currentStepIndex={currentStep} 
-            steps={attendanceStepLabels.slice(0, -1)} // Exclude "Done" from stepper labels
+            steps={attendanceStepLabels.slice(0, -1)} 
             className="mb-6 w-full"
           />
         )}
@@ -234,12 +233,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
                 <span>{activeTitle}</span>
               </div>
         )}
-         {/* Display initials for SSN and Birth Day steps directly in AttendanceForm */}
-         {(currentStep === 0 || currentStep === 1) && userInitials && (
-            <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
-              {formatInitialsForDisplay(userInitials)}
-            </p>
-          )}
       </div>
 
       <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
@@ -267,5 +260,4 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     </div>
   );
 }
-
     

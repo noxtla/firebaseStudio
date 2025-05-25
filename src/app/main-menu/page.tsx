@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import {
   Users,
-  Car,
+  Truck,
   ClipboardList,
   ShieldCheck,
   MessageSquare,
@@ -105,16 +105,17 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 export default function MainMenuPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); // Default to true, adjust based on status
   const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
   
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
-
+  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false); // Added for attendance button
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
+      // Enable attendance if login status is 200, disable and show message for 503
       if (loginStatus === '200') { 
         setIsAttendanceFeatureEnabled(true);
         setShowDisabledAttendanceMessage(false);
@@ -122,8 +123,7 @@ export default function MainMenuPage() {
         setIsAttendanceFeatureEnabled(false);
         setShowDisabledAttendanceMessage(true);
       } else {
-        // Default behavior if status is not 200 or 503 (e.g. user landed here directly)
-        // This might need adjustment based on desired behavior for unauthenticated/unverified access
+        // Default: for any other status or if status is not set, disable attendance and show message
         setIsAttendanceFeatureEnabled(false); 
         setShowDisabledAttendanceMessage(true);
       }
@@ -132,7 +132,7 @@ export default function MainMenuPage() {
 
   const handleVehiclesClick = async () => {
     setIsVehiclesLoading(true);
-    setVehiclesWebhookResponse(null); // Clear previous response
+    setVehiclesWebhookResponse(null); 
     try {
       const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles', {
         method: 'POST',
@@ -171,10 +171,15 @@ export default function MainMenuPage() {
     }
   };
 
+  const handleAttendanceClick = () => {
+    // Direct navigation, no webhook call here as per previous rollback
+    router.push('/attendance');
+  };
+
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
-    { title: 'Vehicles', icon: Car, onClick: handleVehiclesClick, isLoading: isVehiclesLoading },
+    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled },
+    { title: 'Vehicles', icon: Truck, onClick: handleVehiclesClick, isLoading: isVehiclesLoading },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -228,3 +233,4 @@ export default function MainMenuPage() {
     </div>
   );
 }
+    

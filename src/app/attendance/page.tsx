@@ -8,6 +8,7 @@ import type { UserData } from '@/types';
 import AppHeader from '@/components/app-header';
 import { Loader2 } from 'lucide-react';
 import { Toaster } from '@/components/ui/toaster';
+import { Button } from '@/components/ui/button'; // Added
 
 export default function AttendancePage() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -57,5 +58,4 @@ export default function AttendancePage() {
 
   return <AttendanceForm initialUserData={userData} />;
 }
-
     
