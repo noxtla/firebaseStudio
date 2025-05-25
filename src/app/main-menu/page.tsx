@@ -14,7 +14,7 @@ import {
   AlertTriangle as AlertTriangleIcon,
   type LucideIcon,
   Loader2,
-  AlertTriangle
+  AlertTriangle // Keep for potential future use, or remove if truly unneeded
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert";
+import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // Keep for potential future use
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
 
@@ -49,7 +49,7 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
       className={cn(
         "w-full flex flex-col items-center justify-center transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-lg border-none shadow-none",
         isPrimary ? "bg-card p-4 sm:p-6 h-full" : "bg-secondary p-3",
-        isDisabled && "opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none",
+        (isDisabled || isLoading) && "opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none",
         isLoading && "cursor-wait"
       )}
     >
@@ -105,27 +105,19 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 export default function MainMenuPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); // Default to true, adjust based on status
-  const [showDisabledAttendanceMessage, setShowDisabledAttendanceMessage] = useState(false);
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
   
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
-  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false); // Added for attendance button
+  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      // Enable attendance if login status is 200, disable and show message for 503
       if (loginStatus === '200') { 
         setIsAttendanceFeatureEnabled(true);
-        setShowDisabledAttendanceMessage(false);
-      } else if (loginStatus === '503') {
-        setIsAttendanceFeatureEnabled(false);
-        setShowDisabledAttendanceMessage(true);
-      } else {
-        // Default: for any other status or if status is not set, disable attendance and show message
+      } else { // For 503 or any other status/null
         setIsAttendanceFeatureEnabled(false); 
-        setShowDisabledAttendanceMessage(true);
       }
     }
   }, []);
@@ -172,14 +164,12 @@ export default function MainMenuPage() {
   };
 
   const handleAttendanceClick = () => {
-    // Direct navigation, no webhook call here as per previous rollback
     router.push('/attendance');
   };
 
-
   const primaryMenuItems: MenuItemProps[] = [
     { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled },
-    { title: 'Vehicles', icon: Truck, onClick: handleVehiclesClick, isLoading: isVehiclesLoading },
+    { title: 'Vehicles', icon: Truck, onClick: handleVehiclesClick, isLoading: isVehiclesLoading, isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -194,15 +184,7 @@ export default function MainMenuPage() {
       <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
-      {showDisabledAttendanceMessage && (
-        <ShadAlert variant="default" className="mb-4 mx-auto max-w-md bg-muted border-primary/30">
-          <AlertTriangle className="h-5 w-5 text-primary" />
-          <AlertTitleUi className="font-semibold text-primary">Attendance Access Information</AlertTitleUi>
-          <AlertDescUi className="text-muted-foreground">
-            Access to certain features like Attendance is currently disabled. Registration is only available from 7:00 a.m. to 7:15 a.m.
-          </AlertDescUi>
-        </ShadAlert>
-      )}
+      {/* Removed the Alert for disabled attendance message */}
 
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
