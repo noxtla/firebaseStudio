@@ -40,7 +40,7 @@ interface MenuItemProps {
   icon: LucideIcon;
   href?: string;
   isPrimary?: boolean;
-  onClick?: () => Promise<void>;
+  onClick?: () => Promise<void> | void; // Allow non-promise onClick
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -106,28 +106,29 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 
 export default function MainMenuPage() {
   const router = useRouter();
-  const { toast } = useToast();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); 
-  // const [isAttendanceLoading, setIsAttendanceLoading] = useState(false); // Removed as per previous instruction to simplify Attendance button
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
+  const [attendanceDisabledMessage, setAttendanceDisabledMessage] = useState<string | null>(null);
 
-  // Removed vehicles webhook states
-  // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
-  // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
+      const submittedAttendance = sessionStorage.getItem('attendanceSubmitted');
 
-
-  const handleAttendanceClick = async () => {
-    // setIsAttendanceLoading(true); // Removed as per previous instruction
-    // Webhook call was removed from here in a previous step.
-    // If the button is not disabled, it will navigate.
-    router.push('/attendance');
-    // setIsAttendanceLoading(false); // Removed
-  };
-
-  // Removed handleVehiclesClick as it's no longer calling a webhook
-  // The "Vehicles" MenuItem will now use href for direct navigation
+      if (submittedAttendance === 'true') {
+        setIsAttendanceFeatureEnabled(false);
+        setAttendanceDisabledMessage("Attendance has already been recorded for this session.");
+      } else if (loginStatus !== '200') { 
+        setIsAttendanceFeatureEnabled(false);
+        setAttendanceDisabledMessage("Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.");
+      } else {
+        setIsAttendanceFeatureEnabled(true);
+        setAttendanceDisabledMessage(null);
+      }
+    }
+  }, []);
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isDisabled: !isAttendanceFeatureEnabled }, // isAttendanceLoading removed
+    { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
@@ -138,27 +139,16 @@ export default function MainMenuPage() {
     { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: false },
   ];
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus !== '200') { // Assuming 200 is the success status that enables attendance
-        setIsAttendanceFeatureEnabled(false);
-      } else {
-        setIsAttendanceFeatureEnabled(true);
-      }
-    }
-  }, []);
-
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
       <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
-      {!isAttendanceFeatureEnabled && (
+      {attendanceDisabledMessage && (
          <ShadAlert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5 text-primary">
           <AlertTriangle className="h-4 w-4 !text-primary" />
           <AlertTitleUi>Attendance Access Notice</AlertTitleUi>
-          <AlertDescUi>Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.</AlertDescUi>
+          <AlertDescUi>{attendanceDisabledMessage}</AlertDescUi>
         </ShadAlert>
       )}
 
@@ -171,8 +161,6 @@ export default function MainMenuPage() {
           ))}
         </div>
       </div>
-
-      {/* Removed vehiclesWebhookResponse display section */}
 
       <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
         {secondaryMenuItems.map((item) => (

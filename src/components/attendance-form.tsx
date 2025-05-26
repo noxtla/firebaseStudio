@@ -135,8 +135,10 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
   const handleRestartFromCompletion = () => {
     if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('userData');
-        sessionStorage.removeItem('loginWebhookStatus');
+        // Do not clear userData or loginWebhookStatus here to preserve session for other features
+        // sessionStorage.removeItem('userData');
+        // sessionStorage.removeItem('loginWebhookStatus');
+        sessionStorage.removeItem('currentTruckNumber'); // Clear truck specific data if any
     }
     router.push('/main-menu');
   };
@@ -168,7 +170,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
-            formattedUserInitials={(userInitials && (currentStep === 0)) ? formatInitialsForDisplay(userInitials) : null}
           />
         );
       case 1:
@@ -177,7 +178,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formData={formData}
             onInputChange={handleInputChange}
             userData={initialUserData} 
-            formattedUserInitials={(userInitials && (currentStep === 1)) ? formatInitialsForDisplay(userInitials) : null}
           />
         );
       case 2: 

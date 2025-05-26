@@ -47,6 +47,7 @@ export default function EnterTruckNumberPage() {
             description: "Could not load user data. Please try logging in again.",
             variant: "destructive",
           });
+          router.replace('/'); // Redirect if user data is corrupted
         }
       } else {
         setErrorMessage("User data not found. Please log in again.");
@@ -108,7 +109,9 @@ export default function EnterTruckNumberPage() {
       return;
     }
     
-    sessionStorage.setItem('currentTruckNumber', truckNumber);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('currentTruckNumber', truckNumber);
+    }
     router.push('/vehicles/actions');
   };
 
@@ -152,7 +155,7 @@ export default function EnterTruckNumberPage() {
                 className="text-base text-center"
                 aria-label="Truck Number"
                 inputMode="numeric" 
-                pattern="[0-9]*"
+                pattern="[0-9-]*" // Allow digits and hyphen for formatting
                 maxLength={8} 
                 disabled={isLoading || !!errorMessage}
               />
@@ -173,3 +176,4 @@ export default function EnterTruckNumberPage() {
     </div>
   );
 }
+

@@ -140,6 +140,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         try {
           const parsedData = JSON.parse(responseText);
           if (parsedData.Success === "Attendance recorded") {
+            if (typeof window !== 'undefined') {
+              sessionStorage.setItem('attendanceSubmitted', 'true');
+            }
             setSubmissionState('submitted');
           } else {
             setSubmissionState('reviewing');
@@ -148,6 +151,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               title: "Unexpected Response",
               description: `Submission was successful, but the server response was not as expected: ${responseText}. Please contact support.`,
             });
+            onRestart(); // Navigate back to main menu on unexpected success response
           }
         } catch (e) {
           setSubmissionState('reviewing');
@@ -156,6 +160,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             title: "Response Error",
             description: `Submission was successful (HTTP ${response.status}), but the response format was invalid: ${responseText}. Please contact support.`,
           });
+          onRestart(); // Navigate back to main menu on response format error
         }
       } else {
         setSubmissionState('reviewing');
@@ -184,13 +189,16 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
-      setSubmissionResponse(errorMessage);
+      let userFriendlyMessage = `Could not submit your information to ${webhookUrl}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`;
+      if (error instanceof Error) {
+        userFriendlyMessage = `Could not submit your information to ${webhookUrl}. Error: ${error.message}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`;
+      }
+      setSubmissionResponse(error instanceof Error ? error.message : "An unknown network error occurred.");
       setSubmissionState('reviewing');
       toast({
         variant: "destructive",
         title: "Submission Network Error",
-        description: `Could not submit your information to ${webhookUrl}. Error: ${errorMessage}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`,
+        description: userFriendlyMessage,
       });
       onRestart();
     }
@@ -210,7 +218,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
               <CardTitle className="text-xl sm:text-2xl text-center">Attendance Recorded!</CardTitle>
               <CardDescription className="text-center text-base px-2">
-                We hope you have a successful and safe day. Thank you for working for Asplundh.
+                We hope you have a successful and safe day. Thank you for working for Tree Services.
               </CardDescription>
             </CardHeader>
             {submissionResponse && (
