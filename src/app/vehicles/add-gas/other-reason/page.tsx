@@ -70,12 +70,12 @@ export default function OtherGasReasonPage() {
                   <SelectValue placeholder="Select a reason..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Portable Generator">Portable Generator</SelectItem>
-                  <SelectItem value="Chainsaw">Chainsaw</SelectItem>
-                  <SelectItem value="Leaf Blower / Trimmer">Leaf Blower / Trimmer</SelectItem>
-                  <SelectItem value="Water Pump">Water Pump</SelectItem>
-                  <SelectItem value="Spill / Contamination">Spill / Contamination</SelectItem>
-                  <SelectItem value="Other Equipment (Specify)">Other Equipment (Specify)</SelectItem>
+                  <SelectItem value="Portable Generator">Portable Generator (e.g., for on-site power)</SelectItem>
+                  <SelectItem value="Chainsaw">Chainsaw (e.g., fuel for handheld saws)</SelectItem>
+                  <SelectItem value="Leaf Blower / Trimmer">Leaf Blower / Trimmer (e.g., for small engine equipment)</SelectItem>
+                  <SelectItem value="Water Pump">Water Pump (e.g., for dewatering or irrigation)</SelectItem>
+                  <SelectItem value="Spill / Contamination">Spill / Contamination (e.g., fuel used for cleanup or lost)</SelectItem>
+                  <SelectItem value="Other Equipment (Specify)">Other Equipment (Specify details if not listed)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
