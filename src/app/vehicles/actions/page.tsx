@@ -39,7 +39,7 @@ export default function VehicleActionsPage() {
 
   const menuItems: VehicleMenuItemProps[] = [
     { title: 'Add Miles', icon: Gauge, href: '/vehicles/add-miles', description: "Log vehicle mileage" },
-    { title: 'Add Trailer', icon: Truck, href: '/vehicles/add-trailer', description: "Record trailer attachment" },
+    // { title: 'Add Trailer', icon: Truck, href: '/vehicles/add-trailer', description: "Record trailer attachment" }, // Removed
     { title: 'Add Gas', icon: Fuel, href: '#', description: "Input fuel consumption" },
     { title: 'Add Defects', icon: TriangleAlert, href: '#', description: "Report vehicle issues" },
     { title: 'Vehicle Information', icon: Info, href: '/vehicles/info', description: "View vehicle details" },
