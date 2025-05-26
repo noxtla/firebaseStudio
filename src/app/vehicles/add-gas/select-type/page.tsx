@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Truck as TruckIcon, Package as PackageIcon, Fuel as FuelIcon, ChevronLeft, type LucideIcon } from 'lucide-react';
+import { Truck as TruckIcon, Package as PackageIcon, Fuel as FuelIcon, ChevronLeft, HelpCircle as HelpCircleIcon, type LucideIcon } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,27 +44,33 @@ export default function SelectGasTypePage() {
         <AppHeader className="flex-grow" />
       </div>
 
-      <div className="flex-grow flex flex-col items-center justify-center">
+      <div className="flex-grow flex flex-col items-center">
         <Card className="w-full max-w-md shadow-lg rounded-lg border-none mb-8 bg-transparent">
           <CardHeader className="items-center text-center">
-            <FuelIcon className="h-12 w-12 text-primary mb-2" />
-            <CardTitle className="text-2xl font-heading-style">Add Gas</CardTitle>
-            <CardDescription>Where are you adding gas?</CardDescription>
+            <FuelIcon className="h-12 w-12 text-primary mb-4" />
+            <CardTitle className="text-3xl font-heading-style mb-1">Add Gas</CardTitle>
+            <CardDescription className="text-lg text-muted-foreground">Where are you adding gas?</CardDescription>
           </CardHeader>
         </Card>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl">
+        <div className="grid grid-cols-1 gap-6 w-full max-w-md">
           <OptionCard
             title="To Truck"
             icon={TruckIcon}
             href="#" // Placeholder for now, e.g., /vehicles/add-gas/truck
-            description="Add gas to the primary vehicle."
+            description="Log fuel added to the primary vehicle."
           />
           <OptionCard
             title="To Trailer Equipment"
-            icon={PackageIcon} 
+            icon={PackageIcon}
             href="#" // Placeholder for now, e.g., /vehicles/add-gas/trailer-equipment
-            description="Add gas to trailer-mounted equipment (e.g., reefer)."
+            description="Log fuel for trailer-mounted equipment (e.g., chipper, reefer)."
+          />
+          <OptionCard
+            title="Other"
+            icon={HelpCircleIcon}
+            href="/vehicles/add-gas/other-reason"
+            description="Specify other equipment or reason for adding gas."
           />
         </div>
       </div>
