@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChevronLeft, Gauge, User, CalendarDays, Clock } from 'lucide-react';
 import type { UserData } from '@/types';
-import { Input } from '@/components/ui/input'; // For future use
-import { Label } from '@/components/ui/label';   // For future use
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface MileageInfo {
   truckNumber: string;
@@ -58,6 +58,11 @@ export default function AddMilesPage() {
       <p className="text-foreground text-right">{value}</p>
     </div>
   );
+
+  const handleSubmitNewMileage = () => {
+    // For now, just navigate back. Actual submission logic would go here.
+    router.back();
+  };
 
   if (isLoading) {
     return (
@@ -108,7 +113,7 @@ export default function AddMilesPage() {
                 <Label htmlFor="newMileage" className="text-muted-foreground">New Mileage Reading</Label>
                 <Input id="newMileage" type="number" placeholder="e.g., 12500" className="text-base" />
               </div>
-              <Button className="w-full" size="lg" onClick={() => alert('Submit New Mileage (Not Implemented)')}>
+              <Button className="w-full" size="lg" onClick={handleSubmitNewMileage}>
                 Submit New Mileage
               </Button>
             </div>
