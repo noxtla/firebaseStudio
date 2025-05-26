@@ -122,7 +122,7 @@ export default function MultiStepForm() {
       }
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/photo';
 
       try {
         const response = await fetch(webhookUrl, {
@@ -160,13 +160,23 @@ export default function MultiStepForm() {
               toast({ variant: "destructive", title: "Error", description: `Received an invalid response from the server. Response: ${responseText}. Check the raw response display.` });
             }
           } else { // Response OK, but empty responseText
-            toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server." });
+            // If response is OK but empty, and status is 200, proceed.
+            // This path is now less likely if we expect user data.
+            // But if a 200 can mean "valid, no extra data", we might reconsider.
+            // For now, requiring data for 200.
+            if (responseStatus === 200) {
+                 toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server for a 200 status." });
+            } else {
+                 // If other OK status (e.g. 204 No Content), this might be fine.
+                 // But our main flow to /main-menu depends on userData being set.
+                 toast({ variant: "destructive", title: "Empty Response", description: `Server responded with status ${responseStatus} but no content.` });
+            }
           }
         } else if (responseStatus === 404) {
           setIsNotFoundAlertOpen(true);
         } else if (responseStatus === 503) {
           if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('userData'); // Clear any potentially stale user data
+            sessionStorage.removeItem('userData'); 
             sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
           }
           toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to the main menu, some features may be limited."});
@@ -211,7 +221,7 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
 
   const showAppHeader = currentStep !== 0;
-  const showStepper = false; // Always false as per previous request
+  const showStepper = false; // Never show stepper here
   const showStepTitle = currentStep === 1;
   const showNavButtons = currentStep === 1;
 
@@ -233,7 +243,7 @@ export default function MultiStepForm() {
   };
 
   return (
-    <div className={cn("flex flex-col min-h-screen", currentStep > 0 && "bg-background")}>
+    <div className={cn("flex flex-col min-h-screen bg-background")}>
       <Toaster />
       <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
         <AlertDialogContent>
@@ -262,7 +272,7 @@ export default function MultiStepForm() {
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
             "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
-            "text-2xl sm:text-3xl font-heading-style"
+            "text-2xl sm:text-3xl font-heading-style" 
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
@@ -304,4 +314,3 @@ export default function MultiStepForm() {
     </div>
   );
 }
-
