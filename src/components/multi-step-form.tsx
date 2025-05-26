@@ -48,6 +48,17 @@ export default function MultiStepForm() {
   const { toast } = useToast();
   const router = useRouter();
 
+  useEffect(() => {
+    // Clear sensitive data from sessionStorage when the form initializes or currentStep resets to 0
+    if (currentStep === 0) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('loginWebhookStatus');
+        sessionStorage.removeItem('rawApiResponse');
+      }
+    }
+  }, [currentStep]);
+
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "phoneNumber") {
@@ -81,13 +92,21 @@ export default function MultiStepForm() {
 
   const canProceed = getCanProceed();
 
-  const nextStep = async () => {
+  const restartForm = () => {
+    setCurrentStep(0);
+    setFormData(initialFormData);
+    setUserData(null);
+    setIsLoadingPhoneNumber(false);
     setRawApiResponse(null);
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('rawApiResponse');
       sessionStorage.removeItem('userData');
       sessionStorage.removeItem('loginWebhookStatus');
+      sessionStorage.removeItem('rawApiResponse');
     }
+  };
+
+  const nextStep = async () => {
+    setRawApiResponse(null); // Clear previous API response display
 
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -97,9 +116,13 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
       setUserData(null); // Clear previous user data
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('userData');
+        sessionStorage.removeItem('loginWebhookStatus');
+      }
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login'; // Changed back to test
 
       try {
         const response = await fetch(webhookUrl, {
@@ -112,6 +135,7 @@ export default function MultiStepForm() {
         const responseText = await response.text();
         setRawApiResponse(responseText);
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
+
 
         if (response.ok) {
           if (responseText) {
@@ -126,16 +150,16 @@ export default function MultiStepForm() {
                   sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
                   sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
                 }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting to menu..." });
+                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
                 router.push('/main-menu');
-              } else {
+              } else { // Response OK, but not "NO EXISTE" and not valid user data array
                 toast({ variant: "destructive", title: "User Not Found", description: "User data not found or invalid data received from server." });
               }
             } catch (jsonError) {
               console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
               toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server. Check the raw response display." });
             }
-          } else {
+          } else { // Response OK, but empty responseText
             toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server." });
           }
         } else if (responseStatus === 404) {
@@ -209,7 +233,7 @@ export default function MultiStepForm() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className={cn("flex flex-col min-h-screen", currentStep > 0 && "bg-background")}>
       <Toaster />
       <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
         <AlertDialogContent>
@@ -229,15 +253,16 @@ export default function MultiStepForm() {
         {showAppHeader && <AppHeader className="my-8" />}
       </div>
 
-      <div className="w-full max-w-md mx-auto px-4">
+       <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 || currentStep >= MAX_STEPS })}>
         {/* Toasts are rendered here via Toaster for steps other than 0 */}
       </div>
+
 
       <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 })}>
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
             "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
-            "text-2xl sm:text-3xl font-heading-style"
+            "text-2xl sm:text-3xl font-heading-style" // Poppins font
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
