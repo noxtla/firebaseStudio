@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, type LucideIcon } from 'lucide-react'; // Changed Scissors to Caravan
+import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, type LucideIcon } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,9 +39,9 @@ export default function VehicleActionsPage() {
 
   const menuItems: VehicleMenuItemProps[] = [
     { title: 'Add Miles', icon: Gauge, href: '/vehicles/add-miles', description: "Log vehicle mileage" },
-    { title: 'Add Trailer', icon: Caravan, href: '/vehicles/add-trailer', description: "Record trailer attachment" }, // Changed Scissors to Caravan
+    { title: 'Add Trailer', icon: Caravan, href: '/vehicles/add-trailer', description: "Record trailer attachment" },
     { title: 'Add Gas', icon: Fuel, href: '/vehicles/add-gas/select-type', description: "Input fuel consumption" },
-    { title: 'Add Defects', icon: TriangleAlert, href: '#', description: "Report vehicle issues" },
+    { title: 'Add Defects', icon: TriangleAlert, href: '/vehicles/add-defects', description: "Report vehicle issues" },
     { title: 'Vehicle Information', icon: Info, href: '/vehicles/info', description: "View vehicle details" },
   ];
 
@@ -51,7 +51,7 @@ export default function VehicleActionsPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        <AppHeader className="flex-grow text-center" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 flex-grow">
