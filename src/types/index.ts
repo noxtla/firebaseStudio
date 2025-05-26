@@ -11,8 +11,10 @@ export interface UserData {
   Name: string;
   Puesto: string;
   phoneNumber: string;
-  NSS: number; // Assuming NSS is the last 4 digits as a number
+  NSS: number | string; // NSS can be string or number
   dataBirth: string; // Expected format "YYYY-MM-DD"
+  flagTime?: string; // Optional
+  Vehicles?: string[]; // Optional array of vehicle numbers
 }
 
 export interface CapturedLocation {

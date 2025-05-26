@@ -11,64 +11,55 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { ChevronLeft, Truck, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
-
-interface Vehicle {
-  VehicleNumber: string;
-}
+import type { UserData } from '@/types';
 
 export default function EnterTruckNumberPage() {
   const [truckNumber, setTruckNumber] = useState('');
   const [validVehicleNumbers, setValidVehicleNumbers] = useState<string[]>([]);
-  const [isLoadingNumbers, setIsLoadingNumbers] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [truckListApiResponse, setTruckListApiResponse] = useState<string | null>(null); // For debugging
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchValidNumbers = async () => {
-      setIsLoadingNumbers(true);
-      setFetchError(null);
-      setTruckListApiResponse(null); 
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles';
-      try {
-        const response = await fetch(webhookUrl); // This is a GET request by default
-        const responseText = await response.text();
-        setTruckListApiResponse(responseText); 
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText || "No response body"}. URL: ${webhookUrl}`);
+    setIsLoading(true);
+    setErrorMessage(null);
+    if (typeof window !== 'undefined') {
+      const storedUserData = sessionStorage.getItem('userData');
+      if (storedUserData) {
+        try {
+          const parsedUserData: UserData = JSON.parse(storedUserData);
+          if (parsedUserData.Vehicles && parsedUserData.Vehicles.length > 0) {
+            setValidVehicleNumbers(parsedUserData.Vehicles.map(v => String(v).replace(/\D/g, '')));
+          } else {
+            setErrorMessage("No vehicles are assigned to this user.");
+            toast({
+              title: "No Vehicles Found",
+              description: "No vehicles are assigned to your profile. Please contact support if this is an error.",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Failed to parse user data from session storage", error);
+          setErrorMessage("Failed to load user data. Please try logging in again.");
+          toast({
+            title: "Data Error",
+            description: "Could not load user data. Please try logging in again.",
+            variant: "destructive",
+          });
         }
-        
-        if (!responseText.trim()) {
-          throw new Error("Empty response received from server when fetching vehicle numbers.");
-        }
-        
-        const data: Vehicle[] = JSON.parse(responseText);
-        if (Array.isArray(data)) {
-          setValidVehicleNumbers(data.map(v => v.VehicleNumber.replace(/\D/g, ''))); 
-        } else {
-          throw new Error("Invalid data format for vehicle numbers. Expected an array.");
-        }
-      } catch (error) {
-        console.error("Error fetching valid truck numbers:", error);
-        const errorMessage = error instanceof Error ? error.message : "Could not load vehicle list.";
-        setFetchError(errorMessage);
-        // For debugging, show the fetch error in the truckListApiResponse display area
-        setTruckListApiResponse(`Failed to fetch vehicle list: ${errorMessage}. URL: ${webhookUrl}. Check CORS, network, and server status.`);
-        
+      } else {
+        setErrorMessage("User data not found. Please log in again.");
         toast({
-          title: "Error Loading Vehicle List",
-          description: `Could not load vehicle list. ${errorMessage}. Please check your connection and try again. Ensure the server at ${webhookUrl} is accessible and CORS is configured if necessary.`,
+          title: "Login Required",
+          description: "User information is missing. Please log in again.",
           variant: "destructive",
         });
-      } finally {
-        setIsLoadingNumbers(false);
+        router.replace('/'); // Redirect to login if no user data
       }
-    };
-
-    fetchValidNumbers();
-  }, [toast]);
+    }
+    setIsLoading(false);
+  }, [router, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value;
@@ -89,12 +80,13 @@ export default function EnterTruckNumberPage() {
   };
 
   const isTruckNumberValidForSubmission = useMemo(() => {
+    if (isLoading || errorMessage) return false;
     if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
       return false;
     }
     const numericTruckNumber = truckNumber.replace(/-/g, '');
     return validVehicleNumbers.includes(numericTruckNumber);
-  }, [truckNumber, validVehicleNumbers]);
+  }, [truckNumber, validVehicleNumbers, isLoading, errorMessage]);
 
   const handleSubmit = () => {
     if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
@@ -110,26 +102,17 @@ export default function EnterTruckNumberPage() {
     if (!validVehicleNumbers.includes(numericTruckNumber)) {
       toast({
         title: "Invalid Truck Number",
-        description: "The entered truck number is not recognized. Please check and try again.",
+        description: "The entered truck number is not recognized or not assigned to you. Please check and try again.",
         variant: "destructive",
       });
       return;
-    }
-
-    if (fetchError && !isLoadingNumbers) { 
-         toast({
-            title: "Error",
-            description: `Cannot proceed: ${fetchError}`,
-            variant: "destructive",
-        });
-        return;
     }
     
     sessionStorage.setItem('currentTruckNumber', truckNumber);
     router.push('/vehicles/actions');
   };
 
-  const isButtonDisabled = isLoadingNumbers || !isTruckNumberValidForSubmission || (!!fetchError && !isLoadingNumbers);
+  const isButtonDisabled = isLoading || !!errorMessage || !isTruckNumberValidForSubmission;
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -148,15 +131,15 @@ export default function EnterTruckNumberPage() {
             <CardTitle className="text-2xl text-center font-heading-style">Enter Truck Number</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-2">
-            {isLoadingNumbers && (
+            {isLoading && (
               <div className="flex items-center justify-center text-muted-foreground">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Loading valid truck numbers...
+                Loading vehicle information...
               </div>
             )}
-            {fetchError && !isLoadingNumbers && (
+            {errorMessage && !isLoading && (
               <p className="text-sm text-center text-destructive">
-                Error: {fetchError}. Please try again later.
+                Error: {errorMessage}
               </p>
             )}
             <div className="space-y-2">
@@ -169,18 +152,11 @@ export default function EnterTruckNumberPage() {
                 className="text-base text-center"
                 aria-label="Truck Number"
                 inputMode="numeric" 
+                pattern="[0-9]*"
                 maxLength={8} 
-                disabled={isLoadingNumbers || (!!fetchError && !isLoadingNumbers)}
+                disabled={isLoading || !!errorMessage}
               />
             </div>
-            {truckListApiResponse && (
-              <div className="mt-4 p-3 bg-muted rounded-md w-full overflow-x-auto">
-                <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Truck List API Response (Debug):</h4>
-                <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
-                  {truckListApiResponse}
-                </pre>
-              </div>
-            )}
           </CardContent>
           <CardFooter>
             <Button 
