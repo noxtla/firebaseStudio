@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea"; // Import Textarea
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
 
@@ -23,6 +24,7 @@ export default function OtherGasReasonPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [reason, setReason] = useState<string>("");
+  const [customExplanation, setCustomExplanation] = useState<string>(""); // State for Textarea
 
   const handleSubmit = () => {
     if (!reason) {
@@ -33,12 +35,20 @@ export default function OtherGasReasonPage() {
       });
       return;
     }
-    // For now, just log and navigate back.
-    // In a real app, you'd submit this data.
+    if (reason === "Other Equipment (Specify)" && !customExplanation.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Explanation Required",
+        description: "Please provide details for 'Other Equipment'.",
+      });
+      return;
+    }
+
     console.log("Selected 'Other' Gas Reason:", reason);
+    console.log("Custom Explanation:", customExplanation);
     toast({
       title: "Reason Logged (Placeholder)",
-      description: `Selected reason: ${reason}. This would normally be submitted.`,
+      description: `Selected reason: ${reason}. Explanation: ${customExplanation || 'N/A'}. This would normally be submitted.`,
     });
     router.back(); // Or navigate to a confirmation/next step
   };
@@ -60,7 +70,7 @@ export default function OtherGasReasonPage() {
             <CardTitle className="text-2xl font-heading-style">
               Specify Other Gas Reason
             </CardTitle>
-            <CardDescription>Please select why you are adding gas to 'Other'.</CardDescription>
+            <CardDescription>Please select why you are adding gas to 'Other' and provide details if necessary.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-2">
@@ -78,6 +88,19 @@ export default function OtherGasReasonPage() {
                   <SelectItem value="Other Equipment (Specify)">Other Equipment (Specify details if not listed)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="customExplanation" className="text-muted-foreground">
+                Additional Details / Explanation
+              </Label>
+              <Textarea
+                id="customExplanation"
+                placeholder="Provide specific details or explanation here..."
+                value={customExplanation}
+                onChange={(e) => setCustomExplanation(e.target.value)}
+                className="text-base min-h-[100px]"
+              />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end pt-6">
