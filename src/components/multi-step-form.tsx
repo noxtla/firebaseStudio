@@ -122,7 +122,7 @@ export default function MultiStepForm() {
       }
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/login'; // Changed back to test
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
 
       try {
         const response = await fetch(webhookUrl, {
@@ -157,7 +157,7 @@ export default function MultiStepForm() {
               }
             } catch (jsonError) {
               console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
-              toast({ variant: "destructive", title: "Error", description: "Received an invalid response from the server. Check the raw response display." });
+              toast({ variant: "destructive", title: "Error", description: `Received an invalid response from the server. Response: ${responseText}. Check the raw response display.` });
             }
           } else { // Response OK, but empty responseText
             toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server." });
@@ -262,7 +262,7 @@ export default function MultiStepForm() {
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
             "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
-            "text-2xl sm:text-3xl font-heading-style" // Poppins font
+            "text-2xl sm:text-3xl font-heading-style"
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
@@ -304,3 +304,4 @@ export default function MultiStepForm() {
     </div>
   );
 }
+
