@@ -54,9 +54,11 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
+  // Capitalize first letter of each word, rest lowercase, join with hyphens
   return nameStr
+    .toLowerCase()
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join('-');
 };
 
@@ -76,7 +78,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
   const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
-  // alertMessage state removed as specific dialogs handle messages
 
   useEffect(() => {
     setIsMounted(true);
@@ -86,7 +87,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const handleSubmit = async () => {
     setSubmissionState('submitting');
     setSubmissionResponse(null);
-    // alertMessage removed
     setWorkAreaAlertOpen(false);
     setFaceMatchAlertOpen(false);
 
@@ -123,7 +123,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       }
     };
 
-    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/photo';
+    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login'; // Updated URL
 
     try {
       const response = await fetch(webhookUrl, {
@@ -158,7 +158,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             description: `Submission was successful (HTTP ${response.status}), but the response format was invalid: ${responseText}. Please contact support.`,
           });
         }
-      } else { // response not ok (4xx, 5xx)
+      } else {
         setSubmissionState('reviewing');
         let errorHandledByDialog = false;
         try {
@@ -171,7 +171,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             errorHandledByDialog = true;
           }
         } catch (e) {
-          // JSON parsing of error failed, will be handled by generic toast + redirect below
+          // JSON parsing of error failed
         }
 
         if (!errorHandledByDialog) {
@@ -180,20 +180,20 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             title: "Submission Error",
             description: `Failed to submit data. Status: ${response.status}. Server response: ${responseText}`,
           });
-          onRestart(); // Navigate to main menu
+          onRestart(); 
         }
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred. Please check your internet connection and try again.";
+      const errorMessage = error instanceof Error ? error.message : "An unknown network error occurred.";
       setSubmissionResponse(errorMessage);
       setSubmissionState('reviewing');
       toast({
         variant: "destructive",
         title: "Submission Network Error",
-        description: `Could not submit your information. Error: ${errorMessage}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`,
+        description: `Could not submit your information to ${webhookUrl}. Error: ${errorMessage}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`,
       });
-      onRestart(); // Navigate to main menu
+      onRestart();
     }
   };
 
@@ -315,7 +315,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         )}
       </Card>
 
-      {/* Work Area Alert Dialog */}
       <AlertDialog open={isWorkAreaAlertOpen} onOpenChange={setWorkAreaAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
@@ -331,7 +330,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Face Match Alert Dialog */}
       <AlertDialog open={isFaceMatchAlertOpen} onOpenChange={setFaceMatchAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
@@ -351,5 +349,4 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-
     
