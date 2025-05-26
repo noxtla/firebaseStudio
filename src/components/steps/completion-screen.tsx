@@ -76,7 +76,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
   const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
-  const [alertMessage, setAlertMessage] = useState(''); // Generic message for other potential alerts
+  // alertMessage state removed as specific dialogs handle messages
 
   useEffect(() => {
     setIsMounted(true);
@@ -86,7 +86,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const handleSubmit = async () => {
     setSubmissionState('submitting');
     setSubmissionResponse(null);
-    setAlertMessage('');
+    // alertMessage removed
     setWorkAreaAlertOpen(false);
     setFaceMatchAlertOpen(false);
 
@@ -134,7 +134,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         body: JSON.stringify(payload),
       });
 
-      const responseText = await response.text(); 
+      const responseText = await response.text();
       setSubmissionResponse(responseText);
 
       if (response.ok) {
@@ -142,7 +142,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           const parsedData = JSON.parse(responseText);
           if (parsedData.Success === "Attendance recorded") {
             setSubmissionState('submitted');
-            // Custom success message is handled in JSX
           } else {
             setSubmissionState('reviewing');
             toast({
@@ -161,25 +160,27 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         }
       } else { // response not ok (4xx, 5xx)
         setSubmissionState('reviewing');
+        let errorHandledByDialog = false;
         try {
           const parsedErrorData = JSON.parse(responseText);
           if (parsedErrorData.Failed === "Outside designated work area") {
             setWorkAreaAlertOpen(true);
+            errorHandledByDialog = true;
           } else if (parsedErrorData.Failed === "Face does not match profile") {
             setFaceMatchAlertOpen(true);
-          } else {
-            toast({
-              variant: "destructive",
-              title: "Submission Error",
-              description: `Failed to submit data. Status: ${response.status}. ${parsedErrorData.Failed || responseText}`,
-            });
+            errorHandledByDialog = true;
           }
         } catch (e) {
-           toast({
+          // JSON parsing of error failed, will be handled by generic toast + redirect below
+        }
+
+        if (!errorHandledByDialog) {
+          toast({
             variant: "destructive",
             title: "Submission Error",
             description: `Failed to submit data. Status: ${response.status}. Server response: ${responseText}`,
           });
+          onRestart(); // Navigate to main menu
         }
       }
     } catch (error) {
@@ -192,6 +193,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         title: "Submission Network Error",
         description: `Could not submit your information. Error: ${errorMessage}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`,
       });
+      onRestart(); // Navigate to main menu
     }
   };
 
@@ -324,7 +326,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             You appear to be outside the designated work area. Please move to an authorized location and try again.
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setWorkAreaAlertOpen(false)}>OK</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setWorkAreaAlertOpen(false); onRestart(); }}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -340,7 +342,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             Face does not match profile. Attempting to impersonate another individual is a serious offense and will result in immediate termination and potential legal action.
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setFaceMatchAlertOpen(false)}>OK</AlertDialogAction>
+            <AlertDialogAction onClick={() => { setFaceMatchAlertOpen(false); onRestart(); }}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -350,3 +352,4 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
 export default CompletionScreen;
 
+    
