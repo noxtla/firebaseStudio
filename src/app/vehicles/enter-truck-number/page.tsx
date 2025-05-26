@@ -30,13 +30,14 @@ export default function EnterTruckNumberPage() {
       setIsLoadingNumbers(true);
       setFetchError(null);
       setTruckListApiResponse(null); 
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles';
       try {
-        const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles');
+        const response = await fetch(webhookUrl);
         const responseText = await response.text();
         setTruckListApiResponse(responseText); 
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText || "No response body"}`);
+          throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText || "No response body"}. URL: ${webhookUrl}`);
         }
         
         if (!responseText.trim()) { // Explicitly check for empty or whitespace-only response
@@ -54,12 +55,15 @@ export default function EnterTruckNumberPage() {
         const errorMessage = error instanceof Error ? error.message : "Could not load vehicle list.";
         setFetchError(errorMessage);
         
-        if (!truckListApiResponse && error instanceof Error) setTruckListApiResponse(errorMessage);
-        else if (!truckListApiResponse) setTruckListApiResponse("Error processing vehicle list response.");
+        if (!truckListApiResponse && error instanceof Error) {
+          setTruckListApiResponse(`Error: ${errorMessage}. Ensure the server at ${webhookUrl} is running, accessible, and has CORS configured correctly if this is a cross-origin request. Check your browser's developer console for more details.`);
+        } else if (!truckListApiResponse) {
+          setTruckListApiResponse("Error processing vehicle list response.");
+        }
         
         toast({
-          title: "Error",
-          description: `Could not load vehicle list: ${errorMessage}`,
+          title: "Error Loading Vehicle List",
+          description: `Could not load vehicle list. ${errorMessage}. Please check your connection and try again. Ensure the server at ${webhookUrl} is accessible and CORS is configured if necessary.`,
           variant: "destructive",
         });
       } finally {
