@@ -14,7 +14,9 @@ import {
   AlertTriangle as AlertTriangleIcon,
   type LucideIcon,
   Loader2,
-  AlertTriangle // Keep for potential future use, or remove if truly unneeded
+  AlertTriangle, // Keep for potential future use, or remove if truly unneeded
+  MapPin, // For Work Area Alert
+  ShieldAlert as ShieldAlertIcon, // For Face Match Alert
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -105,24 +107,24 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 export default function MainMenuPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); // Default to true now
-  
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); 
+  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
-  // isAttendanceLoading state was removed as Attendance button is now a direct link
 
-  // useEffect logic that sets isAttendanceFeatureEnabled based on loginWebhookStatus is removed
+  const handleAttendanceClick = async () => {
+    setIsAttendanceLoading(true);
+    // Webhook call removed as per previous instructions
+    router.push('/attendance');
+    setIsAttendanceLoading(false); // Reset loading state after navigation attempt
+  };
 
   const handleVehiclesClick = async () => {
     setIsVehiclesLoading(true);
     setVehiclesWebhookResponse(null); 
     const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles';
     try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'vehicles_menu_clicked' }),
-      });
+      const response = await fetch(webhookUrl); // Changed to GET, removed body and headers
       
       const responseText = await response.text();
       setVehiclesWebhookResponse(responseText);
@@ -144,7 +146,7 @@ export default function MainMenuPage() {
         errorMessage = `Could not connect to vehicles service: ${error.message}. Check your internet connection, CORS configuration for ${webhookUrl}, or try again.`;
       }
       console.error('Error calling vehicles webhook:', error);
-      setVehiclesWebhookResponse(errorMessage); // Store the error message for debug display
+      setVehiclesWebhookResponse(errorMessage); 
       toast({
         variant: "destructive",
         title: "Network Error",
@@ -157,7 +159,7 @@ export default function MainMenuPage() {
   };
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
+    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled },
     { title: 'Vehicles', icon: Truck, onClick: handleVehiclesClick, isLoading: isVehiclesLoading, isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
