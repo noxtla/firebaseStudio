@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gauge, Truck, Fuel, TriangleAlert, Info, ChevronLeft, type LucideIcon } from 'lucide-react';
+import { Gauge, Shredder, Fuel, TriangleAlert, Info, ChevronLeft, type LucideIcon } from 'lucide-react'; // Changed Truck to Shredder
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ export default function VehicleActionsPage() {
 
   const menuItems: VehicleMenuItemProps[] = [
     { title: 'Add Miles', icon: Gauge, href: '/vehicles/add-miles', description: "Log vehicle mileage" },
-    { title: 'Add Trailer', icon: Truck, href: '/vehicles/add-trailer', description: "Record trailer attachment" },
+    { title: 'Add Trailer', icon: Shredder, href: '/vehicles/add-trailer', description: "Record trailer attachment" }, // Changed Truck to Shredder
     { title: 'Add Gas', icon: Fuel, href: '/vehicles/add-gas/select-type', description: "Input fuel consumption" },
     { title: 'Add Defects', icon: TriangleAlert, href: '#', description: "Report vehicle issues" },
     { title: 'Vehicle Information', icon: Info, href: '/vehicles/info', description: "View vehicle details" },
