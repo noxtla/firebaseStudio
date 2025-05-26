@@ -40,7 +40,7 @@ interface MenuItemProps {
   icon: LucideIcon;
   href?: string;
   isPrimary?: boolean;
-  onClick?: () => Promise<void> | void; // Allow non-promise onClick
+  onClick?: () => Promise<void> | void;
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -108,7 +108,9 @@ export default function MainMenuPage() {
   const router = useRouter();
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
   const [attendanceDisabledMessage, setAttendanceDisabledMessage] = useState<string | null>(null);
-
+  // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
+  // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
+  
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
@@ -117,6 +119,9 @@ export default function MainMenuPage() {
       if (submittedAttendance === 'true') {
         setIsAttendanceFeatureEnabled(false);
         setAttendanceDisabledMessage("Attendance has already been recorded for this session.");
+      } else if (loginStatus === '503') {
+        setIsAttendanceFeatureEnabled(false);
+        setAttendanceDisabledMessage("Attendance features might be limited due to a temporary service issue. Please try again later.");
       } else if (loginStatus !== '200') { 
         setIsAttendanceFeatureEnabled(false);
         setAttendanceDisabledMessage("Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.");
@@ -127,9 +132,44 @@ export default function MainMenuPage() {
     }
   }, []);
 
+  // const handleVehiclesClick = async () => {
+  //   setIsVehiclesLoading(true);
+  //   setVehiclesWebhookResponse(null);
+  //   const { toast } = await import("@/hooks/use-toast"); 
+  //   try {
+  //     const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles', {
+  //       method: 'GET', 
+  //       // headers: { 'Content-Type': 'application/json' }, // Not needed for GET without body
+  //       // body: JSON.stringify({ action: 'vehicles_menu_clicked' }), // Not for GET
+  //     });
+  //     const responseText = await response.text();
+  //     setVehiclesWebhookResponse(responseText); 
+  //     if (!response.ok) {
+  //       console.error('Vehicles webhook call failed:', response.status, responseText);
+  //       toast({
+  //         variant: "destructive",
+  //         title: "Vehicles Access Issue",
+  //         description: `Could not connect to vehicles service. Status: ${response.status}. Please try again later.`,
+  //       });
+  //     }
+  //   } catch (error: any) {
+  //     console.error('Error calling vehicles webhook:', error);
+  //     setVehiclesWebhookResponse(error.message || "Fetch failed");
+  //     toast({
+  //       variant: "destructive",
+  //       title: "Network Error",
+  //       description: "Could not connect to the vehicles service. Please check your connection and try again.",
+  //     });
+  //   } finally {
+  //     setIsVehiclesLoading(false);
+  //     router.push('/vehicles/enter-truck-number');
+  //   }
+  // };
+
+
   const primaryMenuItems: MenuItemProps[] = [
     { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
-    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
+    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false /* onClick: handleVehiclesClick, isLoading: isVehiclesLoading */ },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -161,6 +201,15 @@ export default function MainMenuPage() {
           ))}
         </div>
       </div>
+      
+      {/* {vehiclesWebhookResponse && (
+        <div className="mt-4 p-3 bg-muted rounded-md w-full max-w-xl mx-auto">
+          <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Vehicles Webhook Response (Debug):</h4>
+          <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
+            {vehiclesWebhookResponse}
+          </pre>
+        </div>
+      )} */}
 
       <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
         {secondaryMenuItems.map((item) => (
