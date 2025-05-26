@@ -14,9 +14,9 @@ import {
   AlertTriangle as AlertTriangleIcon,
   type LucideIcon,
   Loader2,
-  AlertTriangle, // Keep for potential future use, or remove if truly unneeded
-  MapPin, // For Work Area Alert
-  ShieldAlert as ShieldAlertIcon, // For Face Match Alert
+  AlertTriangle, 
+  MapPin, 
+  ShieldAlert as ShieldAlertIcon, 
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // Keep for potential future use
+import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
 
@@ -108,59 +108,27 @@ export default function MainMenuPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); 
-  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
-  const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
-  const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
+  // const [isAttendanceLoading, setIsAttendanceLoading] = useState(false); // Removed as per previous instruction to simplify Attendance button
+
+  // Removed vehicles webhook states
+  // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
+  // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
+
 
   const handleAttendanceClick = async () => {
-    setIsAttendanceLoading(true);
-    // Webhook call removed as per previous instructions
+    // setIsAttendanceLoading(true); // Removed as per previous instruction
+    // Webhook call was removed from here in a previous step.
+    // If the button is not disabled, it will navigate.
     router.push('/attendance');
-    setIsAttendanceLoading(false); // Reset loading state after navigation attempt
+    // setIsAttendanceLoading(false); // Removed
   };
 
-  const handleVehiclesClick = async () => {
-    setIsVehiclesLoading(true);
-    setVehiclesWebhookResponse(null); 
-    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles';
-    try {
-      const response = await fetch(webhookUrl); // Changed to GET, removed body and headers
-      
-      const responseText = await response.text();
-      setVehiclesWebhookResponse(responseText);
-
-      if (!response.ok) {
-        console.error('Vehicles webhook call failed:', response.status, responseText);
-        toast({
-          variant: "destructive",
-          title: "Vehicles Action Error",
-          description: `Could not contact vehicles service. Status: ${response.status}. ${responseText ? `Details: ${responseText}`: ''}`,
-        });
-      } else {
-        console.log('Vehicles webhook call successful');
-        // Optionally show a success toast or handle success response data
-      }
-    } catch (error) {
-      let errorMessage = `Could not connect to the vehicles service. Please check your internet connection or try again. If the issue persists, the service at ${webhookUrl} may be temporarily unavailable or misconfigured (e.g., CORS).`;
-      if (error instanceof Error && error.message) {
-        errorMessage = `Could not connect to vehicles service: ${error.message}. Check your internet connection, CORS configuration for ${webhookUrl}, or try again.`;
-      }
-      console.error('Error calling vehicles webhook:', error);
-      setVehiclesWebhookResponse(errorMessage); 
-      toast({
-        variant: "destructive",
-        title: "Network Error",
-        description: errorMessage,
-      });
-    } finally {
-      setIsVehiclesLoading(false);
-      router.push('/vehicles/enter-truck-number');
-    }
-  };
+  // Removed handleVehiclesClick as it's no longer calling a webhook
+  // The "Vehicles" MenuItem will now use href for direct navigation
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled },
-    { title: 'Vehicles', icon: Truck, onClick: handleVehiclesClick, isLoading: isVehiclesLoading, isDisabled: false },
+    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isDisabled: !isAttendanceFeatureEnabled }, // isAttendanceLoading removed
+    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -170,12 +138,29 @@ export default function MainMenuPage() {
     { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: false },
   ];
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
+      if (loginStatus !== '200') { // Assuming 200 is the success status that enables attendance
+        setIsAttendanceFeatureEnabled(false);
+      } else {
+        setIsAttendanceFeatureEnabled(true);
+      }
+    }
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
       <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
-      {/* Removed the Alert for disabled attendance message */}
+      {!isAttendanceFeatureEnabled && (
+         <ShadAlert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5 text-primary">
+          <AlertTriangle className="h-4 w-4 !text-primary" />
+          <AlertTitleUi>Attendance Access Notice</AlertTitleUi>
+          <AlertDescUi>Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.</AlertDescUi>
+        </ShadAlert>
+      )}
 
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
@@ -187,14 +172,7 @@ export default function MainMenuPage() {
         </div>
       </div>
 
-      {vehiclesWebhookResponse && (
-        <div className="mt-4 p-3 bg-muted rounded-md w-full max-w-xl mx-auto overflow-x-auto">
-          <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Vehicles Webhook Response (Debug):</h4>
-          <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
-            {vehiclesWebhookResponse}
-          </pre>
-        </div>
-      )}
+      {/* Removed vehiclesWebhookResponse display section */}
 
       <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
         {secondaryMenuItems.map((item) => (
