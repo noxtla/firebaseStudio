@@ -53,9 +53,10 @@ export default function VehicleActionsPage() {
     <div className="flex flex-col min-h-screen bg-background p-4">
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
-          <ChevronLeft className="h-6 w-6" />
+          <ChevronLeft className="h-8 w-8" /> {/* Increased icon size */}
         </Button>
-        <AppHeader className="flex-grow !text-left ml-0 pl-0" />
+        {/* Removed !text-left ml-0 pl-0 to allow AppHeader's internal text-center to work */}
+        <AppHeader className="flex-grow" /> 
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 flex-grow">
@@ -66,4 +67,3 @@ export default function VehicleActionsPage() {
     </div>
   );
 }
-
