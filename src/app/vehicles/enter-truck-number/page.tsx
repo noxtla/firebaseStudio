@@ -32,7 +32,7 @@ export default function EnterTruckNumberPage() {
       setTruckListApiResponse(null); 
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles';
       try {
-        const response = await fetch(webhookUrl);
+        const response = await fetch(webhookUrl); // This is a GET request by default
         const responseText = await response.text();
         setTruckListApiResponse(responseText); 
 
@@ -40,7 +40,7 @@ export default function EnterTruckNumberPage() {
           throw new Error(`Failed to fetch vehicle numbers: ${response.status}. Response: ${responseText || "No response body"}. URL: ${webhookUrl}`);
         }
         
-        if (!responseText.trim()) { // Explicitly check for empty or whitespace-only response
+        if (!responseText.trim()) {
           throw new Error("Empty response received from server when fetching vehicle numbers.");
         }
         
@@ -54,12 +54,8 @@ export default function EnterTruckNumberPage() {
         console.error("Error fetching valid truck numbers:", error);
         const errorMessage = error instanceof Error ? error.message : "Could not load vehicle list.";
         setFetchError(errorMessage);
-        
-        if (!truckListApiResponse && error instanceof Error) {
-          setTruckListApiResponse(`Error: ${errorMessage}. Ensure the server at ${webhookUrl} is running, accessible, and has CORS configured correctly if this is a cross-origin request. Check your browser's developer console for more details.`);
-        } else if (!truckListApiResponse) {
-          setTruckListApiResponse("Error processing vehicle list response.");
-        }
+        // For debugging, show the fetch error in the truckListApiResponse display area
+        setTruckListApiResponse(`Failed to fetch vehicle list: ${errorMessage}. URL: ${webhookUrl}. Check CORS, network, and server status.`);
         
         toast({
           title: "Error Loading Vehicle List",
