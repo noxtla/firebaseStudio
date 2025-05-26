@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation'; 
-import { Gauge, Truck, Fuel, TriangleAlert, ChevronLeft, type LucideIcon } from 'lucide-react'; 
+import { Gauge, Truck, Fuel, TriangleAlert, Info, ChevronLeft, type LucideIcon } from 'lucide-react'; 
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card'; 
 import { Button } from '@/components/ui/button';
@@ -34,7 +34,7 @@ const VehicleMenuItem: FC<VehicleMenuItemProps> = ({ title, icon: Icon, href, de
   );
 };
 
-export default function VehicleActionsPage() { // Renamed component
+export default function VehicleActionsPage() { 
   const router = useRouter();
 
   // You can retrieve the truck number here if needed for further actions:
@@ -46,6 +46,7 @@ export default function VehicleActionsPage() { // Renamed component
     { title: 'Add Trailer', icon: Truck, href: '#', description: "Record trailer attachment" }, 
     { title: 'Add Gas', icon: Fuel, href: '#', description: "Input fuel consumption" },
     { title: 'Add Defects', icon: TriangleAlert, href: '#', description: "Report vehicle issues" },
+    { title: 'Vehicle Information', icon: Info, href: '#', description: "View vehicle details" },
   ];
 
   return (
@@ -65,3 +66,4 @@ export default function VehicleActionsPage() { // Renamed component
     </div>
   );
 }
+
