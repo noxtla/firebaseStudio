@@ -109,12 +109,12 @@ export default function MainMenuPage() {
   
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
-  const [isAttendanceLoading, setIsAttendanceLoading] = useState(false);
+  // isAttendanceLoading state was removed as Attendance button is now a direct link
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus === '200') { 
+      if (loginStatus === '200') { // Or whatever status enables attendance
         setIsAttendanceFeatureEnabled(true);
       } else { // For 503 or any other status/null
         setIsAttendanceFeatureEnabled(false); 
@@ -163,12 +163,8 @@ export default function MainMenuPage() {
     }
   };
 
-  const handleAttendanceClick = () => {
-    router.push('/attendance');
-  };
-
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, onClick: handleAttendanceClick, isLoading: isAttendanceLoading, isDisabled: !isAttendanceFeatureEnabled },
+    { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
     { title: 'Vehicles', icon: Truck, onClick: handleVehiclesClick, isLoading: isVehiclesLoading, isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
@@ -215,4 +211,6 @@ export default function MainMenuPage() {
     </div>
   );
 }
+    
+
     
