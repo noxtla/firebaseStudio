@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Lato, Open_Sans } from 'next/font/google';
 import './globals.css';
-// import { Toaster } from "@/components/ui/toaster"; // Toaster moved from here
+import { Button } from '@/components/ui/button'; // Import Button component
 
 const lato = Lato({
   subsets: ['latin'],
@@ -12,7 +12,7 @@ const lato = Lato({
 const openSans = Open_Sans({
   subsets: ['latin'],
   variable: '--font-body',
-  weight: ['400', '700'], // Load regular and bold weights
+  weight: ['400', '700', '800'], // Load regular, bold, and extrabold weights
 });
 
 export const metadata: Metadata = {
@@ -28,10 +28,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${lato.variable} ${openSans.variable}`}>
       <body className={`antialiased`}>
+        <div className="p-2 flex justify-end space-x-2 bg-background sticky top-0 z-50">
+          <Button variant="outline" size="sm">
+            Español
+          </Button>
+          <Button variant="outline" size="sm">
+            English
+          </Button>
+        </div>
         <main>
           {children}
         </main>
-        {/* <Toaster /> */} {/* Toaster moved from here */}
       </body>
     </html>
   );
