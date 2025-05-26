@@ -54,7 +54,6 @@ const getYearFromDate = (dateString: string | undefined): string => {
 
 const transformNameForPayload = (nameStr: string | undefined): string => {
   if (!nameStr) return '';
-  // Capitalize first letter of each word, rest lowercase, join with hyphens
   return nameStr
     .toLowerCase()
     .split(' ')
@@ -123,7 +122,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       }
     };
 
-    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login'; // Updated URL
+    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/photo'; 
 
     try {
       const response = await fetch(webhookUrl, {
@@ -349,4 +348,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-    

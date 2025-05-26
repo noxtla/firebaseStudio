@@ -3,7 +3,7 @@
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData } from '@/types';
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -55,6 +55,7 @@ export default function MultiStepForm() {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
         sessionStorage.removeItem('rawApiResponse');
+        sessionStorage.removeItem('currentTruckNumber');
       }
     }
   }, [currentStep]);
@@ -102,11 +103,12 @@ export default function MultiStepForm() {
       sessionStorage.removeItem('userData');
       sessionStorage.removeItem('loginWebhookStatus');
       sessionStorage.removeItem('rawApiResponse');
+      sessionStorage.removeItem('currentTruckNumber');
     }
   };
 
   const nextStep = async () => {
-    setRawApiResponse(null); // Clear previous API response display
+    setRawApiResponse(null); 
 
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -115,14 +117,14 @@ export default function MultiStepForm() {
 
     if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
-      setUserData(null); // Clear previous user data
+      setUserData(null); 
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
       }
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/photo';
+      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
 
       try {
         const response = await fetch(webhookUrl, {
@@ -133,17 +135,19 @@ export default function MultiStepForm() {
 
         const responseStatus = response.status;
         const responseText = await response.text();
-        setRawApiResponse(responseText);
+        setRawApiResponse(responseText); 
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
 
-
-        if (response.ok) {
+        if (response.ok) { // Status 200-299
           if (responseText) {
             try {
               const parsedData = JSON.parse(responseText);
+              // Case: User explicitly does not exist as per webhook logic
               if (typeof parsedData === 'object' && parsedData !== null && 'myField' in parsedData && parsedData.myField === "NO EXISTE") {
                 toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
-              } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
+              } 
+              // Case: User data found and is in the expected array format
+              else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
                 setUserData(fetchedUserData);
                 if (typeof window !== 'undefined') {
@@ -152,25 +156,17 @@ export default function MultiStepForm() {
                 }
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
                 router.push('/main-menu');
-              } else { // Response OK, but not "NO EXISTE" and not valid user data array
-                toast({ variant: "destructive", title: "User Not Found", description: "User data not found or invalid data received from server." });
+              } 
+              // Case: Response OK, but not "NO EXISTE" and not valid user data array
+              else {
+                toast({ variant: "destructive", title: "User Data Error", description: "User data not found or invalid data received from server." });
               }
-            } catch (jsonError) {
+            } catch (jsonError) { // JSON.parse failed
               console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
-              toast({ variant: "destructive", title: "Error", description: `Received an invalid response from the server. Response: ${responseText}. Check the raw response display.` });
+              toast({ variant: "destructive", title: "Response Format Error", description: `Received an invalid response format from the server. Response: ${responseText}.` });
             }
           } else { // Response OK, but empty responseText
-            // If response is OK but empty, and status is 200, proceed.
-            // This path is now less likely if we expect user data.
-            // But if a 200 can mean "valid, no extra data", we might reconsider.
-            // For now, requiring data for 200.
-            if (responseStatus === 200) {
-                 toast({ variant: "destructive", title: "User Not Found", description: "User not found or empty response from server for a 200 status." });
-            } else {
-                 // If other OK status (e.g. 204 No Content), this might be fine.
-                 // But our main flow to /main-menu depends on userData being set.
-                 toast({ variant: "destructive", title: "Empty Response", description: `Server responded with status ${responseStatus} but no content.` });
-            }
+            toast({ variant: "destructive", title: "Empty Success Response", description: `Server responded with status ${responseStatus} but no content.` });
           }
         } else if (responseStatus === 404) {
           setIsNotFoundAlertOpen(true);
@@ -181,10 +177,10 @@ export default function MultiStepForm() {
           }
           toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to the main menu, some features may be limited."});
           router.push('/main-menu');
-        } else {
-          toast({ variant: "destructive", title: "Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : 'No details in response.'}` });
+        } else { // Other non-ok HTTP statuses
+          toast({ variant: "destructive", title: "Verification Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : 'No details in response.'}` });
         }
-      } catch (error: any) {
+      } catch (error: any) { // Network error or other fetch-related issues
         let userFriendlyMessage = `Network Error: Could not connect to the verification service at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check that the server is accessible and properly configured for CORS. Check your browser's developer console for more details.`;
         if (error instanceof Error && error.message) {
           if (error.message.toLowerCase().includes('failed to fetch')) {
@@ -221,7 +217,7 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
 
   const showAppHeader = currentStep !== 0;
-  const showStepper = false; // Never show stepper here
+  const showStepper = false; 
   const showStepTitle = currentStep === 1;
   const showNavButtons = currentStep === 1;
 
@@ -243,7 +239,7 @@ export default function MultiStepForm() {
   };
 
   return (
-    <div className={cn("flex flex-col min-h-screen bg-background")}>
+    <div className={cn("flex flex-col min-h-screen")}> {/* Removed bg-background here, applied by parent or globally */}
       <Toaster />
       <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
         <AlertDialogContent>
@@ -262,11 +258,6 @@ export default function MultiStepForm() {
       <div className={cn("w-full max-w-md mx-auto", { "pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !== 0 })}>
         {showAppHeader && <AppHeader className="my-8" />}
       </div>
-
-       <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 || currentStep >= MAX_STEPS })}>
-        {/* Toasts are rendered here via Toaster for steps other than 0 */}
-      </div>
-
 
       <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 })}>
         {showStepTitle && ActiveIcon && activeTitle && (
