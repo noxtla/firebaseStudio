@@ -105,28 +105,20 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 export default function MainMenuPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(false);
+  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true); // Default to true now
   
   const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
   // isAttendanceLoading state was removed as Attendance button is now a direct link
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      if (loginStatus === '200') { // Or whatever status enables attendance
-        setIsAttendanceFeatureEnabled(true);
-      } else { // For 503 or any other status/null
-        setIsAttendanceFeatureEnabled(false); 
-      }
-    }
-  }, []);
+  // useEffect logic that sets isAttendanceFeatureEnabled based on loginWebhookStatus is removed
 
   const handleVehiclesClick = async () => {
     setIsVehiclesLoading(true);
     setVehiclesWebhookResponse(null); 
+    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles';
     try {
-      const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'vehicles_menu_clicked' }),
@@ -144,14 +136,15 @@ export default function MainMenuPage() {
         });
       } else {
         console.log('Vehicles webhook call successful');
+        // Optionally show a success toast or handle success response data
       }
     } catch (error) {
-      let errorMessage = "An unknown network error occurred while calling vehicles service.";
-      if (error instanceof Error) {
-        errorMessage = `Could not connect to vehicles service: ${error.message}. Check internet or try again.`;
+      let errorMessage = `Could not connect to the vehicles service. Please check your internet connection or try again. If the issue persists, the service at ${webhookUrl} may be temporarily unavailable or misconfigured (e.g., CORS).`;
+      if (error instanceof Error && error.message) {
+        errorMessage = `Could not connect to vehicles service: ${error.message}. Check your internet connection, CORS configuration for ${webhookUrl}, or try again.`;
       }
       console.error('Error calling vehicles webhook:', error);
-      setVehiclesWebhookResponse(errorMessage);
+      setVehiclesWebhookResponse(errorMessage); // Store the error message for debug display
       toast({
         variant: "destructive",
         title: "Network Error",
@@ -211,6 +204,4 @@ export default function MainMenuPage() {
     </div>
   );
 }
-    
-
     
