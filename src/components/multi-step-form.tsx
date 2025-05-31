@@ -130,33 +130,17 @@ export default function MultiStepForm() {
         body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
       };
 
-      console.log('[MultiStepForm] Calling webhook:', webhookUrl);
-      console.log('[MultiStepForm] Request options:', requestOptions);
-
       try {
         const response = await fetch(webhookUrl, requestOptions);
         
-        console.log('[MultiStepForm] Webhook response status:', response.status);
-        console.log('[MultiStepForm] Webhook response statusText:', response.statusText);
-        console.log('[MultiStepForm] Webhook response ok:', response.ok);
-        
-        const responseHeaders: Record<string, string> = {};
-        response.headers.forEach((value, key) => {
-          responseHeaders[key] = value;
-        });
-        console.log('[MultiStepForm] Webhook response headers:', responseHeaders);
-
         const responseText = await response.text();
-        console.log('[MultiStepForm] Raw webhook responseText:', responseText);
         setRawApiResponse(responseText);
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
 
         if (response.ok) { // Status 200-299
           if (responseText) {
             try {
-              console.log('[MultiStepForm] Attempting to parse responseText as JSON:', responseText);
               const parsedData = JSON.parse(responseText);
-              console.log('[MultiStepForm] Parsed JSON data:', parsedData);
 
               if (typeof parsedData === 'object' && parsedData !== null && 'myField' in parsedData && parsedData.myField === "NO EXISTE") {
                 toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
