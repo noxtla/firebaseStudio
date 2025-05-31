@@ -3,7 +3,7 @@
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData } from '@/types'; // UserData should be imported
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,12 +43,13 @@ export default function MultiStepForm() {
   const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null); // To store fetched user data
 
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
+    // Clear sensitive data from sessionStorage when the form initializes or currentStep resets to 0
     if (currentStep === 0) {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
@@ -63,7 +64,7 @@ export default function MultiStepForm() {
     const { name, value } = e.target;
     if (name === "phoneNumber") {
       const cleaned = ('' + value).replace(/\D/g, '');
-      if (cleaned.length > 10) return;
+      if (cleaned.length > 10) return; // Max 10 digits
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
         let formatted = '';
@@ -107,7 +108,7 @@ export default function MultiStepForm() {
   };
 
   const nextStep = async () => {
-    setRawApiResponse(null);
+    setRawApiResponse(null); 
 
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -116,7 +117,7 @@ export default function MultiStepForm() {
 
     if (currentStep === 1 && canProceed) {
       setIsLoadingPhoneNumber(true);
-      setUserData(null);
+      setUserData(null); 
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
@@ -124,70 +125,77 @@ export default function MultiStepForm() {
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
-      const requestOptions = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
-      };
 
       try {
-        const response = await fetch(webhookUrl, requestOptions);
-        
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
+        });
+
+        const responseStatus = response.status;
         const responseText = await response.text();
-        setRawApiResponse(responseText);
+        setRawApiResponse(responseText); 
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
 
         if (response.ok) { // Status 200-299
           if (responseText) {
             try {
-              const parsedData = JSON.parse(responseText);
-
+              // Case: User explicitly does not exist as per webhook logic
               if (typeof parsedData === 'object' && parsedData !== null && 'myField' in parsedData && parsedData.myField === "NO EXISTE") {
                 toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
-              } else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
+              } 
+              // Case: User data found and is in the expected array format
+              else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
                 const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
                 setUserData(fetchedUserData);
                 if (typeof window !== 'undefined') {
                   sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
-                  sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+                  sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
                 }
                 toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
                 router.push('/main-menu');
-              } else {
-                console.error('[MultiStepForm] Response OK, but not "NO EXISTE" and not valid user data array. Parsed data:', parsedData);
-                toast({ variant: "destructive", title: "User Data Error", description: "User data not found or invalid data received from server. Check console for details." });
+              } 
+              // Case: Response OK, but not "NO EXISTE" and not valid user data array
+              else {
+                toast({ variant: "destructive", title: "User Data Error", description: "User data not found or invalid data received from server." });
               }
-            } catch (jsonError: any) {
-              console.error("[MultiStepForm] JSON Parse Error:", jsonError, "Raw ResponseText was:", responseText);
-              toast({ variant: "destructive", title: "Response Format Error", description: `Received an invalid response format from the server. Check console for details. Response: ${responseText.substring(0,100)}...` });
+            } catch (jsonError) { // JSON.parse failed
+              console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
+              toast({ variant: "destructive", title: "Response Format Error", description: `Received an invalid response format from the server. Response: ${responseText}.` });
             }
           } else { // Response OK, but empty responseText
-            console.warn('[MultiStepForm] Response OK, but empty responseText from server.');
-            toast({ variant: "destructive", title: "Empty Success Response", description: `Server responded with status ${response.status} but no content.` });
-             // Do not navigate if user data is expected but not received.
+            toast({ variant: "destructive", title: "Empty Success Response", description: `Server responded with status ${responseStatus} but no content.` });
           }
-        } else if (response.status === 404) {
+        } else if (responseStatus === 404) {
           setIsNotFoundAlertOpen(true);
-        } else if (response.status === 503) {
+        } else if (responseStatus === 503) {
           if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('userData');
-            sessionStorage.setItem('loginWebhookStatus', response.status.toString());
+            sessionStorage.removeItem('userData'); 
+            sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
           }
-          toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to the main menu, some features may be limited." });
+          toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to the main menu, some features may be limited."});
           router.push('/main-menu');
-        } else {
-          console.error(`[MultiStepForm] Webhook call failed with status: ${response.status}. ResponseText: ${responseText}`);
-          toast({ variant: "destructive", title: "Verification Error", description: `Failed to verify phone number. Status: ${response.status}. ${responseText ? `Details: ${responseText.substring(0,100)}...` : 'No details in response.'} Check console for full details.` });
+        } else { // Other non-ok HTTP statuses
+          toast({ variant: "destructive", title: "Verification Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : 'No details in response.'}` });
         }
-      } catch (error: any) {
-        console.error("[MultiStepForm] Phone Verification Fetch Error:", error);
+      } catch (error: any) { // Network error or other fetch-related issues
+        let userFriendlyMessage = `Network Error: Could not connect to the verification service at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check that the server is accessible and properly configured for CORS. Check your browser's developer console for more details.`;
+        if (error instanceof Error && error.message) {
+          if (error.message.toLowerCase().includes('failed to fetch')) {
+             userFriendlyMessage = `Network Error: Failed to connect to the server at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check the server status, CORS configuration, and your browser's developer console.`;
+          } else {
+            userFriendlyMessage = `Network Error: ${error.message}. This might be due to an issue with the server at ${webhookUrl}, your internet connection, or a CORS policy. Please check the server status and your browser's developer console.`;
+          }
+        }
+        console.error("Phone Verification Fetch Error:", error);
         setRawApiResponse(error.message || "Fetch failed");
         if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', error.message || "Fetch failed");
 
         toast({
           variant: "destructive",
           title: "Network Error",
-          description: `Could not connect to the verification service. Please check your internet connection and the server status at ${webhookUrl}. See console for more details.`,
+          description: userFriendlyMessage,
         });
       } finally {
         setIsLoadingPhoneNumber(false);
@@ -230,7 +238,7 @@ export default function MultiStepForm() {
   };
 
   return (
-    <div className={cn("flex flex-col min-h-screen", currentStep === 0 ? "bg-card" : "bg-background")}>
+    <div className={cn("flex flex-col min-h-screen")}> {/* Removed bg-background here, applied by parent or globally */}
       <Toaster />
       <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
         <AlertDialogContent>
@@ -249,16 +257,12 @@ export default function MultiStepForm() {
       <div className={cn("w-full max-w-md mx-auto", { "pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !== 0 })}>
         {showAppHeader && <AppHeader className="my-8" />}
       </div>
-      
-      <div className={cn("w-full max-w-md mx-auto px-4", { "pt-8": currentStep === 1 })}>
-        {showStepper && (
-          // ProgressStepper logic would be here if enabled for this step
-          <p>Stepper would be here</p>
-        )}
+
+      <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 })}>
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
-            "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-             "text-2xl sm:text-3xl" // Increased title size
+            "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
+            "text-2xl sm:text-3xl font-heading-style" 
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
