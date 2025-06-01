@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { modulesData, type SafetyModule, type Topic, type SkillPhase, getTagClassName } from '@/data/safety-modules-data';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle as CardTitleComponent } from '@/components/ui/card'; // Renamed CardTitle to CardTitleComponent to avoid conflict
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'; // Added DialogFooter
 import { ChevronLeft, AlertTriangle, CheckSquare, ListChecks, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -167,6 +167,17 @@ export default function ModuleDetailsPage() {
                 </div>
               </div>
             </ScrollArea>
+            <DialogFooter className="flex justify-center pt-4">
+              <DialogClose asChild>
+                <Button 
+                  type="button" 
+                  className="bg-success text-success-foreground hover:bg-success/90"
+                  size="lg"
+                >
+                  OK
+                </Button>
+              </DialogClose>
+            </DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="ghost" className="absolute right-4 top-4 p-1 h-auto">
                 <X className="h-5 w-5" />
@@ -179,3 +190,4 @@ export default function ModuleDetailsPage() {
     </div>
   );
 }
+
