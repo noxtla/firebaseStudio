@@ -106,31 +106,31 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 
 export default function MainMenuPage() {
   const router = useRouter();
-  const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
-  const [attendanceDisabledMessage, setAttendanceDisabledMessage] = useState<string | null>(null);
+  // const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
+  // const [attendanceDisabledMessage, setAttendanceDisabledMessage] = useState<string | null>(null);
   // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
   // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
   
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-      const submittedAttendance = sessionStorage.getItem('attendanceSubmitted');
+  // useEffect(() => {
+  //   if (typeof window !== 'undefined') {
+  //     const loginStatus = sessionStorage.getItem('loginWebhookStatus');
+  //     const submittedAttendance = sessionStorage.getItem('attendanceSubmitted');
 
-      if (submittedAttendance === 'true') {
-        setIsAttendanceFeatureEnabled(false);
-        setAttendanceDisabledMessage("Attendance has already been recorded for this session.");
-      } else if (loginStatus === '503') {
-        setIsAttendanceFeatureEnabled(false);
-        setAttendanceDisabledMessage("Attendance features might be limited due to a temporary service issue. Please try again later.");
-      } else if (loginStatus !== '200') { 
-        setIsAttendanceFeatureEnabled(false);
-        setAttendanceDisabledMessage("Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.");
-      } else {
-        setIsAttendanceFeatureEnabled(true);
-        setAttendanceDisabledMessage(null);
-      }
-    }
-  }, []);
+  //     if (submittedAttendance === 'true') {
+  //       setIsAttendanceFeatureEnabled(false);
+  //       setAttendanceDisabledMessage("Attendance has already been recorded for this session.");
+  //     } else if (loginStatus === '503') {
+  //       setIsAttendanceFeatureEnabled(false);
+  //       setAttendanceDisabledMessage("Attendance features might be limited due to a temporary service issue. Please try again later.");
+  //     } else if (loginStatus !== '200') { 
+  //       setIsAttendanceFeatureEnabled(false);
+  //       setAttendanceDisabledMessage("Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.");
+  //     } else {
+  //       setIsAttendanceFeatureEnabled(true);
+  //       setAttendanceDisabledMessage(null);
+  //     }
+  //   }
+  // }, []);
 
   // const handleVehiclesClick = async () => {
   //   setIsVehiclesLoading(true);
@@ -168,7 +168,7 @@ export default function MainMenuPage() {
 
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, href: '/attendance', isDisabled: !isAttendanceFeatureEnabled },
+    { title: 'Attendance', icon: Users, href: '/attendance' },
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false /* onClick: handleVehiclesClick, isLoading: isVehiclesLoading */ },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
@@ -184,13 +184,13 @@ export default function MainMenuPage() {
       <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
-      {attendanceDisabledMessage && (
+      {/* {attendanceDisabledMessage && (
          <ShadAlert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5 text-primary">
           <AlertTriangle className="h-4 w-4 !text-primary" />
           <AlertTitleUi>Attendance Access Notice</AlertTitleUi>
           <AlertDescUi>{attendanceDisabledMessage}</AlertDescUi>
         </ShadAlert>
-      )}
+      )} */}
 
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
