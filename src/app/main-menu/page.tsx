@@ -14,6 +14,7 @@ import {
   AlertTriangle as AlertTriangleIcon,
   type LucideIcon,
   Loader2,
+  BookHeart, // Icon for Safety
   // AlertTriangle, // Not used
   // MapPin, // Not used
   // ShieldAlert as ShieldAlertIcon, // Not used
@@ -105,44 +106,11 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 };
 
 export default function MainMenuPage() {
-  // const router = useRouter(); // Not used directly if all items are Link or have no onClick
-  // Commented out states related to attendance and vehicles webhook logic
-  // const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
-  // const [attendanceDisabledMessage, setAttendanceDisabledMessage] = useState<string | null>(null);
-  // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false); // Removed
-  // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null); // Removed
-  
-  // useEffect for attendance status logic remains commented as per previous state
-  // useEffect(() => {
-  //   if (typeof window !== 'undefined') {
-  //     const loginStatus = sessionStorage.getItem('loginWebhookStatus');
-  //     const submittedAttendance = sessionStorage.getItem('attendanceSubmitted');
-
-  //     if (submittedAttendance === 'true') {
-  //       setIsAttendanceFeatureEnabled(false);
-  //       setAttendanceDisabledMessage("Attendance has already been recorded for this session.");
-  //     } else if (loginStatus === '503') {
-  //       setIsAttendanceFeatureEnabled(false);
-  //       setAttendanceDisabledMessage("Attendance features might be limited due to a temporary service issue. Please try again later.");
-  //     } else if (loginStatus !== '200') { 
-  //       setIsAttendanceFeatureEnabled(false);
-  //       setAttendanceDisabledMessage("Attendance features might be limited based on your login status. The registration is typically available from 7:00 a.m. to 7:15 a.m.");
-  //     } else {
-  //       setIsAttendanceFeatureEnabled(true);
-  //       setAttendanceDisabledMessage(null);
-  //     }
-  //   }
-  // }, []);
-
-  // Removed handleVehiclesClick function as it's no longer used and was webhook-related
-  // const handleVehiclesClick = async () => { ... };
-
-
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, href: '/attendance' /* isDisabled based on attendance logic if uncommented */ },
-    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false }, // No onClick or isLoading for webhook
+    { title: 'Attendance', icon: Users, href: '/attendance' },
+    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
-    { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
+    { title: 'Safety', icon: BookHeart, href: '/safety/modules', isDisabled: false },
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
@@ -155,15 +123,6 @@ export default function MainMenuPage() {
       <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
-      {/* Commented out attendanceDisabledMessage display as its state logic is also commented */}
-      {/* {attendanceDisabledMessage && (
-         <ShadAlert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5 text-primary">
-          <AlertTriangle className="h-4 w-4 !text-primary" />
-          <AlertTitleUi>Attendance Access Notice</AlertTitleUi>
-          <AlertDescUi>{attendanceDisabledMessage}</AlertDescUi>
-        </ShadAlert>
-      )} */}
-
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
           {primaryMenuItems.map((item) => (
@@ -174,16 +133,6 @@ export default function MainMenuPage() {
         </div>
       </div>
       
-      {/* Commented out vehiclesWebhookResponse display as its state and logic are removed */}
-      {/* {vehiclesWebhookResponse && (
-        <div className="mt-4 p-3 bg-muted rounded-md w-full max-w-xl mx-auto">
-          <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Vehicles Webhook Response (Debug):</h4>
-          <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
-            {vehiclesWebhookResponse}
-          </pre>
-        </div>
-      )} */}
-
       <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
         {secondaryMenuItems.map((item) => (
           <div key={item.title} className="flex-1 max-w-[200px] sm:max-w-[240px]">
