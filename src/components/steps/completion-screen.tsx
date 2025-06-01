@@ -52,14 +52,15 @@ const getYearFromDate = (dateString: string | undefined): string => {
   }
 };
 
-const transformNameForPayload = (nameStr: string | undefined): string => {
-  if (!nameStr) return '';
-  return nameStr
-    .toLowerCase()
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('-');
-};
+// transformNameForPayload is no longer used for webhook payload, but kept in case needed for display or other logic
+// const transformNameForPayload = (nameStr: string | undefined): string => {
+//   if (!nameStr) return '';
+//   return nameStr
+//     .toLowerCase()
+//     .split(' ')
+//     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+//     .join('-');
+// };
 
 
 const CompletionScreen: FC<CompletionScreenProps> = ({
@@ -75,8 +76,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
 
-  const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
-  const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
+  const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false); // Kept for potential future use
+  const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false); // Kept for potential future use
 
   useEffect(() => {
     setIsMounted(true);
@@ -86,8 +87,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const handleSubmit = async () => {
     setSubmissionState('submitting');
     setSubmissionResponse(null);
-    setWorkAreaAlertOpen(false);
-    setFaceMatchAlertOpen(false);
+    // The specific error dialogs are no longer directly triggered by this simulated submission
+    // setWorkAreaAlertOpen(false); 
+    // setFaceMatchAlertOpen(false);
 
     if (!capturedImage) {
       toast({
@@ -99,109 +101,19 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       return;
     }
 
-    let locationInfoPayload: any = "Precise location not available or permission denied.";
-    if (capturedLocation) {
-      locationInfoPayload = {
-        latitude: capturedLocation.latitude,
-        longitude: capturedLocation.longitude,
-        accuracy: capturedLocation.accuracy,
-        geolocationTimestamp: new Date(capturedLocation.timestamp).toISOString(),
-      };
-    }
-
-    const payload: any = {
-      step: "finalSubmission",
-      name: userData?.Name ? transformNameForPayload(userData.Name) : '',
-      phoneNumber: formData.phoneNumber || (userData?.phoneNumber || ''),
-      ssnLast4: formData.ssnLast4 || '',
-      birthDay: formData.birthDay || '',
-      capturedImageBase64: capturedImage,
-      metadata: {
-        captureTimestamp: captureTimestamp || new Date().toISOString(),
-        locationInfo: locationInfoPayload,
+    // Simulate API call
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('attendanceSubmitted', 'true');
       }
-    };
-
-    const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/photo'; 
-
-    try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const responseText = await response.text();
-      setSubmissionResponse(responseText);
-
-      if (response.ok) {
-        try {
-          const parsedData = JSON.parse(responseText);
-          if (parsedData.Success === "Attendance recorded") {
-            if (typeof window !== 'undefined') {
-              sessionStorage.setItem('attendanceSubmitted', 'true');
-            }
-            setSubmissionState('submitted');
-          } else {
-            setSubmissionState('reviewing');
-            toast({
-              variant: "destructive",
-              title: "Unexpected Response",
-              description: `Submission was successful, but the server response was not as expected: ${responseText}. Please contact support.`,
-            });
-            onRestart(); // Navigate back to main menu on unexpected success response
-          }
-        } catch (e) {
-          setSubmissionState('reviewing');
-          toast({
-            variant: "destructive",
-            title: "Response Error",
-            description: `Submission was successful (HTTP ${response.status}), but the response format was invalid: ${responseText}. Please contact support.`,
-          });
-          onRestart(); // Navigate back to main menu on response format error
-        }
-      } else {
-        setSubmissionState('reviewing');
-        let errorHandledByDialog = false;
-        try {
-          const parsedErrorData = JSON.parse(responseText);
-          if (parsedErrorData.Failed === "Outside designated work area") {
-            setWorkAreaAlertOpen(true);
-            errorHandledByDialog = true;
-          } else if (parsedErrorData.Failed === "Face does not match profile") {
-            setFaceMatchAlertOpen(true);
-            errorHandledByDialog = true;
-          }
-        } catch (e) {
-          // JSON parsing of error failed
-        }
-
-        if (!errorHandledByDialog) {
-          toast({
-            variant: "destructive",
-            title: "Submission Error",
-            description: `Failed to submit data. Status: ${response.status}. Server response: ${responseText}`,
-          });
-          onRestart(); 
-        }
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      let userFriendlyMessage = `Could not submit your information to ${webhookUrl}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`;
-      if (error instanceof Error) {
-        userFriendlyMessage = `Could not submit your information to ${webhookUrl}. Error: ${error.message}. This might be due to a network issue or a problem with the server. Please check your connection and try again.`;
-      }
-      setSubmissionResponse(error instanceof Error ? error.message : "An unknown network error occurred.");
-      setSubmissionState('reviewing');
+      setSubmissionResponse(JSON.stringify({ "Success": "Attendance recorded (Simulated)" }));
+      setSubmissionState('submitted');
       toast({
-        variant: "destructive",
-        title: "Submission Network Error",
-        description: userFriendlyMessage,
+        variant: "success",
+        title: "Attendance Recorded (Simulated)",
+        description: "Your attendance has been successfully simulated.",
       });
-      onRestart();
-    }
+    }, 1500); // Simulate 1.5 second delay
   };
 
   const birthDayDisplay = userData?.dataBirth && formData.birthDay
@@ -224,7 +136,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             {submissionResponse && (
               <CardContent className="pt-4">
                 <div className="mt-4 p-3 bg-muted rounded-md w-full overflow-x-auto">
-                  <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Webhook Response:</h4>
+                  <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Simulated Response:</h4>
                   <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
                     {submissionResponse}
                   </pre>
@@ -289,14 +201,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                   <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
                 )}
               </div>
-              {submissionState === 'reviewing' && submissionResponse && (
-                <div className="mt-4 p-3 bg-destructive/10 rounded-md border border-destructive/30 w-full overflow-x-auto">
-                  <h4 className="text-sm font-semibold mb-1 text-destructive">Last Webhook Submission Response/Error:</h4>
-                  <pre className="text-xs whitespace-pre-wrap break-all text-destructive/80 p-2 rounded">
-                    {submissionResponse}
-                  </pre>
-                </div>
-              )}
+              {/* Removed display of actual webhook error as it's no longer relevant */}
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button
@@ -322,6 +227,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         )}
       </Card>
 
+      {/* AlertDialogs are kept in the DOM but will not be triggered by the simulated submission logic */}
       <AlertDialog open={isWorkAreaAlertOpen} onOpenChange={setWorkAreaAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
@@ -356,3 +262,4 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+
