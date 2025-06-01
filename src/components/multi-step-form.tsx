@@ -40,7 +40,7 @@ const STEP_CONFIG = [
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
-  const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false);
+  // const [isLoadingPhoneNumber, setIsLoadingPhoneNumber] = useState(false); // No longer needed for webhook
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null); // To store fetched user data
@@ -80,7 +80,7 @@ export default function MultiStepForm() {
   };
 
   const getCanProceed = (): boolean => {
-    if (isLoadingPhoneNumber) return false;
+    // if (isLoadingPhoneNumber) return false; // No longer needed for webhook
     switch (currentStep) {
       case 0:
         return true;
@@ -97,7 +97,7 @@ export default function MultiStepForm() {
     setCurrentStep(0);
     setFormData(initialFormData);
     setUserData(null);
-    setIsLoadingPhoneNumber(false);
+    // setIsLoadingPhoneNumber(false); // No longer needed for webhook
     setRawApiResponse(null);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('userData');
@@ -108,7 +108,7 @@ export default function MultiStepForm() {
   };
 
   const nextStep = async () => {
-    setRawApiResponse(null); 
+    setRawApiResponse(null);
 
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -116,94 +116,99 @@ export default function MultiStepForm() {
     }
 
     if (currentStep === 1 && canProceed) {
-      setIsLoadingPhoneNumber(true);
-      setUserData(null); 
+      // setIsLoadingPhoneNumber(true); // No longer needed for webhook
+      setUserData(null);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
       }
 
-      const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
-      const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
+      // const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
+      // const webhookUrl = 'https://n8n.srv809556.hstgr.cloud/webhook/login';
 
-      try {
-        const response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
-        });
+      // // Removed fetch call to the webhook
+      // try {
+      //   const response = await fetch(webhookUrl, {
+      //     method: 'POST',
+      //     headers: { 'Content-Type': 'application/json' },
+      //     body: JSON.stringify({ phoneNumber: cleanedPhoneNumber }),
+      //   });
 
-        const responseStatus = response.status;
-        const responseText = await response.text();
-        setRawApiResponse(responseText); 
-        if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
+      //   const responseStatus = response.status;
+      //   const responseText = await response.text();
+      //   setRawApiResponse(responseText);
+      //   if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', responseText);
 
-        if (response.ok) { // Status 200-299
-          if (responseText) {
-            try {
-              const parsedData = JSON.parse(responseText);
-              // Case: User explicitly does not exist as per webhook logic
-              if (typeof parsedData === 'object' && parsedData !== null && 'myField' in parsedData && parsedData.myField === "NO EXISTE") {
-                toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
-              } 
-              // Case: User data found and is in the expected array format
-              else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
-                const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
-                setUserData(fetchedUserData);
-                if (typeof window !== 'undefined') {
-                  sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
-                  sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
-                }
-                toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
-                router.push('/main-menu');
-              } 
-              // Case: Response OK, but not "NO EXISTE" and not valid user data array
-              else {
-                toast({ variant: "destructive", title: "User Data Error", description: "User data not found or invalid data received from server." });
-              }
-            } catch (jsonError) { // JSON.parse failed
-              console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
-              toast({ variant: "destructive", title: "Response Format Error", description: `Received an invalid response format from the server. Response: ${responseText}.` });
-            }
-          } else { // Response OK, but empty responseText
-            toast({ variant: "destructive", title: "Empty Success Response", description: `Server responded with status ${responseStatus} but no content.` });
-          }
-        } else if (responseStatus === 404) {
-          setIsNotFoundAlertOpen(true);
-        } else if (responseStatus === 503) {
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('userData'); 
-            sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
-          }
-          toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to the main menu, some features may be limited."});
-          router.push('/main-menu');
-        } else { // Other non-ok HTTP statuses
-          toast({ variant: "destructive", title: "Verification Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : 'No details in response.'}` });
-        }
-      } catch (error: any) { // Network error or other fetch-related issues
-        let userFriendlyMessage = `Network Error: Could not connect to the verification service at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check that the server is accessible and properly configured for CORS. Check your browser's developer console for more details.`;
-        if (error instanceof Error && error.message) {
-          if (error.message.toLowerCase().includes('failed to fetch')) {
-             userFriendlyMessage = `Network Error: Failed to connect to the server at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check the server status, CORS configuration, and your browser's developer console.`;
-          } else {
-            userFriendlyMessage = `Network Error: ${error.message}. This might be due to an issue with the server at ${webhookUrl}, your internet connection, or a CORS policy. Please check the server status and your browser's developer console.`;
-          }
-        }
-        console.error("Phone Verification Fetch Error:", error);
-        setRawApiResponse(error.message || "Fetch failed");
-        if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', error.message || "Fetch failed");
+      //   if (response.ok) { // Status 200-299
+      //     if (responseText) {
+      //       try {
+      //         const parsedData = JSON.parse(responseText);
+      //         // Case: User explicitly does not exist as per webhook logic
+      //         if (typeof parsedData === 'object' && parsedData !== null && 'myField' in parsedData && parsedData.myField === "NO EXISTE") {
+      //           toast({ variant: "destructive", title: "User Not Found", description: "User not found. Please check the phone number and try again." });
+      //         }
+      //         // Case: User data found and is in the expected array format
+      //         else if (Array.isArray(parsedData) && parsedData.length > 0 && parsedData[0].Name) {
+      //           const fetchedUserData: UserData = { ...parsedData[0], phoneNumber: cleanedPhoneNumber };
+      //           setUserData(fetchedUserData);
+      //           if (typeof window !== 'undefined') {
+      //             sessionStorage.setItem('userData', JSON.stringify(fetchedUserData));
+      //             sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
+      //           }
+      //           toast({ variant: "success", title: "Success", description: "Phone number verified. Redirecting..." });
+      //           router.push('/main-menu');
+      //         }
+      //         // Case: Response OK, but not "NO EXISTE" and not valid user data array
+      //         else {
+      //           toast({ variant: "destructive", title: "User Data Error", description: "User data not found or invalid data received from server." });
+      //         }
+      //       } catch (jsonError) { // JSON.parse failed
+      //         console.error("JSON Parse Error:", jsonError, "Raw Response:", responseText);
+      //         toast({ variant: "destructive", title: "Response Format Error", description: `Received an invalid response format from the server. Response: ${responseText}.` });
+      //       }
+      //     } else { // Response OK, but empty responseText
+      //       toast({ variant: "destructive", title: "Empty Success Response", description: `Server responded with status ${responseStatus} but no content.` });
+      //     }
+      //   } else if (responseStatus === 404) {
+      //     setIsNotFoundAlertOpen(true);
+      //   } else if (responseStatus === 503) {
+      //     if (typeof window !== 'undefined') {
+      //       sessionStorage.removeItem('userData');
+      //       sessionStorage.setItem('loginWebhookStatus', responseStatus.toString());
+      //     }
+      //     toast({ variant: "default", title: "Service Unavailable", description: "Service temporarily unavailable. Proceeding to the main menu, some features may be limited."});
+      //     router.push('/main-menu');
+      //   } else { // Other non-ok HTTP statuses
+      //     toast({ variant: "destructive", title: "Verification Error", description: `Failed to verify phone number. Status: ${responseStatus}. ${responseText ? `Details: ${responseText}` : 'No details in response.'}` });
+      //   }
+      // } catch (error: any) { // Network error or other fetch-related issues
+      //   let userFriendlyMessage = `Network Error: Could not connect to the verification service at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check that the server is accessible and properly configured for CORS. Check your browser's developer console for more details.`;
+      //   if (error instanceof Error && error.message) {
+      //     if (error.message.toLowerCase().includes('failed to fetch')) {
+      //        userFriendlyMessage = `Network Error: Failed to connect to the server at ${webhookUrl}. This might be due to the server not running, a network issue, or a CORS policy. Please check the server status, CORS configuration, and your browser's developer console.`;
+      //     } else {
+      //       userFriendlyMessage = `Network Error: ${error.message}. This might be due to an issue with the server at ${webhookUrl}, your internet connection, or a CORS policy. Please check the server status and your browser's developer console.`;
+      //     }
+      //   }
+      //   console.error("Phone Verification Fetch Error:", error);
+      //   setRawApiResponse(error.message || "Fetch failed");
+      //   if (typeof window !== 'undefined') sessionStorage.setItem('rawApiResponse', error.message || "Fetch failed");
 
-        toast({
-          variant: "destructive",
-          title: "Network Error",
-          description: userFriendlyMessage,
-        });
-      } finally {
-        setIsLoadingPhoneNumber(false);
-      }
+      //   toast({
+      //     variant: "destructive",
+      //     title: "Network Error",
+      //     description: userFriendlyMessage,
+      //   });
+      // } finally {
+      //   setIsLoadingPhoneNumber(false); // No longer needed for webhook
+      // }
+
+      // Directly redirect to the main menu after phone number input
+      router.push('/main-menu');
       return;
     }
   };
+
 
   const prevStep = () => {
     if (currentStep > 0) {
@@ -217,7 +222,7 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
 
   const showAppHeader = currentStep !== 0;
-  const showStepper = false; 
+  const showStepper = false;
   const showStepTitle = currentStep === 1;
   const showNavButtons = currentStep === 1;
 
@@ -282,21 +287,16 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={isLoadingPhoneNumber || currentStep === 0}
+                disabled={currentStep === 0}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
-              <Button onClick={nextStep} disabled={!canProceed || isLoadingPhoneNumber}>
-                {isLoadingPhoneNumber ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
+              <Button onClick={nextStep} disabled={!canProceed}>
+                {
                   <>
                     Next <ArrowRight className="ml-2 h-4 w-4" />
                   </>
-                )}
+                }
               </Button>
             </div>
           )}
