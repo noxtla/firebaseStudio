@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, type ChangeEvent, useEffect } from 'react';
+import { useState, type ChangeEvent, useEffect, useCallback } from 'react'; // Import useCallback
 import { useRouter } from 'next/navigation';
 import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +44,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
   const [userInitials, setUserInitials] = useState<string | null>(null);
+  const [isBirthDayInputValid, setIsBirthDayInputValid] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "birthDay") {
-        const numericValue = value.replace(/\D/g, '');
+        const numericValue = value.replace(/\D/g, ''); // Keep cleaning here as parent's responsibility
         setFormData((prev) => ({ ...prev, [name]: numericValue }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -77,31 +78,19 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCapturedLocation(location || null);
   };
 
+  const handleBirthDayValidationChange = useCallback((isValid: boolean) => {
+    setIsBirthDayInputValid(isValid);
+  }, []); // setIsBirthDayInputValid is stable
+
   const getCanProceed = (): boolean => {
     switch (currentStep) {
       case 0: // SSN
-        if (formData.ssnLast4.length !== 4 || !/^\d{4}$/.test(formData.ssnLast4)) {
-          return false;
-        }
-        // User wants to allow any 4 digits, so we don't check against initialUserData.NSS
-        return true;
+        return formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4);
       case 1: // Birth Day
-        if (!initialUserData || !initialUserData.dataBirth) return false;
-        const day = parseInt(formData.birthDay, 10);
-        if (isNaN(day) || day < 1 || day > 31 || formData.birthDay.length === 0 || formData.birthDay.length > 2) {
-          return false;
-        }
-        try {
-          const [year, month] = initialUserData.dataBirth.split('-').map(Number);
-          const paddedDay = String(day).padStart(2, '0');
-          const userEnteredFullDate = `${year}-${String(month).padStart(2, '0')}-${paddedDay}`;
-          return userEnteredFullDate === initialUserData.dataBirth;
-        } catch (e) {
-          return false;
-        }
+        return isBirthDayInputValid;
       case 2: // Photo
         return !!capturedImage && !!capturedLocation;
-      default: // Completion Screen or beyond
+      default:
         return true;
     }
   };
@@ -109,24 +98,30 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const canProceed = getCanProceed();
 
   const nextStep = async () => {
-    if (currentStep === 0 && canProceed) { // SSN to BirthDay
-      toast({ variant: "success", title: "Success", description: "SSN format accepted." });
-      setCurrentStep(1);
-    } else if (currentStep === 1 && canProceed) { // BirthDay to Photo
-      toast({ variant: "success", title: "Success", description: "Birth day verified." });
-      setCurrentStep(2);
-    } else if (currentStep < MAX_ATTENDANCE_STEPS && canProceed) { // Photo to Completion or other steps if any
-      setCurrentStep((prev) => (prev + 1) as FormStep);
+    if (canProceed) {
+      if (currentStep === 0) { // SSN to BirthDay
+        toast({ variant: "success", title: "Success", description: "SSN format accepted." });
+        setCurrentStep(1);
+      } else if (currentStep === 1) { // BirthDay to Photo
+        toast({ variant: "success", title: "Success", description: "Birth day verified." });
+        setCurrentStep(2);
+      } else if (currentStep < MAX_ATTENDANCE_STEPS) { // Photo to Completion
+        setCurrentStep((prev) => (prev + 1) as FormStep);
+      }
+    } else {
+        console.log("Cannot proceed: current step data is not valid.");
     }
   };
+
 
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (currentStep === 1) { // Going back from BirthDay to SSN
+      if (currentStep === 1) { 
          setFormData(prev => ({...prev, birthDay: ''}));
+         setIsBirthDayInputValid(false); 
       }
-      if (currentStep === 2) { // Going back from Photo to BirthDay
+      if (currentStep === 2) { 
         setCapturedImage(null);
         setCaptureTimestamp(null);
         setCapturedLocation(null);
@@ -136,10 +131,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
   const handleRestartFromCompletion = () => {
     if (typeof window !== 'undefined') {
-        // Do not clear userData or loginWebhookStatus here to preserve session for other features
-        // sessionStorage.removeItem('userData');
-        // sessionStorage.removeItem('loginWebhookStatus');
-        sessionStorage.removeItem('currentTruckNumber'); // Clear truck specific data if any
+        sessionStorage.removeItem('currentTruckNumber'); 
     }
     router.push('/main-menu');
   };
@@ -160,7 +152,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   };
 
   let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && currentStep === 2) { // Only for photo step
+  if (userInitials && currentStep === 2) { 
     formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
   }
 
@@ -179,6 +171,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formData={formData}
             onInputChange={handleInputChange}
             userData={initialUserData} 
+            onValidationChange={handleBirthDayValidationChange}
           />
         );
       case 2: 
@@ -261,4 +254,3 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     </div>
   );
 }
-    
