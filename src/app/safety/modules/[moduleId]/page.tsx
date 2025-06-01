@@ -6,8 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { modulesData, type SafetyModule, type Topic, type SkillPhase, getTagClassName } from '@/data/safety-modules-data';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle as CardTitleComponent } from '@/components/ui/card'; // Renamed CardTitle to CardTitleComponent to avoid conflict
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'; // Added DialogFooter
+import { Card, CardContent, CardHeader, CardTitle as CardTitleComponent } from '@/components/ui/card'; // Renamed CardTitle to avoid conflict
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { ChevronLeft, AlertTriangle, CheckSquare, ListChecks, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
@@ -96,7 +96,7 @@ export default function ModuleDetailsPage() {
         </h1>
       </div>
 
-      <div className="space-y-12"> {/* Adjusted layout: removed grid, using space-y */}
+      <div className="space-y-12">
         {/* Key Focus Areas */}
         <section>
           <h2 className="text-xl font-semibold mb-4 text-foreground">Key Focus Areas</h2>
@@ -116,10 +116,10 @@ export default function ModuleDetailsPage() {
         <section>
           <h2 className="text-xl font-semibold mb-6 text-foreground">Suggested Skill Progression</h2>
           <ScrollArea className="w-full pb-4">
-            <div className="flex space-x-4 sm:space-x-0 sm:grid sm:grid-flow-col sm:auto-cols-max sm:gap-x-8 overflow-x-auto">
+            <div className="flex space-x-4 sm:space-x-0 sm:grid sm:grid-flow-col sm:auto-cols-max sm:gap-x-8 py-2"> {/* py-2 for vertical room for dot/line */}
               {module.skillProgression.map((phase, index) => (
-                <SkillTimelinePhase 
-                  key={phase.id} 
+                <SkillTimelinePhase
+                  key={phase.id}
                   phase={phase}
                   isFirst={index === 0}
                   isLast={index === module.skillProgression.length - 1}
@@ -133,12 +133,12 @@ export default function ModuleDetailsPage() {
       {selectedTopic && (
         <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
           <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[80vh] flex flex-col">
-            <DialogHeader className="pt-2 pr-12"> {/* Added padding for close button */}
+            <DialogHeader className="pt-2 pr-12">
               <DialogTitle className="text-xl md:text-2xl text-[hsl(var(--safety-blue-text-DEFAULT))]">
                 {selectedTopic.title}
               </DialogTitle>
             </DialogHeader>
-            <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Added padding for scrollbar */}
+            <ScrollArea className="flex-grow pr-6 -mr-6">
               <div className="space-y-4 py-4 text-sm">
                 <div>
                   <h4 className="font-semibold text-foreground flex items-center mb-1">
@@ -169,8 +169,8 @@ export default function ModuleDetailsPage() {
             </ScrollArea>
             <DialogFooter className="flex justify-center pt-4">
               <DialogClose asChild>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   className="bg-success text-success-foreground hover:bg-success/90"
                   size="lg"
                 >
@@ -190,4 +190,3 @@ export default function ModuleDetailsPage() {
     </div>
   );
 }
-

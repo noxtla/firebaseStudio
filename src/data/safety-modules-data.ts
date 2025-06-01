@@ -79,6 +79,18 @@ export const modulesData: SafetyModule[] = [
         timeframe: 'Week 3-4', 
         description: 'Learn to establish safe work zones, traffic control, and emergency preparedness.' 
       },
+      {
+        id: 'phase1-3',
+        title: 'Emergency Procedures',
+        timeframe: 'Month 2',
+        description: 'Practice aerial rescue basics and emergency response protocols.'
+      },
+      {
+        id: 'phase1-4',
+        title: 'Tool Inspection',
+        timeframe: 'Month 2-3',
+        description: 'Detailed inspection routines for all climbing and cutting equipment.'
+      }
     ],
   },
   {
@@ -127,6 +139,24 @@ export const modulesData: SafetyModule[] = [
         timeframe: 'Week 3-4', 
         description: 'Learn controlled felling and efficient, safe limbing methods under supervision.' 
       },
+      {
+        id: 'phase2-3',
+        title: 'Advanced Rigging',
+        timeframe: 'Month 2-3',
+        description: 'Introduction to rigging for lowering limbs and sections of wood safely.'
+      },
+      {
+        id: 'phase2-4',
+        title: 'Complex Tree Removal',
+        timeframe: 'Month 4-6',
+        description: 'Supervised participation in removing trees in confined spaces or near obstacles.'
+      },
+      {
+        id: 'phase2-5',
+        title: 'Storm Damage Response',
+        timeframe: 'Month 6+',
+        description: 'Techniques for safely addressing trees damaged by storms, including tension wood.'
+      }
     ],
   },
   {
@@ -147,6 +177,20 @@ export const modulesData: SafetyModule[] = [
           { text: 'Understand rope strength, load limits, and safe working loads.' },
         ],
       },
+       {
+        id: 'topic3-2',
+        title: 'Aerial Lift Operations',
+        description: 'Safe setup, operation, and emergency procedures for aerial lifts.',
+        tag: 'ADVANCED',
+        safetyImpact: 'High - Prevents tip-overs, falls, and electrical contact from lifts.',
+        practicalRelevance: 'Essential for tasks where climbing is not feasible or efficient.',
+        keyPoints: [
+          { text: 'Conduct pre-operational checks on the lift vehicle and equipment.' },
+          { text: 'Assess ground conditions and set up outriggers correctly.' },
+          { text: 'Maintain safe distances from power lines; understand approach distances.' },
+          { text: 'Know emergency lowering procedures and rescue plans.' },
+        ],
+      }
     ],
     skillProgression: [
       { 
@@ -155,6 +199,24 @@ export const modulesData: SafetyModule[] = [
         timeframe: 'Month 2-3', 
         description: 'Ascent, descent, and work positioning with basic climbing systems.' 
       },
+      {
+        id: 'phase3-2',
+        title: 'Aerial Rescue Drills',
+        timeframe: 'Month 4-5',
+        description: 'Regular practice of self-rescue and partner rescue techniques from ropes.'
+      },
+      {
+        id: 'phase3-3',
+        title: 'Advanced Work Positioning',
+        timeframe: 'Month 6+',
+        description: 'Utilizing advanced techniques for optimal positioning during complex tasks.'
+      },
+      {
+        id: 'phase3-4',
+        title: 'SRT/SRS Climbing',
+        timeframe: 'Year 1+',
+        description: 'Introduction to Stationary Rope Technique (SRT) or Stationary Rope System (SRS) climbing.'
+      }
     ],
   },
 ];
