@@ -38,7 +38,7 @@ export default function ModuleSelectionPage() {
                     module.id === defaultSelectedModuleId && "safety-module-button-selected"
                   )}>
                     {module.shortTitle}
-                    {module.id === defaultSelectedModuleId && <span className="ml-2">☜</span>}
+                    {/* Icon removed from here */}
                   </a>
                 </Link>
               ))}
