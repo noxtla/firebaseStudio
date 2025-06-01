@@ -80,10 +80,11 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const getCanProceed = (): boolean => {
     switch (currentStep) {
       case 0: // SSN
-        if (!initialUserData || formData.ssnLast4.length !== 4 || !/^\d{4}$/.test(formData.ssnLast4)) {
+        if (formData.ssnLast4.length !== 4 || !/^\d{4}$/.test(formData.ssnLast4)) {
           return false;
         }
-        return String(initialUserData.NSS) === formData.ssnLast4;
+        // User wants to allow any 4 digits, so we don't check against initialUserData.NSS
+        return true;
       case 1: // Birth Day
         if (!initialUserData || !initialUserData.dataBirth) return false;
         const day = parseInt(formData.birthDay, 10);
@@ -109,7 +110,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
   const nextStep = async () => {
     if (currentStep === 0 && canProceed) { // SSN to BirthDay
-      toast({ variant: "success", title: "Success", description: "SSN verified." });
+      toast({ variant: "success", title: "Success", description: "SSN format accepted." });
       setCurrentStep(1);
     } else if (currentStep === 1 && canProceed) { // BirthDay to Photo
       toast({ variant: "success", title: "Success", description: "Birth day verified." });
