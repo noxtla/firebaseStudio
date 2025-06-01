@@ -115,7 +115,9 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
 
   const prevStep = () => {
-    if (currentStep > 0) {
+    if (currentStep === 0) {
+      router.push('/main-menu');
+    } else if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
       if (currentStep === 1) { 
          setFormData(prev => ({...prev, birthDay: ''}));
@@ -240,7 +242,8 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 0}
+                // The button is now always enabled for step 0 to go back to main menu
+                // disabled={currentStep === 0} // Previous condition removed
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
