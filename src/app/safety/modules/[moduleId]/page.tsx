@@ -167,7 +167,7 @@ export default function ModuleDetailsPage() {
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="flex justify-center pt-4">
+            <DialogFooter className="flex justify-center sm:justify-center pt-4"> {/* Ensures centering on all screen sizes */}
               <DialogClose asChild>
                 <Button
                   type="button"
