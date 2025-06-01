@@ -4,7 +4,7 @@
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+// Removed useState, useEffect as they are no longer needed after removing webhook logic
 import {
   Users,
   Truck,
@@ -14,25 +14,25 @@ import {
   AlertTriangle as AlertTriangleIcon,
   type LucideIcon,
   Loader2,
-  AlertTriangle, 
-  MapPin, 
-  ShieldAlert as ShieldAlertIcon, 
+  // AlertTriangle, // Not used
+  // MapPin, // Not used
+  // ShieldAlert as ShieldAlertIcon, // Not used
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+// import { Separator } from '@/components/ui/separator'; // Not used
 import { cn } from '@/lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert";
-import { useToast } from "@/hooks/use-toast";
+// import {
+//   AlertDialog,
+//   AlertDialogAction,
+//   AlertDialogContent,
+//   AlertDialogDescription,
+//   AlertDialogFooter,
+//   AlertDialogHeader,
+//   AlertDialogTitle,
+// } from "@/components/ui/alert-dialog"; // Not used
+// import { Alert as ShadAlert, AlertDescription as AlertDescUi, AlertTitle as AlertTitleUi } from "@/components/ui/alert"; // Not used
+// import { useToast } from "@/hooks/use-toast"; // Not used
 import { Toaster } from '@/components/ui/toaster';
 
 interface MenuItemProps {
@@ -40,7 +40,7 @@ interface MenuItemProps {
   icon: LucideIcon;
   href?: string;
   isPrimary?: boolean;
-  onClick?: () => Promise<void> | void;
+  onClick?: () => Promise<void> | void; // onClick is kept for potential future use by other items if needed
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -105,12 +105,14 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 };
 
 export default function MainMenuPage() {
-  const router = useRouter();
+  // const router = useRouter(); // Not used directly if all items are Link or have no onClick
+  // Commented out states related to attendance and vehicles webhook logic
   // const [isAttendanceFeatureEnabled, setIsAttendanceFeatureEnabled] = useState(true);
   // const [attendanceDisabledMessage, setAttendanceDisabledMessage] = useState<string | null>(null);
-  // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false);
-  // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null);
+  // const [isVehiclesLoading, setIsVehiclesLoading] = useState(false); // Removed
+  // const [vehiclesWebhookResponse, setVehiclesWebhookResponse] = useState<string | null>(null); // Removed
   
+  // useEffect for attendance status logic remains commented as per previous state
   // useEffect(() => {
   //   if (typeof window !== 'undefined') {
   //     const loginStatus = sessionStorage.getItem('loginWebhookStatus');
@@ -132,44 +134,13 @@ export default function MainMenuPage() {
   //   }
   // }, []);
 
-  // const handleVehiclesClick = async () => {
-  //   setIsVehiclesLoading(true);
-  //   setVehiclesWebhookResponse(null);
-  //   const { toast } = await import("@/hooks/use-toast"); 
-  //   try {
-  //     const response = await fetch('https://n8n.srv809556.hstgr.cloud/webhook-test/vehicles', {
-  //       method: 'GET', 
-  //       // headers: { 'Content-Type': 'application/json' }, // Not needed for GET without body
-  //       // body: JSON.stringify({ action: 'vehicles_menu_clicked' }), // Not for GET
-  //     });
-  //     const responseText = await response.text();
-  //     setVehiclesWebhookResponse(responseText); 
-  //     if (!response.ok) {
-  //       console.error('Vehicles webhook call failed:', response.status, responseText);
-  //       toast({
-  //         variant: "destructive",
-  //         title: "Vehicles Access Issue",
-  //         description: `Could not connect to vehicles service. Status: ${response.status}. Please try again later.`,
-  //       });
-  //     }
-  //   } catch (error: any) {
-  //     console.error('Error calling vehicles webhook:', error);
-  //     setVehiclesWebhookResponse(error.message || "Fetch failed");
-  //     toast({
-  //       variant: "destructive",
-  //       title: "Network Error",
-  //       description: "Could not connect to the vehicles service. Please check your connection and try again.",
-  //     });
-  //   } finally {
-  //     setIsVehiclesLoading(false);
-  //     router.push('/vehicles/enter-truck-number');
-  //   }
-  // };
+  // Removed handleVehiclesClick function as it's no longer used and was webhook-related
+  // const handleVehiclesClick = async () => { ... };
 
 
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, href: '/attendance' },
-    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false /* onClick: handleVehiclesClick, isLoading: isVehiclesLoading */ },
+    { title: 'Attendance', icon: Users, href: '/attendance' /* isDisabled based on attendance logic if uncommented */ },
+    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false }, // No onClick or isLoading for webhook
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: ShieldCheck, href: '#', isDisabled: false },
   ];
@@ -184,6 +155,7 @@ export default function MainMenuPage() {
       <Toaster />
       <AppHeader className="my-2 sm:my-4" />
 
+      {/* Commented out attendanceDisabledMessage display as its state logic is also commented */}
       {/* {attendanceDisabledMessage && (
          <ShadAlert variant="default" className="mb-4 max-w-xl mx-auto border-primary/50 bg-primary/5 text-primary">
           <AlertTriangle className="h-4 w-4 !text-primary" />
@@ -202,6 +174,7 @@ export default function MainMenuPage() {
         </div>
       </div>
       
+      {/* Commented out vehiclesWebhookResponse display as its state and logic are removed */}
       {/* {vehiclesWebhookResponse && (
         <div className="mt-4 p-3 bg-muted rounded-md w-full max-w-xl mx-auto">
           <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Vehicles Webhook Response (Debug):</h4>
