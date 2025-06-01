@@ -50,10 +50,10 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
           */}
           <div className="mt-4 text-center">
             <p className="text-sm font-medium text-muted-foreground">
-              Access is currently disabled.
+              Solo para empleados actualmente activos.
             </p>
             <p className="text-xs text-muted-foreground/90 mt-1">
-              The registration is only 7:00 am - 7:15 am.
+              Cualquier intento de fraude será castigado.
             </p>
           </div>
         </CardContent>
