@@ -170,6 +170,22 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                   {userData && <li>Position: {userData.Puesto}</li> }
                 </ul>
               </div>
+              
+              <div className="space-y-2">
+                <h3 className="font-semibold text-lg">Capture Details:</h3>
+                {captureTimestamp && (
+                  <p className="text-sm text-muted-foreground">Photo captured on: {new Date(captureTimestamp).toLocaleString()}</p>
+                )}
+                {capturedLocation ? (
+                  <p className="text-sm text-muted-foreground flex items-center">
+                    <MapPin className="h-4 w-4 mr-1 text-primary" />
+                    Location: Lat {capturedLocation.latitude.toFixed(4)}, Lon {capturedLocation.longitude.toFixed(4)} (Accuracy: {capturedLocation.accuracy.toFixed(0)}m)
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
+                )}
+              </div>
+
               {capturedImage && (
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg">Captured Photo:</h3>
@@ -185,20 +201,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Capture Details:</h3>
-                {captureTimestamp && (
-                  <p className="text-sm text-muted-foreground">Photo captured on: {new Date(captureTimestamp).toLocaleString()}</p>
-                )}
-                {capturedLocation ? (
-                  <p className="text-sm text-muted-foreground flex items-center">
-                    <MapPin className="h-4 w-4 mr-1 text-primary" />
-                    Location: Lat {capturedLocation.latitude.toFixed(4)}, Lon {capturedLocation.longitude.toFixed(4)} (Accuracy: {capturedLocation.accuracy.toFixed(0)}m)
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
-                )}
-              </div>
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button
