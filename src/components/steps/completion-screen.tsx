@@ -52,17 +52,6 @@ const getYearFromDate = (dateString: string | undefined): string => {
   }
 };
 
-// transformNameForPayload is no longer used for webhook payload, but kept in case needed for display or other logic
-// const transformNameForPayload = (nameStr: string | undefined): string => {
-//   if (!nameStr) return '';
-//   return nameStr
-//     .toLowerCase()
-//     .split(' ')
-//     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-//     .join('-');
-// };
-
-
 const CompletionScreen: FC<CompletionScreenProps> = ({
   formData,
   capturedImage,
@@ -75,9 +64,10 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
+  const [isRestarting, setIsRestarting] = useState(false); // Added for "Done" button
 
-  const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false); // Kept for potential future use
-  const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false); // Kept for potential future use
+  const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
+  const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -87,10 +77,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const handleSubmit = async () => {
     setSubmissionState('submitting');
     setSubmissionResponse(null);
-    // The specific error dialogs are no longer directly triggered by this simulated submission
-    // setWorkAreaAlertOpen(false); 
-    // setFaceMatchAlertOpen(false);
-
+    
     if (!capturedImage) {
       toast({
         variant: "destructive",
@@ -102,18 +89,28 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
 
     // Simulate API call
-    setTimeout(() => {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('attendanceSubmitted', 'true');
-      }
-      setSubmissionResponse(JSON.stringify({ "Success": "Attendance recorded (Simulated)" }));
-      setSubmissionState('submitted');
-      toast({
-        variant: "success",
-        title: "Attendance Recorded (Simulated)",
-        description: "Your attendance has been successfully simulated.",
-      });
-    }, 1500); // Simulate 1.5 second delay
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate 1.5 second delay
+
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('attendanceSubmitted', 'true');
+    }
+    setSubmissionResponse(JSON.stringify({ "Success": "Attendance recorded (Simulated)" }));
+    setSubmissionState('submitted');
+    toast({
+      variant: "success",
+      title: "Attendance Recorded (Simulated)",
+      description: "Your attendance has been successfully simulated.",
+    });
+  };
+
+  const handleActualRestart = async () => {
+    setIsRestarting(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('currentTruckNumber'); 
+    }
+    onRestart(); 
+    // setIsRestarting(false); // Component will unmount
   };
 
   const birthDayDisplay = userData?.dataBirth && formData.birthDay
@@ -144,8 +141,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
               </CardContent>
             )}
             <CardFooter className="flex justify-center pt-6">
-              <Button onClick={onRestart} size="lg" aria-label="Done">
-                Done
+              <Button onClick={handleActualRestart} size="lg" aria-label="Done" disabled={isRestarting}>
+                {isRestarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isRestarting ? "Loading..." : "Done"}
               </Button>
             </CardFooter>
           </>
@@ -201,7 +199,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                   <p className="text-sm text-muted-foreground">Location data: Not available or permission denied.</p>
                 )}
               </div>
-              {/* Removed display of actual webhook error as it's no longer relevant */}
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button
@@ -227,7 +224,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         )}
       </Card>
 
-      {/* AlertDialogs are kept in the DOM but will not be triggered by the simulated submission logic */}
       <AlertDialog open={isWorkAreaAlertOpen} onOpenChange={setWorkAreaAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
@@ -262,4 +258,3 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
-

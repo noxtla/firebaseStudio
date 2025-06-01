@@ -16,13 +16,14 @@ import type { UserData } from '@/types';
 export default function EnterTruckNumberPage() {
   const [truckNumber, setTruckNumber] = useState('');
   const [validVehicleNumbers, setValidVehicleNumbers] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
+    setIsLoadingInitialData(true);
     setErrorMessage(null);
     if (typeof window !== 'undefined') {
       const storedUserData = sessionStorage.getItem('userData');
@@ -32,9 +33,6 @@ export default function EnterTruckNumberPage() {
           if (parsedUserData.Vehicles && parsedUserData.Vehicles.length > 0) {
             setValidVehicleNumbers(parsedUserData.Vehicles.map(v => String(v).replace(/\D/g, '')));
           } else {
-            // This case might still be relevant if you want to ensure some vehicles *could* be assigned,
-            // even if not strictly validating against them.
-            // For now, we'll keep the logic that populates validVehicleNumbers but won't use it for button enabling.
             console.warn("No vehicles are assigned to this user in session data, but proceeding is allowed if format is correct.");
           }
         } catch (error) {
@@ -57,7 +55,7 @@ export default function EnterTruckNumberPage() {
         router.replace('/'); 
       }
     }
-    setIsLoading(false);
+    setIsLoadingInitialData(false);
   }, [router, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,12 +76,11 @@ export default function EnterTruckNumberPage() {
   };
 
   const isTruckNumberValidForSubmission = useMemo(() => {
-    if (isLoading || errorMessage) return false;
-    // Only check format, not inclusion in validVehicleNumbers
+    if (isLoadingInitialData || errorMessage) return false;
     return /^\d{3}-\d{4}$/.test(truckNumber);
-  }, [truckNumber, isLoading, errorMessage]);
+  }, [truckNumber, isLoadingInitialData, errorMessage]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
       toast({
         title: "Invalid Format",
@@ -92,31 +89,24 @@ export default function EnterTruckNumberPage() {
       });
       return;
     }
-
-    // Removed check against validVehicleNumbers
-    // const numericTruckNumber = truckNumber.replace(/-/g, '');
-    // if (!validVehicleNumbers.includes(numericTruckNumber)) {
-    //   toast({
-    //     title: "Invalid Truck Number",
-    //     description: "The entered truck number is not recognized or not assigned to you. Please check and try again.",
-    //     variant: "destructive",
-    //   });
-    //   return;
-    // }
     
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('currentTruckNumber', truckNumber);
     }
     router.push('/vehicles/actions');
+    // setIsSubmitting(false); // Component unmounts
   };
 
-  const isButtonDisabled = isLoading || !!errorMessage || !isTruckNumberValidForSubmission;
+  const isButtonDisabled = isLoadingInitialData || !!errorMessage || !isTruckNumberValidForSubmission;
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
       <Toaster />
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
         <AppHeader className="flex-grow !text-left ml-0 pl-0" />
@@ -129,13 +119,13 @@ export default function EnterTruckNumberPage() {
             <CardTitle className="text-2xl text-center font-heading-style">Enter Truck Number</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-2">
-            {isLoading && (
+            {isLoadingInitialData && (
               <div className="flex items-center justify-center text-muted-foreground">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Loading vehicle information...
               </div>
             )}
-            {errorMessage && !isLoading && (
+            {errorMessage && !isLoadingInitialData && (
               <p className="text-sm text-center text-destructive">
                 Error: {errorMessage}
               </p>
@@ -152,7 +142,7 @@ export default function EnterTruckNumberPage() {
                 inputMode="numeric" 
                 pattern="[0-9-]*" 
                 maxLength={8} 
-                disabled={isLoading || !!errorMessage}
+                disabled={isLoadingInitialData || !!errorMessage || isSubmitting}
               />
             </div>
           </CardContent>
@@ -161,9 +151,10 @@ export default function EnterTruckNumberPage() {
               onClick={handleSubmit} 
               className="w-full" 
               size="lg"
-              disabled={isButtonDisabled}
+              disabled={isButtonDisabled || isSubmitting}
             >
-              Continue
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isSubmitting ? "Loading..." : "Continue"}
             </Button>
           </CardFooter>
         </Card>

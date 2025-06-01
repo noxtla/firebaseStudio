@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ChevronLeft, TriangleAlert as ReportProblemIcon } from 'lucide-react';
+import { ChevronLeft, TriangleAlert as ReportProblemIcon, Loader2 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
@@ -68,6 +68,7 @@ interface UiText {
   generalDetailsLabel: string;
   generalDetailsPlaceholder: string;
   submitButton: string;
+  submittingButton: string;
   toastTitle: string;
   toastDescriptionTruck: string;
   toastDescriptionTrailer: string;
@@ -88,6 +89,7 @@ const uiTextEn: UiText = {
   generalDetailsLabel: "Additional Details",
   generalDetailsPlaceholder: "Provide any other relevant details about the defects observed...",
   submitButton: "Submit Defects",
+  submittingButton: "Submitting...",
   toastTitle: "Defects Logged (Placeholder)",
   toastDescriptionTruck: "Truck",
   toastDescriptionTrailer: "Trailer",
@@ -108,6 +110,7 @@ const uiTextEs: UiText = {
   generalDetailsLabel: "Detalles Adicionales",
   generalDetailsPlaceholder: "Proporcione cualquier otro detalle relevante sobre los defectos observados...",
   submitButton: "Enviar Defectos",
+  submittingButton: "Enviando...",
   toastTitle: "Defectos Registrados (Marcador de posición)",
   toastDescriptionTruck: "Camión",
   toastDescriptionTrailer: "Remolque",
@@ -123,6 +126,7 @@ export default function AddDefectsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [lang, setLang] = useState<'en' | 'es'>('en');
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
   const [selectedDefects, setSelectedDefects] = useState<SelectedDefects>({
     truck: [],
     trailer: [],
@@ -160,7 +164,10 @@ export default function AddDefectsPage() {
     });
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+
     const truckDefectsToLog = selectedDefects.truck.join(', ') || currentUiText.toastNone;
     const trailerDefectsToLog = selectedDefects.trailer.join(', ') || currentUiText.toastNone;
     const generalDetailsToLog = selectedDefects.generalDefectDetails || currentUiText.toastNotApplicable;
@@ -169,13 +176,24 @@ export default function AddDefectsPage() {
       title: currentUiText.toastTitle,
       description: `${currentUiText.toastDescriptionTruck}: ${truckDefectsToLog}. ${currentUiText.toastDescriptionTrailer}: ${trailerDefectsToLog}. ${currentUiText.toastDescriptionOtherTruck}: ${selectedDefects.otherTruckText || currentUiText.toastNotApplicable}. ${currentUiText.toastDescriptionOtherTrailer}: ${selectedDefects.otherTrailerText || currentUiText.toastNotApplicable}. ${currentUiText.toastDescriptionGeneral}: ${generalDetailsToLog}`,
     });
+    
+    // Optionally navigate back or to another page after submission
+    // router.back(); 
+    setIsSubmitting(false);
   };
+
+  const hasSelectedAnyDefect = 
+    selectedDefects.truck.length > 0 ||
+    selectedDefects.trailer.length > 0 ||
+    selectedDefects.otherTruckText.trim() !== '' ||
+    selectedDefects.otherTrailerText.trim() !== '' ||
+    selectedDefects.generalDefectDetails.trim() !== '';
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
       <Toaster />
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
         <AppHeader className="flex-grow" />
@@ -201,6 +219,7 @@ export default function AddDefectsPage() {
                       id={`truck-${truckDefectValue(index)}`}
                       checked={selectedDefects.truck.includes(truckDefectValue(index))}
                       onCheckedChange={(checked) => handleCheckboxChange('truck', truckDefectValue(index), !!checked)}
+                      disabled={isSubmitting}
                     />
                     <Label htmlFor={`truck-${truckDefectValue(index)}`} className="text-sm font-normal cursor-pointer">
                       {defect}
@@ -214,6 +233,7 @@ export default function AddDefectsPage() {
                   value={selectedDefects.otherTruckText}
                   onChange={(e) => setSelectedDefects(prev => ({ ...prev, otherTruckText: e.target.value }))}
                   className="mt-3 text-sm"
+                  disabled={isSubmitting}
                 />
               )}
             </div>
@@ -227,6 +247,7 @@ export default function AddDefectsPage() {
                       id={`trailer-${trailerDefectValue(index)}`}
                       checked={selectedDefects.trailer.includes(trailerDefectValue(index))}
                       onCheckedChange={(checked) => handleCheckboxChange('trailer', trailerDefectValue(index), !!checked)}
+                      disabled={isSubmitting}
                     />
                     <Label htmlFor={`trailer-${trailerDefectValue(index)}`} className="text-sm font-normal cursor-pointer">
                       {defect}
@@ -240,6 +261,7 @@ export default function AddDefectsPage() {
                   value={selectedDefects.otherTrailerText}
                   onChange={(e) => setSelectedDefects(prev => ({ ...prev, otherTrailerText: e.target.value }))}
                   className="mt-3 text-sm"
+                  disabled={isSubmitting}
                 />
               )}
             </div>
@@ -254,14 +276,16 @@ export default function AddDefectsPage() {
                 value={selectedDefects.generalDefectDetails}
                 onChange={(e) => setSelectedDefects(prev => ({ ...prev, generalDefectDetails: e.target.value }))}
                 className="text-sm min-h-[100px]"
+                disabled={isSubmitting}
               />
             </div>
           </CardContent>
         </ScrollArea>
         
         <CardFooter className="flex justify-end pt-6 border-t mt-auto">
-          <Button size="lg" onClick={handleSubmit}>
-            {currentUiText.submitButton}
+          <Button size="lg" onClick={handleSubmit} disabled={isSubmitting || !hasSelectedAnyDefect}>
+            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isSubmitting ? currentUiText.submittingButton : currentUiText.submitButton}
           </Button>
         </CardFooter>
       </Card>

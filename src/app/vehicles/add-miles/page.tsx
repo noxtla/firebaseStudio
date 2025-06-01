@@ -6,23 +6,20 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronLeft, Gauge, User, CalendarDays, Clock } from 'lucide-react';
+import { ChevronLeft, Gauge, User, CalendarDays, Clock, Loader2 } from 'lucide-react';
 import type { UserData } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-interface MileageInfo {
-  truckNumber: string;
-  driverName: string;
-  lastRecordedMileage: string;
-  lastDrivenDate: string;
-  lastDropOffTime: string;
-}
+import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { Toaster } from '@/components/ui/toaster'; // Import Toaster
 
 export default function AddMilesPage() {
   const [mileageInfo, setMileageInfo] = useState<MileageInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
+  const [newMileage, setNewMileage] = useState(''); // State for new mileage input
   const router = useRouter();
+  const { toast } = useToast(); // Initialize useToast
 
   useEffect(() => {
     const truckNumberFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('currentTruckNumber') : 'N/A';
@@ -42,11 +39,11 @@ export default function AddMilesPage() {
     setMileageInfo({
       truckNumber: truckNumberFromSession || 'N/A',
       driverName: driverNameFromSession,
-      lastRecordedMileage: "12345 miles",
-      lastDrivenDate: "2024-07-15",
-      lastDropOffTime: "17:30",
+      lastRecordedMileage: "12345 miles", // Placeholder
+      lastDrivenDate: "2024-07-15", // Placeholder
+      lastDropOffTime: "17:30", // Placeholder
     });
-    setIsLoading(false);
+    setIsLoadingInitialData(false);
   }, []);
 
   const InfoRow = ({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ElementType }) => (
@@ -59,21 +56,38 @@ export default function AddMilesPage() {
     </div>
   );
 
-  const handleSubmitNewMileage = () => {
-    // For now, just navigate back. Actual submission logic would go here.
+  const handleSubmitNewMileage = async () => {
+    if (!newMileage.trim() || isNaN(parseFloat(newMileage))) {
+        toast({
+            title: "Invalid Input",
+            description: "Please enter a valid mileage number.",
+            variant: "destructive",
+        });
+        return;
+    }
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    
+    // Placeholder submission logic
+    toast({
+        title: "Mileage Submitted (Placeholder)",
+        description: `New mileage ${newMileage} for truck ${mileageInfo?.truckNumber} logged.`,
+    });
+    
     router.back();
+    // setIsSubmitting(false); // Component likely unmounts
   };
 
-  if (isLoading) {
+  if (isLoadingInitialData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <p>Loading mileage information...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-2">Loading mileage information...</p>
       </div>
     );
   }
 
   if (!mileageInfo) {
-    // Should not happen if isLoading is false and data is set, but as a fallback
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <p>Could not load mileage information.</p>
@@ -84,8 +98,9 @@ export default function AddMilesPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
+      <Toaster /> {/* Add Toaster */}
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
         <AppHeader className="flex-grow" />
@@ -106,15 +121,28 @@ export default function AddMilesPage() {
             <InfoRow label="Last Driven Date" value={mileageInfo.lastDrivenDate} icon={CalendarDays} />
             <InfoRow label="Vehicle Drop-off Time (Last)" value={mileageInfo.lastDropOffTime} icon={Clock} />
             
-            {/* Placeholder for New Mileage Input */}
             <div className="pt-6 mt-4 border-t border-border">
               <h3 className="text-lg font-semibold text-center mb-4 text-foreground">Enter New Mileage</h3>
               <div className="space-y-2 mb-4">
                 <Label htmlFor="newMileage" className="text-muted-foreground">New Mileage Reading</Label>
-                <Input id="newMileage" type="number" placeholder="e.g., 12500" className="text-base" />
+                <Input 
+                  id="newMileage" 
+                  type="number" 
+                  placeholder="e.g., 12500" 
+                  className="text-base" 
+                  value={newMileage}
+                  onChange={(e) => setNewMileage(e.target.value)}
+                  disabled={isSubmitting}
+                />
               </div>
-              <Button className="w-full" size="lg" onClick={handleSubmitNewMileage}>
-                Submit New Mileage
+              <Button 
+                className="w-full" 
+                size="lg" 
+                onClick={handleSubmitNewMileage} 
+                disabled={isSubmitting || !newMileage.trim()}
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSubmitting ? "Submitting..." : "Submit New Mileage"}
               </Button>
             </div>
           </CardContent>

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { ChevronLeft, HelpCircle } from 'lucide-react';
+import { ChevronLeft, HelpCircle, Loader2 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea"; // Import Textarea
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from '@/components/ui/toaster';
 
@@ -24,9 +24,10 @@ export default function OtherGasReasonPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [reason, setReason] = useState<string>("");
-  const [customExplanation, setCustomExplanation] = useState<string>(""); // State for Textarea
+  const [customExplanation, setCustomExplanation] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!reason) {
       toast({
         variant: "destructive",
@@ -44,20 +45,27 @@ export default function OtherGasReasonPage() {
       return;
     }
 
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+
     console.log("Selected 'Other' Gas Reason:", reason);
     console.log("Custom Explanation:", customExplanation);
     toast({
       title: "Reason Logged (Placeholder)",
       description: `Selected reason: ${reason}. Explanation: ${customExplanation || 'N/A'}. This would normally be submitted.`,
     });
-    router.back(); // Or navigate to a confirmation/next step
+    
+    router.back(); 
+    // setIsSubmitting(false); // Component unmounts
   };
+
+  const canSubmit = reason && !(reason === "Other Equipment (Specify)" && !customExplanation.trim());
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
       <Toaster />
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
         <AppHeader className="flex-grow" />
@@ -75,7 +83,7 @@ export default function OtherGasReasonPage() {
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-2">
               <Label htmlFor="otherReasonSelect" className="text-muted-foreground">Reason for 'Other' Gas</Label>
-              <Select value={reason} onValueChange={setReason}>
+              <Select value={reason} onValueChange={setReason} disabled={isSubmitting}>
                 <SelectTrigger id="otherReasonSelect" className="w-full text-base">
                   <SelectValue placeholder="Select a reason..." />
                 </SelectTrigger>
@@ -100,12 +108,14 @@ export default function OtherGasReasonPage() {
                 value={customExplanation}
                 onChange={(e) => setCustomExplanation(e.target.value)}
                 className="text-base min-h-[100px]"
+                disabled={isSubmitting}
               />
             </div>
           </CardContent>
           <CardFooter className="flex justify-end pt-6">
-            <Button size="lg" onClick={handleSubmit}>
-              Submit Reason
+            <Button size="lg" onClick={handleSubmit} disabled={isSubmitting || !canSubmit}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isSubmitting ? "Submitting..." : "Submit Reason"}
             </Button>
           </CardFooter>
         </Card>

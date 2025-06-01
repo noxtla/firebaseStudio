@@ -6,57 +6,66 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronLeft, Truck as TruckIcon } from 'lucide-react';
+import { ChevronLeft, Truck as TruckIcon, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-// UserData import can be removed if not used elsewhere after this change
-// import type { UserData } from '@/types'; 
+import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { Toaster } from '@/components/ui/toaster'; // Import Toaster
 
-interface TrailerContextInfo { // Renamed from TrailerInfo and simplified
+
+interface TrailerContextInfo {
   truckNumber: string;
 }
 
 export default function AddTrailerPage() {
-  const [trailerContext, setTrailerContext] = useState<TrailerContextInfo | null>(null); // Renamed state
-  const [isLoading, setIsLoading] = useState(true);
+  const [trailerContext, setTrailerContext] = useState<TrailerContextInfo | null>(null);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
   const [trailerNumber, setTrailerNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
   const router = useRouter();
+  const { toast } = useToast(); // Initialize useToast
 
   useEffect(() => {
     const truckNumberFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('currentTruckNumber') : 'N/A';
     
-    setTrailerContext({ // Updated state being set
+    setTrailerContext({
       truckNumber: truckNumberFromSession || 'N/A',
-      // Removed lastDriver, lastUsedDate, lastDropOffTime
     });
-    setIsLoading(false);
+    setIsLoadingInitialData(false);
   }, []);
 
-  // InfoRow component is no longer needed here if all InfoRows are removed
-  // const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  //   <div className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
-  //     <div className="flex items-center">
-  //       <p className="font-medium text-muted-foreground">{label}:</p>
-  //     </div>
-  //     <p className="text-foreground text-right">{value}</p>
-  //   </div>
-  // );
-
-  const handleSubmitTrailer = () => {
-    // For now, just navigate back. Actual submission logic would go here.
-    // console.log("Adding trailer:", trailerNumber, "to truck:", trailerContext?.truckNumber);
+  const handleSubmitTrailer = async () => {
+    if (!trailerNumber.trim()) {
+        toast({
+            title: "Invalid Input",
+            description: "Please enter a trailer number.",
+            variant: "destructive",
+        });
+        return;
+    }
+    setIsSubmitting(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    
+    // Placeholder submission logic
+    toast({
+        title: "Trailer Added (Placeholder)",
+        description: `Trailer ${trailerNumber} added to truck ${trailerContext?.truckNumber}.`,
+    });
+    
     router.back();
+    // setIsSubmitting(false); // Component likely unmounts
   };
 
-  if (isLoading) {
+  if (isLoadingInitialData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <p>Loading trailer information...</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-2">Loading trailer information...</p>
       </div>
     );
   }
 
-  if (!trailerContext) { // Updated check
+  if (!trailerContext) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <p>Could not load truck information.</p>
@@ -67,8 +76,9 @@ export default function AddTrailerPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
+      <Toaster /> {/* Add Toaster */}
       <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
         <AppHeader className="flex-grow" />
@@ -83,10 +93,8 @@ export default function AddTrailerPage() {
             </CardTitle>
             <CardDescription>To Truck: {trailerContext.truckNumber}</CardDescription>
           </CardHeader>
-          <CardContent className="pt-4 text-sm sm:text-base"> {/* Removed space-y-1 as InfoRows are gone */}
-            {/* Removed InfoRow calls for Last Driver, Last Used Date, Last Drop-off Time */}
-            
-            <div className="pt-0 mt-0"> {/* Adjusted padding/margin as previous content is removed */}
+          <CardContent className="pt-4 text-sm sm:text-base">
+            <div className="pt-0 mt-0">
               <h3 className="text-lg font-semibold text-center mb-4 text-foreground">Enter New Trailer Details</h3>
               <div className="space-y-2 mb-4">
                 <Label htmlFor="trailerNumber" className="text-muted-foreground">Trailer Number</Label>
@@ -97,10 +105,17 @@ export default function AddTrailerPage() {
                   className="text-base"
                   value={trailerNumber}
                   onChange={(e) => setTrailerNumber(e.target.value)} 
+                  disabled={isSubmitting}
                 />
               </div>
-              <Button className="w-full" size="lg" onClick={handleSubmitTrailer} disabled={!trailerNumber}>
-                Add Trailer to Truck
+              <Button 
+                className="w-full" 
+                size="lg" 
+                onClick={handleSubmitTrailer} 
+                disabled={isSubmitting || !trailerNumber.trim()}
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isSubmitting ? "Adding..." : "Add Trailer to Truck"}
               </Button>
             </div>
           </CardContent>

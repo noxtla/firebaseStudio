@@ -3,7 +3,7 @@
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
+import type { FormData, FormStep, UserData } from '@/types'; // Removed CapturedLocation as it's not used here
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import AppHeader from './app-header';
-// ProgressStepper will not be shown on the phone number step
-// import ProgressStepper from './progress-stepper';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
 
@@ -42,20 +40,20 @@ export default function MultiStepForm() {
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
-  const [userData, setUserData] = useState<UserData | null>(null); // To store fetched user data
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isProcessingPhoneNumber, setIsProcessingPhoneNumber] = useState(false); // Added loading state
 
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
-    // Clear sensitive data from sessionStorage when the form initializes or currentStep resets to 0
     if (currentStep === 0) {
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
         sessionStorage.removeItem('rawApiResponse');
         sessionStorage.removeItem('currentTruckNumber');
-        sessionStorage.removeItem('attendanceSubmitted'); // Clear attendance status too
+        sessionStorage.removeItem('attendanceSubmitted');
       }
     }
   }, [currentStep]);
@@ -64,7 +62,7 @@ export default function MultiStepForm() {
     const { name, value } = e.target;
     if (name === "phoneNumber") {
       const cleaned = ('' + value).replace(/\D/g, '');
-      if (cleaned.length > 10) return; // Max 10 digits
+      if (cleaned.length > 10) return;
       const match = cleaned.match(/^(\d{0,3})(\d{0,3})(\d{0,4})$/);
       if (match) {
         let formatted = '';
@@ -97,6 +95,7 @@ export default function MultiStepForm() {
     setFormData(initialFormData);
     setUserData(null);
     setRawApiResponse(null);
+    setIsProcessingPhoneNumber(false);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('userData');
       sessionStorage.removeItem('loginWebhookStatus');
@@ -115,32 +114,36 @@ export default function MultiStepForm() {
     }
 
     if (currentStep === 1 && canProceed) {
+      setIsProcessingPhoneNumber(true);
       setUserData(null);
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('userData');
         sessionStorage.removeItem('loginWebhookStatus');
-        sessionStorage.removeItem('attendanceSubmitted'); // Ensure this is cleared before setting new data
+        sessionStorage.removeItem('attendanceSubmitted');
       }
+      
+      // Simulate a small delay for visual feedback
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Create and store mock user data since webhooks are bypassed
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
       const mockUserData: UserData = {
         Name: "Mock User",
         Puesto: "Mock Position",
         phoneNumber: cleanedPhoneNumber,
-        NSS: "1234", // Last 4 digits for SSN verification step
-        dataBirth: "1990-01-15", // YYYY-MM-DD, for birth day verification (day: 15)
-        Vehicles: ["111-1111", "222-2222", "123-4567"], // Sample vehicle numbers
+        NSS: "1234",
+        dataBirth: "1990-01-15",
+        Vehicles: ["111-1111", "222-2222", "123-4567"],
       };
 
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('userData', JSON.stringify(mockUserData));
-        sessionStorage.setItem('loginWebhookStatus', '200'); // Simulate successful login
+        sessionStorage.setItem('loginWebhookStatus', '200');
       }
-      setUserData(mockUserData); // Set local state if needed elsewhere on this component
+      setUserData(mockUserData);
 
       toast({ variant: "success", title: "Mock Login Successful", description: "Proceeding with mock user data." });
       router.push('/main-menu');
+      // setIsProcessingPhoneNumber(false); // Not strictly necessary if unmounting
       return;
     }
   };
@@ -158,7 +161,6 @@ export default function MultiStepForm() {
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
 
   const showAppHeader = currentStep !== 0;
-  const showStepper = false;
   const showStepTitle = currentStep === 1;
   const showNavButtons = currentStep === 1;
 
@@ -180,7 +182,7 @@ export default function MultiStepForm() {
   };
 
   return (
-    <div className={cn("flex flex-col min-h-screen")}> {/* Removed bg-background here, applied by parent or globally */}
+    <div className={cn("flex flex-col min-h-screen")}>
       <Toaster />
       <AlertDialog open={isNotFoundAlertOpen} onOpenChange={setIsNotFoundAlertOpen}>
         <AlertDialogContent>
@@ -223,16 +225,21 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || isProcessingPhoneNumber}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
-              <Button onClick={nextStep} disabled={!canProceed}>
-                {
+              <Button onClick={nextStep} disabled={!canProceed || isProcessingPhoneNumber}>
+                {isProcessingPhoneNumber ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
                   <>
                     Next <ArrowRight className="ml-2 h-4 w-4" />
                   </>
-                }
+                )}
               </Button>
             </div>
           )}
