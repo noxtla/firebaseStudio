@@ -6,8 +6,9 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { modulesData, type SafetyModule, type Topic, type SkillPhase, getTagClassName } from '@/data/safety-modules-data';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ChevronLeft, AlertTriangle, CheckSquare, ListChecks } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle as CardTitleComponent } from '@/components/ui/card'; // Renamed CardTitle to CardTitleComponent to avoid conflict
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { ChevronLeft, AlertTriangle, CheckSquare, ListChecks, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
@@ -19,23 +20,24 @@ export default function ModuleDetailsPage() {
   const [module, setModule] = useState<SafetyModule | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
 
   useEffect(() => {
     if (moduleId) {
       const foundModule = modulesData.find(m => m.id === moduleId);
       if (foundModule) {
         setModule(foundModule);
-        // Optionally, select the first topic by default
-        // if (foundModule.topics.length > 0) {
-        //   setSelectedTopic(foundModule.topics[0]);
-        // }
       } else {
-        // Handle module not found, e.g., redirect or show error
         router.push('/safety/modules');
       }
       setIsLoading(false);
     }
   }, [moduleId, router]);
+
+  const handleTopicSelect = (topic: Topic) => {
+    setSelectedTopic(topic);
+    setIsDetailDialogOpen(true);
+  };
 
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-[60vh]"><p>Loading module details...</p></div>;
@@ -54,7 +56,7 @@ export default function ModuleDetailsPage() {
       onClick={onSelect}
     >
       <CardHeader className="p-0 mb-2">
-        <CardTitle className="text-lg text-[hsl(var(--safety-blue-text-DEFAULT))]">{topic.title}</CardTitle>
+        <CardTitleComponent className="text-lg text-[hsl(var(--safety-blue-text-DEFAULT))]">{topic.title}</CardTitleComponent>
       </CardHeader>
       <CardContent className="p-0 space-y-2">
         <p className="text-sm text-muted-foreground">{topic.description}</p>
@@ -70,13 +72,8 @@ export default function ModuleDetailsPage() {
 
   const SkillTimelinePhase: React.FC<{ phase: SkillPhase, isFirst: boolean, isLast: boolean }> = ({ phase, isFirst, isLast }) => (
     <div className="relative flex flex-col items-center">
-      {/* Timeline Connector (not for first) */}
       {!isFirst && <div className="absolute top-2 left-[-50%] w-1/2 h-0.5 bg-[hsl(var(--safety-gray-border-DEFAULT))] z-0"></div>}
-      
-      {/* Marker */}
       <div className="relative z-10 w-4 h-4 bg-[hsl(var(--safety-blue-border-DEFAULT))] rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
-      
-      {/* Phase Card */}
       <Card className="mt-2 w-48 sm:w-56 bg-card p-3 shadow-sm border border-[hsl(var(--safety-gray-border-DEFAULT))]">
         <h4 className="font-semibold text-sm text-[hsl(var(--safety-blue-text-DEFAULT))]">{phase.title}</h4>
         <p className="text-xs text-muted-foreground mb-1">{phase.timeframe}</p>
@@ -84,7 +81,6 @@ export default function ModuleDetailsPage() {
       </Card>
     </div>
   );
-
 
   return (
     <div className="w-full">
@@ -100,86 +96,86 @@ export default function ModuleDetailsPage() {
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-        {/* Left Column / Main Content */}
-        <div className="md:col-span-2 space-y-8">
-          {/* Key Focus Areas */}
-          <section>
-            <h2 className="text-xl font-semibold mb-4 text-foreground">Key Focus Areas</h2>
-            <div className="space-y-4">
-              {module.topics.map(topic => (
-                <TopicCard
-                  key={topic.id}
-                  topic={topic}
-                  isSelected={selectedTopic?.id === topic.id}
-                  onSelect={() => setSelectedTopic(topic)}
+      <div className="space-y-12"> {/* Adjusted layout: removed grid, using space-y */}
+        {/* Key Focus Areas */}
+        <section>
+          <h2 className="text-xl font-semibold mb-4 text-foreground">Key Focus Areas</h2>
+          <div className="space-y-4">
+            {module.topics.map(topic => (
+              <TopicCard
+                key={topic.id}
+                topic={topic}
+                isSelected={selectedTopic?.id === topic.id}
+                onSelect={() => handleTopicSelect(topic)}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* Suggested Skill Progression */}
+        <section>
+          <h2 className="text-xl font-semibold mb-6 text-foreground">Suggested Skill Progression</h2>
+          <ScrollArea className="w-full pb-4">
+            <div className="flex space-x-4 sm:space-x-0 sm:grid sm:grid-flow-col sm:auto-cols-max sm:gap-x-8 overflow-x-auto">
+              {module.skillProgression.map((phase, index) => (
+                <SkillTimelinePhase 
+                  key={phase.id} 
+                  phase={phase}
+                  isFirst={index === 0}
+                  isLast={index === module.skillProgression.length - 1}
                 />
               ))}
             </div>
-          </section>
+          </ScrollArea>
+        </section>
+      </div>
 
-          {/* Suggested Skill Progression */}
-          <section>
-            <h2 className="text-xl font-semibold mb-6 text-foreground">Suggested Skill Progression</h2>
-            <ScrollArea className="w-full pb-4">
-              <div className="flex space-x-4 sm:space-x-0 sm:grid sm:grid-flow-col sm:auto-cols-max sm:gap-x-8 overflow-x-auto">
-                {module.skillProgression.map((phase, index) => (
-                  <SkillTimelinePhase 
-                    key={phase.id} 
-                    phase={phase}
-                    isFirst={index === 0}
-                    isLast={index === module.skillProgression.length - 1}
-                  />
-                ))}
+      {selectedTopic && (
+        <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+          <DialogContent className="sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[80vh] flex flex-col">
+            <DialogHeader className="pt-2 pr-12"> {/* Added padding for close button */}
+              <DialogTitle className="text-xl md:text-2xl text-[hsl(var(--safety-blue-text-DEFAULT))]">
+                {selectedTopic.title}
+              </DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Added padding for scrollbar */}
+              <div className="space-y-4 py-4 text-sm">
+                <div>
+                  <h4 className="font-semibold text-foreground flex items-center mb-1">
+                    <AlertTriangle className="h-4 w-4 mr-2 text-red-500 flex-shrink-0" />
+                    Safety Impact:
+                  </h4>
+                  <p className="text-muted-foreground ml-6">{selectedTopic.safetyImpact}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground flex items-center mb-1">
+                    <CheckSquare className="h-4 w-4 mr-2 text-green-600 flex-shrink-0" />
+                    Practical Relevance:
+                  </h4>
+                  <p className="text-muted-foreground ml-6">{selectedTopic.practicalRelevance}</p>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-foreground flex items-center mb-1">
+                     <ListChecks className="h-4 w-4 mr-2 text-sky-500 flex-shrink-0" />
+                    Key Points / Actions:
+                  </h4>
+                  <ul className="list-disc list-inside space-y-1 text-muted-foreground pl-7">
+                    {selectedTopic.keyPoints.map((point, index) => (
+                      <li key={index}>{point.text}</li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </ScrollArea>
-          </section>
-        </div>
-
-        {/* Right Sidebar */}
-        <aside className="md:col-span-1 md:sticky md:top-24 h-fit">
-          <Card className="bg-white dark:bg-gray-800 shadow-lg border border-[hsl(var(--safety-gray-border-DEFAULT))]">
-            <CardHeader>
-              <CardTitle className="text-lg text-[hsl(var(--safety-blue-text-DEFAULT))]">
-                {selectedTopic ? selectedTopic.title : "Select a Focus Area"}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              {selectedTopic ? (
-                <>
-                  <div>
-                    <h4 className="font-semibold text-foreground flex items-center mb-1">
-                      <AlertTriangle className="h-4 w-4 mr-2 text-red-500" />
-                      Safety Impact:
-                    </h4>
-                    <p className="text-muted-foreground">{selectedTopic.safetyImpact}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground flex items-center mb-1">
-                      <CheckSquare className="h-4 w-4 mr-2 text-green-600" />
-                      Practical Relevance:
-                    </h4>
-                    <p className="text-muted-foreground">{selectedTopic.practicalRelevance}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-foreground flex items-center mb-1">
-                       <ListChecks className="h-4 w-4 mr-2 text-sky-500" />
-                      Key Points / Actions:
-                    </h4>
-                    <ul className="list-disc list-inside space-y-1 text-muted-foreground pl-1">
-                      {selectedTopic.keyPoints.map((point, index) => (
-                        <li key={index}>{point.text}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              ) : (
-                <p className="text-muted-foreground">Click on a topic card from the "Key Focus Areas" to see more details here.</p>
-              )}
-            </CardContent>
-          </Card>
-        </aside>
-      </div>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" className="absolute right-4 top-4 p-1 h-auto">
+                <X className="h-5 w-5" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
