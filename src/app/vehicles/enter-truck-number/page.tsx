@@ -32,12 +32,10 @@ export default function EnterTruckNumberPage() {
           if (parsedUserData.Vehicles && parsedUserData.Vehicles.length > 0) {
             setValidVehicleNumbers(parsedUserData.Vehicles.map(v => String(v).replace(/\D/g, '')));
           } else {
-            setErrorMessage("No vehicles are assigned to this user.");
-            toast({
-              title: "No Vehicles Found",
-              description: "No vehicles are assigned to your profile. Please contact support if this is an error.",
-              variant: "destructive",
-            });
+            // This case might still be relevant if you want to ensure some vehicles *could* be assigned,
+            // even if not strictly validating against them.
+            // For now, we'll keep the logic that populates validVehicleNumbers but won't use it for button enabling.
+            console.warn("No vehicles are assigned to this user in session data, but proceeding is allowed if format is correct.");
           }
         } catch (error) {
           console.error("Failed to parse user data from session storage", error);
@@ -47,7 +45,7 @@ export default function EnterTruckNumberPage() {
             description: "Could not load user data. Please try logging in again.",
             variant: "destructive",
           });
-          router.replace('/'); // Redirect if user data is corrupted
+          router.replace('/'); 
         }
       } else {
         setErrorMessage("User data not found. Please log in again.");
@@ -56,7 +54,7 @@ export default function EnterTruckNumberPage() {
           description: "User information is missing. Please log in again.",
           variant: "destructive",
         });
-        router.replace('/'); // Redirect to login if no user data
+        router.replace('/'); 
       }
     }
     setIsLoading(false);
@@ -73,7 +71,6 @@ export default function EnterTruckNumberPage() {
       } else if (numbers.length <= 7) {
         formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
       } else {
-        // Limit to 7 digits for NNN-NNNN format
         formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}`;
       }
     }
@@ -82,12 +79,9 @@ export default function EnterTruckNumberPage() {
 
   const isTruckNumberValidForSubmission = useMemo(() => {
     if (isLoading || errorMessage) return false;
-    if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
-      return false;
-    }
-    const numericTruckNumber = truckNumber.replace(/-/g, '');
-    return validVehicleNumbers.includes(numericTruckNumber);
-  }, [truckNumber, validVehicleNumbers, isLoading, errorMessage]);
+    // Only check format, not inclusion in validVehicleNumbers
+    return /^\d{3}-\d{4}$/.test(truckNumber);
+  }, [truckNumber, isLoading, errorMessage]);
 
   const handleSubmit = () => {
     if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
@@ -99,15 +93,16 @@ export default function EnterTruckNumberPage() {
       return;
     }
 
-    const numericTruckNumber = truckNumber.replace(/-/g, '');
-    if (!validVehicleNumbers.includes(numericTruckNumber)) {
-      toast({
-        title: "Invalid Truck Number",
-        description: "The entered truck number is not recognized or not assigned to you. Please check and try again.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Removed check against validVehicleNumbers
+    // const numericTruckNumber = truckNumber.replace(/-/g, '');
+    // if (!validVehicleNumbers.includes(numericTruckNumber)) {
+    //   toast({
+    //     title: "Invalid Truck Number",
+    //     description: "The entered truck number is not recognized or not assigned to you. Please check and try again.",
+    //     variant: "destructive",
+    //   });
+    //   return;
+    // }
     
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('currentTruckNumber', truckNumber);
@@ -155,7 +150,7 @@ export default function EnterTruckNumberPage() {
                 className="text-base text-center"
                 aria-label="Truck Number"
                 inputMode="numeric" 
-                pattern="[0-9-]*" // Allow digits and hyphen for formatting
+                pattern="[0-9-]*" 
                 maxLength={8} 
                 disabled={isLoading || !!errorMessage}
               />
@@ -176,4 +171,3 @@ export default function EnterTruckNumberPage() {
     </div>
   );
 }
-
