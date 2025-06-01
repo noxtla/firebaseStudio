@@ -20,7 +20,7 @@ import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
 
 import { Button } from '@/components/ui/button';
-import { Phone, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Phone, ArrowLeft, ArrowRight, Loader2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
@@ -41,7 +41,12 @@ export default function MultiStepForm() {
   const [rawApiResponse, setRawApiResponse] = useState<string | null>(null);
   const [isNotFoundAlertOpen, setIsNotFoundAlertOpen] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [isProcessingPhoneNumber, setIsProcessingPhoneNumber] = useState(false); // Added loading state
+  const [isProcessingPhoneNumber, setIsProcessingPhoneNumber] = useState(false);
+
+  const [isSuccessDialogOpen, setIsSuccessDialogOpen] = useState(false);
+  const [successDialogTitle, setSuccessDialogTitle] = useState("");
+  const [successDialogMessage, setSuccessDialogMessage] = useState("");
+
 
   const { toast } = useToast();
   const router = useRouter();
@@ -96,6 +101,7 @@ export default function MultiStepForm() {
     setUserData(null);
     setRawApiResponse(null);
     setIsProcessingPhoneNumber(false);
+    setIsSuccessDialogOpen(false);
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('userData');
       sessionStorage.removeItem('loginWebhookStatus');
@@ -103,6 +109,11 @@ export default function MultiStepForm() {
       sessionStorage.removeItem('currentTruckNumber');
       sessionStorage.removeItem('attendanceSubmitted');
     }
+  };
+
+  const handleSuccessDialogCloseAndNavigate = () => {
+    setIsSuccessDialogOpen(false);
+    router.push('/main-menu');
   };
 
   const nextStep = async () => {
@@ -122,7 +133,6 @@ export default function MultiStepForm() {
         sessionStorage.removeItem('attendanceSubmitted');
       }
       
-      // Simulate a small delay for visual feedback
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const cleanedPhoneNumber = formData.phoneNumber.replace(/\D/g, '');
@@ -140,10 +150,12 @@ export default function MultiStepForm() {
         sessionStorage.setItem('loginWebhookStatus', '200');
       }
       setUserData(mockUserData);
+      setIsProcessingPhoneNumber(false);
 
-      toast({ variant: "success", title: "Mock Login Successful", description: "Proceeding with mock user data." });
-      router.push('/main-menu');
-      // setIsProcessingPhoneNumber(false); // Not strictly necessary if unmounting
+      setSuccessDialogTitle("Login Successful");
+      setSuccessDialogMessage(`Welcome, ${mockUserData.Name}! You will now be redirected to the main menu.`);
+      setIsSuccessDialogOpen(true);
+      // Navigation will happen when "OK" is clicked in the dialog
       return;
     }
   };
@@ -194,6 +206,26 @@ export default function MultiStepForm() {
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setIsNotFoundAlertOpen(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isSuccessDialogOpen} onOpenChange={setIsSuccessDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="items-center">
+            <CheckCircle className="h-12 w-12 text-green-500 mb-2" />
+            <AlertDialogTitle>{successDialogTitle}</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="text-center">
+            {successDialogMessage}
+          </AlertDialogDescription>
+          <AlertDialogFooter className="flex justify-center sm:justify-center pt-4">
+            <AlertDialogAction 
+              onClick={handleSuccessDialogCloseAndNavigate}
+              className="bg-success text-success-foreground hover:bg-success/90"
+            >
+              OK
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
