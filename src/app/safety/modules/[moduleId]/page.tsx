@@ -6,11 +6,36 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { modulesData, type SafetyModule, type Topic, type SkillPhase, getTagClassName } from '@/data/safety-modules-data';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle as CardTitleComponent } from '@/components/ui/card'; // Renamed CardTitle to avoid conflict
+import { Card, CardContent, CardHeader, CardTitle as CardTitleComponent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { ChevronLeft, AlertTriangle, CheckSquare, ListChecks, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+
+interface SkillTimelinePhaseProps {
+  phase: SkillPhase;
+  isFirst: boolean;
+  isLast: boolean;
+  animationDelay: string;
+}
+
+const SkillTimelinePhase: React.FC<SkillTimelinePhaseProps> = ({ phase, isFirst, isLast, animationDelay }) => (
+  <div
+    className={cn(
+      "relative flex flex-col items-center animate-step-enter"
+    )}
+    style={{ animationDelay }}
+  >
+    {!isFirst && <div className="absolute top-2 left-[-50%] w-1/2 h-0.5 bg-[hsl(var(--safety-gray-border-DEFAULT))] z-0"></div>}
+    <div className="relative z-10 w-4 h-4 bg-[hsl(var(--safety-blue-border-DEFAULT))] rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
+    <Card className="mt-2 w-52 bg-card p-3 shadow-sm border border-[hsl(var(--safety-gray-border-DEFAULT))] transition-all duration-300 ease-in-out hover:shadow-lg hover:scale-105">
+      <h4 className="font-semibold text-sm text-[hsl(var(--safety-blue-text-DEFAULT))]">{phase.title}</h4>
+      <p className="text-xs text-muted-foreground mb-1">{phase.timeframe}</p>
+      <p className="text-xs text-foreground">{phase.description}</p>
+    </Card>
+  </div>
+);
+
 
 export default function ModuleDetailsPage() {
   const router = useRouter();
@@ -70,18 +95,6 @@ export default function ModuleDetailsPage() {
     </Card>
   );
 
-  const SkillTimelinePhase: React.FC<{ phase: SkillPhase, isFirst: boolean, isLast: boolean }> = ({ phase, isFirst, isLast }) => (
-    <div className="relative flex flex-col items-center">
-      {!isFirst && <div className="absolute top-2 left-[-50%] w-1/2 h-0.5 bg-[hsl(var(--safety-gray-border-DEFAULT))] z-0"></div>}
-      <div className="relative z-10 w-4 h-4 bg-[hsl(var(--safety-blue-border-DEFAULT))] rounded-full border-2 border-white dark:border-gray-800 shadow-sm"></div>
-      <Card className="mt-2 w-48 sm:w-56 bg-card p-3 shadow-sm border border-[hsl(var(--safety-gray-border-DEFAULT))]">
-        <h4 className="font-semibold text-sm text-[hsl(var(--safety-blue-text-DEFAULT))]">{phase.title}</h4>
-        <p className="text-xs text-muted-foreground mb-1">{phase.timeframe}</p>
-        <p className="text-xs text-foreground">{phase.description}</p>
-      </Card>
-    </div>
-  );
-
   return (
     <div className="w-full">
       <div className="mb-6 flex items-center justify-between">
@@ -115,14 +128,15 @@ export default function ModuleDetailsPage() {
         {/* Suggested Skill Progression */}
         <section>
           <h2 className="text-xl font-semibold mb-6 text-foreground">Suggested Skill Progression</h2>
-          <ScrollArea className="w-full pb-4">
-            <div className="flex space-x-4 sm:space-x-0 sm:grid sm:grid-flow-col sm:auto-cols-max sm:gap-x-8 py-2"> {/* py-2 for vertical room for dot/line */}
+          <ScrollArea className="w-full rounded-md"> {/* Added rounded-md for consistency if scrollbar appears */}
+            <div className="flex space-x-6 py-3 px-2"> {/* Adjusted class for flex layout, spacing, and padding */}
               {module.skillProgression.map((phase, index) => (
                 <SkillTimelinePhase
                   key={phase.id}
                   phase={phase}
                   isFirst={index === 0}
                   isLast={index === module.skillProgression.length - 1}
+                  animationDelay={`${index * 100}ms`}
                 />
               ))}
             </div>
@@ -138,7 +152,7 @@ export default function ModuleDetailsPage() {
                 {selectedTopic.title}
               </DialogTitle>
             </DialogHeader>
-            <ScrollArea className="flex-grow pr-6 -mr-6">
+            <ScrollArea className="flex-grow pr-6 -mr-6"> {/* Keep ScrollArea for dialog content */}
               <div className="space-y-4 py-4 text-sm">
                 <div>
                   <h4 className="font-semibold text-foreground flex items-center mb-1">
@@ -167,7 +181,7 @@ export default function ModuleDetailsPage() {
                 </div>
               </div>
             </ScrollArea>
-            <DialogFooter className="flex justify-center sm:justify-center pt-4"> {/* Ensures centering on all screen sizes */}
+            <DialogFooter className="flex justify-center sm:justify-center pt-4">
               <DialogClose asChild>
                 <Button
                   type="button"
