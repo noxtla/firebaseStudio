@@ -1,13 +1,14 @@
 
 "use client";
 
-import type { FC } from 'react';
+import { useState, type FC } from 'react'; // Added useState
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, type LucideIcon } from 'lucide-react';
+import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, Loader2, type LucideIcon } from 'lucide-react'; // Added Loader2
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils'; // Added cn
 
 interface VehicleMenuItemProps {
   title: string;
@@ -17,12 +18,33 @@ interface VehicleMenuItemProps {
 }
 
 const VehicleMenuItem: FC<VehicleMenuItemProps> = ({ title, icon: Icon, href, description }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault(); // Prevent default link behavior to show loader
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay for loader visibility
+    router.push(href);
+    // No need to setIsLoading(false) as component will unmount
+  };
+
   return (
     <Link href={href} passHref legacyBehavior>
-      <a className="block transition-all duration-200 ease-in-out transform hover:scale-105">
+      <a
+        onClick={handleClick}
+        className={cn(
+          "block transition-all duration-200 ease-in-out transform hover:scale-105",
+          isLoading && "opacity-75 cursor-wait"
+        )}
+      >
         <Card className="w-full h-full flex flex-col items-center justify-center text-center p-6 shadow-md hover:shadow-lg rounded-lg border bg-card">
           <CardContent className="flex flex-col items-center justify-center gap-3 p-0">
-            <Icon className="h-10 w-10 text-primary mb-2" />
+            {isLoading ? (
+              <Loader2 className="h-10 w-10 text-primary mb-2 animate-spin" />
+            ) : (
+              <Icon className="h-10 w-10 text-primary mb-2" />
+            )}
             <p className="text-lg font-semibold text-foreground">{title}</p>
             {description && (
               <p className="text-sm text-muted-foreground">{description}</p>
