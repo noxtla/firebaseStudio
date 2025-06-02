@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import type { FormData } from '@/types';
-import { AlertTriangle } from 'lucide-react'; // Import AlertTriangle
+// Imports for Dialog and AlertTriangle will be removed if no longer used by other parts of this file (they are not).
 
 interface PhoneNumberStepProps {
   formData: Pick<FormData, 'phoneNumber'>;
@@ -35,14 +35,8 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange, ra
             className="text-base sm:text-lg p-2 sm:p-3"
           />
         </div>
-        <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive/90 text-xs">
-          <div className="flex items-start">
-            <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0 mt-0.5" />
-            <p>
-              Warning: Impersonating another individual or attempting fraudulent activities is a serious offense and will result in immediate termination and potential legal action.
-            </p>
-          </div>
-        </div>
+        {/* The Dialog component and its trigger have been removed from here. */}
+
         {rawApiResponse && (
           <div className="mt-4 p-3 bg-muted rounded-md">
             <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Raw API Response (for debugging):</h4>
@@ -57,3 +51,4 @@ const PhoneNumberStep: FC<PhoneNumberStepProps> = ({ formData, onInputChange, ra
 };
 
 export default PhoneNumberStep;
+
