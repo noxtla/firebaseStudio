@@ -1,58 +1,85 @@
 
 "use client";
 
-import { useState, type FC } from 'react'; // Added useState
+import { useState, type FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, Loader2, type LucideIcon } from 'lucide-react'; // Added Loader2
+import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, Loader2, type LucideIcon, Wrench } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils'; // Added cn
+import { cn } from '@/lib/utils';
 
 interface VehicleMenuItemProps {
   title: string;
   icon: LucideIcon;
-  href: string;
+  href?: string;
   description?: string;
+  isPrimary?: boolean; // Added isPrimary prop to match MenuItemProps
+  onClick?: () => Promise<void> | void; // Added onClick prop to match MenuItemProps
+  isDisabled?: boolean;
+  isLoading?: boolean;
 }
 
-const VehicleMenuItem: FC<VehicleMenuItemProps> = ({ title, icon: Icon, href, description }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+const VehicleMenuItem: FC<VehicleMenuItemProps> = ({ title, icon: Icon, href, description, isDisabled, isLoading, onClick }) => {
 
-  const handleClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault(); // Prevent default link behavior to show loader
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay for loader visibility
-    router.push(href);
-    // No need to setIsLoading(false) as component will unmount
-  };
-
-  return (
-    <Link href={href} passHref legacyBehavior>
-      <a
-        onClick={handleClick}
-        className={cn(
-          "block transition-all duration-200 ease-in-out transform hover:scale-105",
-          isLoading && "opacity-75 cursor-wait"
+  const content = (
+    <Card
+      className={cn(
+        "w-full flex flex-col items-center justify-center transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-lg border-none shadow-none",
+        (isDisabled || isLoading) && "opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none",
+        isLoading && "cursor-wait"
+      )}
+    >
+      <CardContent className={cn(
+        "flex-1 flex flex-col items-center justify-center text-center gap-2",
+        "space-y-2 sm:space-y-3",
+        "p-0"
+      )}>
+        {isLoading ? (
+          <Loader2 className={cn("animate-spin text-primary", "h-10 w-10 sm:h-12 sm:w-12")} />
+        ) : (
+          <Icon className={cn("text-primary", "h-10 w-10 sm:h-12 sm:w-12")} />
         )}
-      >
-        <Card className="w-full h-full flex flex-col items-center justify-center text-center p-6 shadow-md hover:shadow-lg rounded-lg border bg-card">
-          <CardContent className="flex flex-col items-center justify-center gap-3 p-0">
-            {isLoading ? (
-              <Loader2 className="h-10 w-10 text-primary mb-2 animate-spin" />
-            ) : (
-              <Icon className="h-10 w-10 text-primary mb-2" />
-            )}
-            <p className="text-lg font-semibold text-foreground">{title}</p>
-            {description && (
+        <p className={cn("font-medium text-foreground", "text-base sm:text-lg")}>{title}</p>
+        {description && (
               <p className="text-sm text-muted-foreground">{description}</p>
             )}
-          </CardContent>
-        </Card>
-      </a>
-    </Link>
+      </CardContent>
+    </Card>
+  );
+
+  if (href && !onClick && !isDisabled && !isLoading) {
+    return (
+      <Link href={href} passHref legacyBehavior>
+        <a className="flex h-full w-full">
+          {content}
+        </a>
+      </Link>
+    );
+  }
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (isDisabled || isLoading) {
+          e.preventDefault();
+          return;
+        }
+        if (onClick) {
+          e.preventDefault();
+          onClick();
+        }
+      };
+
+  return (
+    <div
+      onClick={handleClick}
+      className={cn("flex h-full w-full cursor-pointer", isDisabled || isLoading ? "pointer-events-none" : "")}
+      role="button"
+      tabIndex={isDisabled || isLoading ? -1 : 0}
+      aria-disabled={isDisabled || isLoading}
+    >
+      {content}
+    </div>
   );
 };
 
@@ -65,6 +92,7 @@ export default function VehicleActionsPage() {
     { title: 'Add Gas', icon: Fuel, href: '/vehicles/add-gas/select-type', description: "Input fuel consumption" },
     { title: 'Add Defects', icon: TriangleAlert, href: '/vehicles/add-defects', description: "Report vehicle issues" },
     { title: 'Vehicle Information', icon: Info, href: '/vehicles/info', description: "View vehicle details" },
+    { title: 'Tool Inventory', icon: Wrench, href: '/vehicles/tool-inventory', description: "Manage tool inventory" },
   ];
 
   return (
