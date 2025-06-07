@@ -112,12 +112,9 @@ export default function MainMenuPage() {
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '/job-briefing/step-1', isDisabled: false },
     { title: 'Safety', icon: BookHeart, href: '/safety/modules', isDisabled: false },
-    { title: "Tool-Inventory", icon: Wrench, href: "#", isDisabled: false },
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [
-    { title: 'Support', icon: MessageSquare, href: '#', isPrimary: false, isDisabled: false },
-    { title: 'Emergency Support', icon: AlertTriangleIcon, href: '#', isPrimary: false, isDisabled: false },
   ];
 
   return (
