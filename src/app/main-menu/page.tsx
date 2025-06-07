@@ -110,7 +110,7 @@ export default function MainMenuPage() {
   const primaryMenuItems: MenuItemProps[] = [
     { title: 'Attendance', icon: Users, href: '/attendance' },
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
-    { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
+    { title: 'Job Briefing', icon: ClipboardList, href: '/job-briefing/step-1', isDisabled: false },
     { title: 'Safety', icon: BookHeart, href: '/safety/modules', isDisabled: false },
     { title: "Tool-Inventory", icon: Wrench, href: "#", isDisabled: false },
   ];

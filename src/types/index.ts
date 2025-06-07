@@ -23,3 +23,38 @@ export interface CapturedLocation {
   accuracy: number;
   timestamp: number; // Timestamp from the geolocation API
 }
+
+// --- Job Briefing Types ---
+export interface JobBriefingFormData {
+  // Step 1: Basic Info
+  date: Date | undefined;
+  time: string;
+  crewNumber: string;
+  crewPhoneNumber: string;
+  generalForemanName: string;
+  foremanName: string;
+  workLocation: string;
+
+  // Step 2: Emergency Contacts & Site Info (to be added)
+  emergencyContactPerson: string;
+  medicalCenterPhone: string;
+  medicalCenterAddress: string;
+  nearestMedicalCenter: string;
+  helicopterService: 'yes' | 'no' | 'plan';
+  helicopterPlanDetails?: string;
+  fireDangerLevel: string; // e.g., 'low', 'medium', 'high', 'extreme'
+  utilityCompanyName: string;
+  utilityCompanyContact: string;
+  utilityCompanyPhone: string;
+  employeeCount: number | undefined;
+  emergencyMeetingPoint: string;
+  environmentalConcerns: 'yes' | 'no';
+  spillContact?: string;
+  
+  // Step 3: Task Description & Crew Readiness (to be added)
+  // Step 4: Human Performance & Foreman Acknowledgment (to be added)
+  // Step 5: High-Energy Sources (to be added)
+  // Step 6: Mitigation Controls (to be added)
+}
+
+// Define Zod schemas for validation later if needed for each step
