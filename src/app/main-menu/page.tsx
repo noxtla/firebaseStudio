@@ -15,6 +15,7 @@ import {
   type LucideIcon,
   Loader2,
   BookHeart, // Icon for Safety
+  Wrench,
   // AlertTriangle, // Not used
   // MapPin, // Not used
   // ShieldAlert as ShieldAlertIcon, // Not used
@@ -111,6 +112,7 @@ export default function MainMenuPage() {
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '#', isDisabled: false },
     { title: 'Safety', icon: BookHeart, href: '/safety/modules', isDisabled: false },
+    { title: "Tool-Inventory", icon: Wrench, href: "#", isDisabled: false },
   ];
 
   const secondaryMenuItems: MenuItemProps[] = [

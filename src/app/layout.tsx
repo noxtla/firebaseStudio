@@ -4,6 +4,7 @@
 import { Lato, Open_Sans } from 'next/font/google';
 import './globals.css';
 import { Button } from '@/components/ui/button';
+import AppFooter from '@/components/app-footer'; // Import the AppFooter
 
 const lato = Lato({
   subsets: ['latin'],
@@ -39,7 +40,7 @@ export default function RootLayout({
         {/* You can add other meta tags here if needed */}
       </head>
       <body className={`antialiased`}>
-        <div className="p-2 flex justify-end space-x-2 bg-background sticky top-0 z-50">
+        <div className="p-2 flex justify-end space-x-2 bg-background sticky top-0 z-50 border-b">
           <Button variant="outline" size="sm" onClick={() => setLanguage('es')}>
             Español
           </Button>
@@ -47,9 +48,10 @@ export default function RootLayout({
             English
           </Button>
         </div>
-        <main>
+        <main className="pb-20"> {/* Added padding-bottom for the footer */}
           {children}
         </main>
+        <AppFooter /> {/* Add the AppFooter component here */}
       </body>
     </html>
   );
