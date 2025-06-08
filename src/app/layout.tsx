@@ -41,9 +41,6 @@ export default function RootLayout({
       </head>
       <body className={`antialiased`}>
         <div className="p-2 flex justify-end space-x-2 bg-background sticky top-0 z-50 border-b">
-          <Button variant="outline" size="sm" onClick={() => setLanguage('es')}>
-            Español
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setLanguage('en')}>
             English
           </Button>
