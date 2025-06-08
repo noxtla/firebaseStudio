@@ -1,9 +1,9 @@
 
-"use client"; // Make it a client component for button onClick
+"use client"; // Keep for other client-side logic if any, or remove if no longer needed.
 
 import { Lato, Open_Sans } from 'next/font/google';
 import './globals.css';
-import { Button } from '@/components/ui/button';
+// Button import is removed as it's no longer used for language selection here.
 import AppFooter from '@/components/app-footer'; // Import the AppFooter
 
 const lato = Lato({
@@ -26,12 +26,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const setLanguage = (lang: 'en' | 'es') => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('preferredLang', lang);
-      window.location.reload(); // Reload to apply language change
-    }
-  };
+  // Language setting function is removed as buttons are removed.
+  // const setLanguage = (lang: 'en' | 'es') => {
+  //   if (typeof window !== 'undefined') {
+  //     localStorage.setItem('preferredLang', lang);
+  //     window.location.reload(); // Reload to apply language change
+  //   }
+  // };
 
   return (
     <html lang="en" className={`${lato.variable} ${openSans.variable}`}>
@@ -40,11 +41,7 @@ export default function RootLayout({
         {/* You can add other meta tags here if needed */}
       </head>
       <body className={`antialiased`}>
-        <div className="p-2 flex justify-end space-x-2 bg-background sticky top-0 z-50 border-b">
-          <Button variant="outline" size="sm" onClick={() => setLanguage('en')}>
-            English
-          </Button>
-        </div>
+        {/* The div containing language buttons is removed. */}
         <main className="pb-20"> {/* Added padding-bottom for the footer */}
           {children}
         </main>
