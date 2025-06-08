@@ -2,151 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: var(--font-body, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif);
-  @apply bg-background text-foreground; /* Ensure background is applied here */
-  min-height: 100vh;
-}
-
-h1, h2, h3, h4, h5, h6, .font-heading-style {
-  font-family: var(--font-heading, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif);
-}
-
 @layer base {
   :root {
-    --background: 0 0% 93.3%; /* #EEEEEE Light Gray */
-    --foreground: 201 100% 23.9%; /* #00547A Dark Blue */
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
 
-    --card: 0 0% 93.3%; /* #EEEEEE - to blend with background */
-    --card-foreground: 201 100% 23.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
 
-    --popover: 0 0% 100%; /* White for popovers */
-    --popover-foreground: 201 100% 23.9%;
+    --primary: 222.1 83.2% 9.8%;
+    --primary-foreground: 210 40% 98%;
 
-    --primary: 22 87% 55%; /* #F26522 Asplundh Orange */
-    --primary-foreground: 0 0% 100%; /* White for text on primary */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 0 0% 88%; /* Slightly darker gray than background */
-    --secondary-foreground: 201 100% 23.9%; /* Dark Blue */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --muted: 0 0% 90%; /* Lighter gray for muted elements */
-    --muted-foreground: 201 80% 35%; /* Muted blue */
-
-    --accent: 19 84% 48%; /* #D95A1E Darker Orange variant for accent */
-    --accent-foreground: 0 0% 100%; /* White for text on accent */
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 210 40% 98%;
 
-    --success: 140 60% 45%; /* Green for success */
-    --success-foreground: 0 0% 100%; /* White text for success */
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.1 83.2% 9.8%;
 
-    --toast-success-background: 140 70% 96%; /* Very light pastel green */
-    --toast-success-foreground: 140 60% 30%; /* Darker, readable green text */
-    --toast-success-border: 140 50% 80%;   /* Soft green border */
-
-    --border: 0 0% 80%; /* Gray border */
-    --input: 22 87% 55%; /* Primary Orange for input borders */
-    --ring: 22 87% 55%; /* Primary Orange for focus rings */
-
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%; /* Default sidebar colors, can be themed if needed */
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Safety Module Specific Colors */
-    --safety-blue-text-DEFAULT: 211 90% 50%; /* #0d6efd */
-    --safety-blue-text-darker: 211 90% 40%; /* #0a58ca */
-    --safety-blue-border-DEFAULT: 211 90% 50%; /* #0d6efd */
-    --safety-blue-border-darker: 211 90% 40%; /* For selected topic card left border */
-    --safety-blue-bg-hover: 211 100% 95%; /* #e7f3ff */
-    --safety-gray-border-DEFAULT: 210 17% 82%; /* #ccd0d5 */
-    --safety-tag-fundamental-bg: 200 82% 51%; /* A distinct blue for fundamental tags */
-    --safety-tag-fundamental-text: 0 0% 100%;
-    --safety-tag-essential-bg: 28 100% 53%; /* An orange for essential tags */
-    --safety-tag-essential-text: 0 0% 100%;
-    --safety-tag-advanced-bg: 122 39% 49%; /* A green for advanced tags */
-    --safety-tag-advanced-text: 0 0% 100%;
-    --safety-tag-critical-bg: 0 72% 51%; /* A red for critical tags */
-    --safety-tag-critical-text: 0 0% 100%;
   }
 
   .dark {
-    --background: 201 100% 10%; /* Very Dark Blue */
-    --foreground: 0 0% 93.3%; /* #EEEEEE Light Gray */
-    
-    --card: 201 100% 10%; /* Dark card to match background */
-    --card-foreground: 0 0% 93.3%;
-    
-    --popover: 201 100% 15%; /* Slightly Lighter Dark Blue for popovers */
-    --popover-foreground: 0 0% 93.3%;
-    
-    --primary: 22 87% 55%; /* #F26522 Asplundh Orange */
-    --primary-foreground: 0 0% 100%; /* White */
-    
-    --secondary: 201 100% 20%; /* Darker Blue */
-    --secondary-foreground: 0 0% 93.3%;
-    
-    --muted: 201 100% 20%;
-    --muted-foreground: 0 0% 70%; /* Lighter gray for muted text on dark */
-    
-    --accent: 19 84% 48%; /* #D95A1E Darker Orange */
-    --accent-foreground: 0 0% 100%;
-    
+    --background: 224 71% 4%;
+    --foreground: 213 31% 91%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+ 
+    --popover: 224 71% 4%;
+    --popover-foreground: 213 31% 91%;
+
+    --primary: 212.7 26.8% 83.9%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 8.3% 52.9%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --success: 140 60% 35%; /* Darker green for dark mode */
-    --success-foreground: 0 0% 100%;
-    
-    --toast-success-background: 140 30% 12%; /* Dark, slightly green background for dark mode */
-    --toast-success-foreground: 140 50% 75%; /* Lighter green text for dark mode */
-    --toast-success-border: 140 40% 25%;    /* Muted green border for dark mode */
-    
-    --border: 201 100% 25%; /* Muted Blue border */
-    --input: 22 87% 55%; /* Primary Orange for input borders in dark mode */
-    --ring: 22 87% 55%;
-    
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --destructive-foreground: 210 40% 98%;
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-
-    /* Safety Module Specific Colors - Dark Theme (Consider adjusting if needed) */
-    --safety-blue-text-DEFAULT: 211 90% 65%; 
-    --safety-blue-text-darker: 211 90% 55%;
-    --safety-blue-border-DEFAULT: 211 90% 60%;
-    --safety-blue-border-darker: 211 90% 50%;
-    --safety-blue-bg-hover: 211 100% 20%; 
-    --safety-gray-border-DEFAULT: 210 10% 40%;
-    /* Tag colors might need adjustments for dark mode visibility if their light versions are too dark */
+    --border: 216 12% 42.4%;
+    --input: 216 12% 42.4%;
+    --ring: 212.7 26.8% 83.9%;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
   }
 }
 
@@ -187,36 +109,4 @@ h1, h2, h3, h4, h5, h6, .font-heading-style {
 
 .animate-title-pulse {
   animation: titlePulse 2.5s ease-in-out infinite;
-}
-
-/* Custom styles for safety module elements if needed */
-.safety-module-button {
-  @apply text-[hsl(var(--safety-blue-text-DEFAULT))] bg-white border border-[hsl(var(--safety-gray-border-DEFAULT))] rounded-lg p-3 px-5 m-2 cursor-pointer transition-all duration-150 ease-in-out text-center text-base flex items-center justify-center hover:bg-[hsl(var(--safety-blue-bg-hover))] hover:border-[hsl(var(--safety-blue-border-DEFAULT))] hover:text-[hsl(var(--safety-blue-text-darker))];
-}
-
-.safety-module-button-selected {
-  @apply bg-[hsl(var(--safety-blue-bg-hover))] border-[hsl(var(--safety-blue-border-DEFAULT))] text-[hsl(var(--safety-blue-text-darker))];
-}
-
-.safety-topic-card {
-  @apply bg-white border border-[hsl(var(--safety-gray-border-DEFAULT))] border-l-4 rounded-md p-4 transition-all duration-150 ease-in-out;
-  border-left-color: hsl(var(--safety-blue-border-DEFAULT));
-}
-
-.safety-topic-card-selected {
-  @apply shadow-lg;
-  border-left-color: hsl(var(--safety-blue-border-darker));
-}
-
-.safety-tag-fundamental {
-  @apply bg-[hsl(var(--safety-tag-fundamental-bg))] text-[hsl(var(--safety-tag-fundamental-text))];
-}
-.safety-tag-essential {
-  @apply bg-[hsl(var(--safety-tag-essential-bg))] text-[hsl(var(--safety-tag-essential-text))];
-}
-.safety-tag-advanced {
-  @apply bg-[hsl(var(--safety-tag-advanced-bg))] text-[hsl(var(--safety-tag-advanced-text))];
-}
-.safety-tag-critical {
-  @apply bg-[hsl(var(--safety-tag-critical-bg))] text-[hsl(var(--safety-tag-critical-text))];
 }

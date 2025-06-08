@@ -1,8 +1,12 @@
 import React from 'react';
+import HorizontalTabBar from '@/components/horizontal-tab-bar';
+
+const tabLabels = ["Chainsaw", "Climbing Equipment", "Safety Signs", "Prunas", "Veneno", "Gas Container"];
 
 export default function ToolInventoryPage() {
   return (
     <div>
+      <HorizontalTabBar labels={tabLabels} />
       <h1>Arborist Tool Inventory</h1>
       <p>Here is some dummy information about common arborist tools:</p>
       <ul>
