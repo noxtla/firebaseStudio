@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect, useCallback } from 'react';
@@ -123,11 +122,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setIsNavigating(true);
     await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
 
-    if (currentStep === 0) {
-      router.push('/main-menu');
-      // setIsNavigating(false); // Component unmounts
-      return; 
-    } else if (currentStep > 0) {
+    if (currentStep > 0) { // Only go back if not on the first step
       setCurrentStep((prev) => (prev - 1) as FormStep);
       if (currentStep === 1) { 
          setFormData(prev => ({...prev, birthDay: ''}));
@@ -138,6 +133,9 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
         setCaptureTimestamp(null);
         setCapturedLocation(null);
       }
+    } else {
+      // Do nothing or provide feedback if at the first step and "Previous" is clicked
+      console.log("Cannot go back from the first step.");
     }
     setIsNavigating(false);
   };

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -24,8 +23,8 @@ export default function AppFooter() {
   const pathname = usePathname();
 
   // Determine if the footer should be visible based on the current path
-  // For example, hide on login page ('/') or attendance form if it's full-screen focused
-  const hiddenPaths = ['/', '/attendance']; // Add paths where footer should be hidden
+  // For example, hide on login page ('/')
+  const hiddenPaths = ['/']; // Removed '/attendance' from here
   if (hiddenPaths.includes(pathname)) {
     return null;
   }

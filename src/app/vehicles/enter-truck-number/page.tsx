@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -32,8 +31,10 @@ export default function EnterTruckNumberPage() {
           const parsedUserData: UserData = JSON.parse(storedUserData);
           if (parsedUserData.Vehicles && parsedUserData.Vehicles.length > 0) {
             setValidVehicleNumbers(parsedUserData.Vehicles.map(v => String(v).replace(/\D/g, '')));
+            setIsLoadingInitialData(false); // Set loading to false here
           } else {
             console.warn("No vehicles are assigned to this user in session data, but proceeding is allowed if format is correct.");
+             setIsLoadingInitialData(false); // Stop loading if no vehicles but data is present
           }
         } catch (error) {
           console.error("Failed to parse user data from session storage", error);
@@ -43,7 +44,7 @@ export default function EnterTruckNumberPage() {
             description: "Could not load user data. Please try logging in again.",
             variant: "destructive",
           });
-          router.replace('/'); 
+          setIsLoadingInitialData(false); // Stop loading on error
         }
       } else {
         setErrorMessage("User data not found. Please log in again.");
@@ -52,10 +53,9 @@ export default function EnterTruckNumberPage() {
           description: "User information is missing. Please log in again.",
           variant: "destructive",
         });
-        router.replace('/'); 
+        setIsLoadingInitialData(false); // Stop loading on error
       }
     }
-    setIsLoadingInitialData(false);
   }, [router, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,19 +77,33 @@ export default function EnterTruckNumberPage() {
 
   const isTruckNumberValidForSubmission = useMemo(() => {
     if (isLoadingInitialData || errorMessage) return false;
-    return /^\d{3}-\d{4}$/.test(truckNumber);
-  }, [truckNumber, isLoadingInitialData, errorMessage]);
+    // Allow submission if there are no valid vehicle numbers but the format is correct
+    if (validVehicleNumbers.length === 0) {
+        return /^\d{3}-\d{4}$/.test(truckNumber);
+    }
+    // Otherwise, check if the entered truck number is in the list of valid numbers
+    return validVehicleNumbers.includes(truckNumber.replace(/\D/g, ''));
+  }, [truckNumber, isLoadingInitialData, errorMessage, validVehicleNumbers]);
 
   const handleSubmit = async () => {
-    if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
-      toast({
-        title: "Invalid Format",
-        description: "Please enter the truck number in NNN-NNNN format.",
-        variant: "destructive",
-      });
+    if (!isTruckNumberValidForSubmission) {
+         // This case should ideally not be reachable if the button is disabled, but as a fallback:
+        if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
+             toast({
+                title: "Invalid Format",
+                description: "Please enter the truck number in NNN-NNNN format.",
+                variant: "destructive",
+            });
+        } else if (validVehicleNumbers.length > 0 && !validVehicleNumbers.includes(truckNumber.replace(/\D/g, ''))) {
+             toast({
+                title: "Invalid Truck Number",
+                description: "The entered truck number is not assigned to you.",
+                variant: "destructive",
+            });
+        }
       return;
     }
-    
+
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
 
@@ -100,7 +114,7 @@ export default function EnterTruckNumberPage() {
     // setIsSubmitting(false); // Component unmounts
   };
 
-  const isButtonDisabled = isLoadingInitialData || !!errorMessage || !isTruckNumberValidForSubmission;
+  const isButtonDisabled = isLoadingInitialData || !!errorMessage || !isTruckNumberValidForSubmission || isSubmitting;
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -130,28 +144,30 @@ export default function EnterTruckNumberPage() {
                 Error: {errorMessage}
               </p>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="truckNumber" className="sr-only">Truck Number</Label>
-              <Input
-                id="truckNumber"
-                value={truckNumber}
-                onChange={handleInputChange}
-                placeholder="e.g., 123-4567"
-                className="text-base text-center"
-                aria-label="Truck Number"
-                inputMode="numeric" 
-                pattern="[0-9-]*" 
-                maxLength={8} 
-                disabled={isLoadingInitialData || !!errorMessage || isSubmitting}
-              />
-            </div>
+            {!isLoadingInitialData && !errorMessage && (
+              <div className="space-y-2">
+                <Label htmlFor="truckNumber" className="sr-only">Truck Number</Label>
+                <Input
+                  id="truckNumber"
+                  value={truckNumber}
+                  onChange={handleInputChange}
+                  placeholder="e.g., 123-4567"
+                  className="text-base text-center"
+                  aria-label="Truck Number"
+                  inputMode="numeric" 
+                  pattern="[0-9-]*" 
+                  maxLength={8} 
+                  disabled={isButtonDisabled}
+                />
+              </div>
+            )}
           </CardContent>
           <CardFooter>
             <Button 
               onClick={handleSubmit} 
               className="w-full" 
               size="lg"
-              disabled={isButtonDisabled || isSubmitting}
+              disabled={isButtonDisabled}
             >
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               {isSubmitting ? "Loading..." : "Continue"}
