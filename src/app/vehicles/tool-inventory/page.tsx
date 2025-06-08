@@ -1,5 +1,5 @@
 import React from 'react';
-import HorizontalTabBar from '@/components/horizontal-tab-bar';
+import HorizontalTabBar from '@/components/horizontal-tab-bar2';
 
 const tabLabels = ["Chainsaw", "Climbing Equipment", "Safety Signs", "Prunas", "Veneno", "Gas Container"];
 
