@@ -76,33 +76,10 @@ export default function EnterTruckNumberPage() {
   };
 
   const isTruckNumberValidForSubmission = useMemo(() => {
-    if (isLoadingInitialData || errorMessage) return false;
-    // Allow submission if there are no valid vehicle numbers but the format is correct
-    if (validVehicleNumbers.length === 0) {
-        return /^\d{3}-\d{4}$/.test(truckNumber);
-    }
-    // Otherwise, check if the entered truck number is in the list of valid numbers
-    return validVehicleNumbers.includes(truckNumber.replace(/\D/g, ''));
+        return true
   }, [truckNumber, isLoadingInitialData, errorMessage, validVehicleNumbers]);
 
   const handleSubmit = async () => {
-    if (!isTruckNumberValidForSubmission) {
-         // This case should ideally not be reachable if the button is disabled, but as a fallback:
-        if (!/^\d{3}-\d{4}$/.test(truckNumber)) {
-             toast({
-                title: "Invalid Format",
-                description: "Please enter the truck number in NNN-NNNN format.",
-                variant: "destructive",
-            });
-        } else if (validVehicleNumbers.length > 0 && !validVehicleNumbers.includes(truckNumber.replace(/\D/g, ''))) {
-             toast({
-                title: "Invalid Truck Number",
-                description: "The entered truck number is not assigned to you.",
-                variant: "destructive",
-            });
-        }
-      return;
-    }
 
     setIsSubmitting(true);
     await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
@@ -114,7 +91,7 @@ export default function EnterTruckNumberPage() {
     // setIsSubmitting(false); // Component unmounts
   };
 
-  const isButtonDisabled = isLoadingInitialData || !!errorMessage || !isTruckNumberValidForSubmission || isSubmitting;
+  const isButtonDisabled =  isSubmitting;
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -157,7 +134,7 @@ export default function EnterTruckNumberPage() {
                   inputMode="numeric" 
                   pattern="[0-9-]*" 
                   maxLength={8} 
-                  disabled={isButtonDisabled}
+                  disabled={isSubmitting}
                 />
               </div>
             )}
