@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
@@ -9,7 +10,7 @@ import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
 
 import { Button } from '@/components/ui/button';
-import { Phone, ArrowLeft, ArrowRight, type LucideIcon } from 'lucide-react';
+import { Phone, ArrowLeft, ArrowRight, Loader2, type LucideIcon } from 'lucide-react'; // Added Loader2
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -27,6 +28,7 @@ const STEP_CONFIG = [
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
+  const [isProcessingWebhook, setIsProcessingWebhook] = useState(false); // New state for loading
 
   const router = useRouter();
   const { toast } = useToast()
@@ -62,7 +64,7 @@ export default function MultiStepForm() {
 
   const getCanProceed = (): boolean => {
     // Removed phone number validation, always allow proceeding from step 1
-    return currentStep === 0 ? true : true; // Always allow proceeding from step 1
+    return currentStep === 0 ? true : formData.phoneNumber.replace(/\D/g, '').length === 10;
   };
 
   const canProceed = getCanProceed();
@@ -80,15 +82,13 @@ export default function MultiStepForm() {
   };
 
   const nextStep = async () => {
-    // Removed rawApiResponse reset
-
     if (currentStep === 0) {
       setCurrentStep(1);
       return;
     }
 
     if (currentStep === 1 && canProceed) {
-      // Send phone number to webhook
+      setIsProcessingWebhook(true); // Start loading
       try {
         const response = await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
           method: 'POST',
@@ -106,6 +106,7 @@ export default function MultiStepForm() {
               description: "User not found. Please check the phone number and try again.",
               variant: "destructive",
             })
+            setIsProcessingWebhook(false); // Stop loading
             return;
           }
         }
@@ -117,6 +118,7 @@ export default function MultiStepForm() {
             description: `Webhook request failed with status: ${response.status}`,
             variant: "destructive",
           })
+          setIsProcessingWebhook(false); // Stop loading
           return;
         }
 
@@ -126,12 +128,12 @@ export default function MultiStepForm() {
           // Store user data in session storage
           sessionStorage.setItem('userData', JSON.stringify(data[0]));
 
-          // Simply navigate to main menu after phone number input
           toast({
             title: "Login Successful",
             description: "Login successful. Welcome back!",
           })
           router.push('/main-menu');
+          // No need to set isProcessingWebhook to false here as we are navigating away
           return;
         } else {
           // Handle invalid data
@@ -140,9 +142,7 @@ export default function MultiStepForm() {
             description: "The user data received from the server is invalid.",
             variant: "destructive",
           })
-          return;
         }
-
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
         toast({
@@ -150,8 +150,8 @@ export default function MultiStepForm() {
           description: "Failed to connect to the server. Please try again.",
           variant: "destructive",
         })
-        // Consider showing an error message to the user
-        return;
+      } finally {
+        setIsProcessingWebhook(false); // Stop loading in finally block
       }
     }
   };
@@ -159,9 +159,7 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      // Removed rawApiResponse clearing
       if (typeof window !== 'undefined') {
-        // Removed rawApiResponse session storage clearing
       }
     }
   };
@@ -182,7 +180,7 @@ export default function MultiStepForm() {
           <PhoneNumberStep
             formData={formData}
             onInputChange={handleInputChange}
-            // Removed rawApiResponse prop as it's no longer used
+            rawApiResponse={null} // rawApiResponse prop seems unused, passing null
           />
         );
       default:
@@ -192,10 +190,6 @@ export default function MultiStepForm() {
 
   return (
     <div className={cn("flex flex-col min-h-screen")}>
-      {/* Removed Toaster component */}
-      {/* Removed AlertDialog for User Not Found */}
-      {/* Removed AlertDialog for Success Dialog */}
-
       <div className={cn("w-full max-w-md mx-auto", { "pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !== 0 })}>
         {showAppHeader && <AppHeader className="my-8" />}
       </div>
@@ -204,7 +198,7 @@ export default function MultiStepForm() {
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
             "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
-            "text-2xl sm:text-3xl font-heading-style" 
+            "text-2xl sm:text-3xl font-heading-style"
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
@@ -223,15 +217,21 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 0}
+                disabled={currentStep === 0 || isProcessingWebhook}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
-              <Button onClick={nextStep} disabled={!canProceed}>
-                {/* Removed processing state and loader */}
+              <Button onClick={nextStep} disabled={!canProceed || isProcessingWebhook}>
+                {isProcessingWebhook ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
                   <>
                     Next <ArrowRight className="ml-2 h-4 w-4" />
                   </>
+                )}
               </Button>
             </div>
           )}
