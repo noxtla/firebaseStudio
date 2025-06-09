@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
@@ -87,7 +86,20 @@ export default function MultiStepForm() {
     }
 
     if (currentStep === 1 && canProceed) {
-      // Removed all webhook fetch logic and response handling
+      // Send phone number to webhook
+      try {
+        await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ phoneNumber: formData.phoneNumber }),
+        });
+      } catch (error) {
+        console.error('Error sending phone number to webhook:', error);
+        // Consider showing an error message to the user
+      }
+
       // Simply navigate to main menu after phone number input
       router.push('/main-menu');
       return;
