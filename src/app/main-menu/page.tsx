@@ -91,19 +91,18 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 };
 
 export default function MainMenuPage() {
+  const router = useRouter();
+
   useEffect(() => {
     // Check if userData exists in sessionStorage
-    if (typeof window !== 'undefined' && !sessionStorage.getItem('userData')) {
-      // Mock user data if not found
-      const mockUserData: UserData = {
-        Name: 'Mock User',
-        phoneNumber: '1234567890',
-        Vehicles: ['123-4567', '890-1234'], // Add some mock vehicle numbers
-      };
-      sessionStorage.setItem('userData', JSON.stringify(mockUserData));
-      console.log('Mock user data set in sessionStorage.');
+    if (typeof window !== 'undefined') {
+      const userData = sessionStorage.getItem('userData');
+      if (!userData) {
+        // If not, redirect to the login page
+        router.push('/');
+      }
     }
-  }, []);
+  }, [router]);
 
   const primaryMenuItems: MenuItemProps[] = [
     { title: 'Attendance', icon: Users, href: '/attendance' },

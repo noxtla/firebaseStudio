@@ -103,7 +103,7 @@ export default function MultiStepForm() {
           if (errorData.Error === "UserNotFound") {
             toast({
               title: "User Not Found",
-              description: "The phone number you entered was not found.",
+              description: "User not found. Please check the phone number and try again.",
               variant: "destructive",
             })
             return;
@@ -127,6 +127,10 @@ export default function MultiStepForm() {
           sessionStorage.setItem('userData', JSON.stringify(data[0]));
 
           // Simply navigate to main menu after phone number input
+          toast({
+            title: "Login Successful",
+            description: "Login successful. Welcome back!",
+          })
           router.push('/main-menu');
           return;
         } else {
