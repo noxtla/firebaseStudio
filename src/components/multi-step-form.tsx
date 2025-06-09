@@ -11,6 +11,7 @@ import PhoneNumberStep from './steps/phone-number-step';
 import { Button } from '@/components/ui/button';
 import { Phone, ArrowLeft, ArrowRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
@@ -28,6 +29,7 @@ export default function MultiStepForm() {
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
 
   const router = useRouter();
+  const { toast } = useToast()
 
   useEffect(() => {
     if (currentStep === 0) {
@@ -88,21 +90,65 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) {
       // Send phone number to webhook
       try {
-        await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
+        const response = await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ phoneNumber: formData.phoneNumber }),
         });
+
+        if (response.status === 404) {
+          const errorData = await response.json();
+          if (errorData.Error === "UserNotFound") {
+            toast({
+              title: "User Not Found",
+              description: "The phone number you entered was not found.",
+              variant: "destructive",
+            })
+            return;
+          }
+        }
+
+        if (!response.ok) {
+          // Handle other non-200 status codes
+          toast({
+            title: "Error",
+            description: `Webhook request failed with status: ${response.status}`,
+            variant: "destructive",
+          })
+          return;
+        }
+
+        const data = await response.json();
+
+        if (data && data.length > 0 && data[0].Name && data[0].phoneNumber) {
+          // Store user data in session storage
+          sessionStorage.setItem('userData', JSON.stringify(data[0]));
+
+          // Simply navigate to main menu after phone number input
+          router.push('/main-menu');
+          return;
+        } else {
+          // Handle invalid data
+          toast({
+            title: "Invalid User Data",
+            description: "The user data received from the server is invalid.",
+            variant: "destructive",
+          })
+          return;
+        }
+
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
+        toast({
+          title: "Error",
+          description: "Failed to connect to the server. Please try again.",
+          variant: "destructive",
+        })
         // Consider showing an error message to the user
+        return;
       }
-
-      // Simply navigate to main menu after phone number input
-      router.push('/main-menu');
-      return;
     }
   };
 
