@@ -41,7 +41,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     ssnLast4: initialUserData?.SSN?.slice(-4) || '',
     birthDay: initialUserData?.BirthDay || '',
   });
-
+  const [isSsnValid, setIsSsnValid] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
@@ -50,6 +50,10 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    setIsSsnValid(formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4));
+  }, [formData.ssnLast4]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -78,7 +82,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const getCanProceed = (): boolean => {
     switch (currentStep) {
       case 0:
-        return formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4);
+        return isSsnValid;
       case 1:
         return isBirthDayInputValid;
       case 2: 
@@ -161,6 +165,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           <SsnStep
             formData={formData}
             onInputChange={handleInputChange}
+            isSsnValid={isSsnValid}
           />
         );
       case 1:

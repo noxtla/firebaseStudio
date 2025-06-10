@@ -1,18 +1,15 @@
-
-"use client";
-
-import type { FC, ChangeEvent } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import type { FormData } from '@/types';
+import React, { FC } from 'react';
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface SsnStepProps {
-  formData: Pick<FormData, 'ssnLast4'>;
-  onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  formData: { ssnLast4: string };
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  isSsnValid: boolean;
 }
 
-const SsnStep: FC<SsnStepProps> = ({ formData, onInputChange }) => {
+const SsnStep: FC<SsnStepProps> = ({ formData, onInputChange, isSsnValid }) => {
   return (
     <Card className="w-full border-none shadow-none">
       <CardContent className="space-y-4 pt-6">
@@ -21,7 +18,7 @@ const SsnStep: FC<SsnStepProps> = ({ formData, onInputChange }) => {
           <Input
             id="ssnLast4"
             name="ssnLast4"
-            type="password" 
+            type="password"
             inputMode="numeric"
             value={formData.ssnLast4}
             onChange={onInputChange}
