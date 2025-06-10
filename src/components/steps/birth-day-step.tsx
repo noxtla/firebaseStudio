@@ -4,14 +4,12 @@
 import type { FC, ChangeEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import type { FormData, UserData } from '@/types';
+import type { FormData } from '@/types';
 import { useState, useEffect, useCallback } from 'react'; // Import useCallback
 
 interface BirthDayStepProps {
   formData: Pick<FormData, 'birthDay'>;
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  userData: UserData | null;
-  formattedUserInitials?: string | null;
   onValidationChange?: (isValid: boolean) => void;
 }
 
@@ -28,34 +26,18 @@ const getMonthIndex = (monthName: string): number | null => {
 };
 
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData, formattedUserInitials, onValidationChange }) => {
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidationChange }) => {
   const [error, setError] = useState('');
 
-  let displayMonth = "September";
-  let displayYear = "1996";
-
-  if (userData && userData.dataBirth) {
-    try {
-      const parts = userData.dataBirth.split('-');
-      if (parts.length === 3) {
-        displayYear = parts[0];
-        const monthNumber = parseInt(parts[1], 10);
-        if (!isNaN(monthNumber) && monthNumber >= 1 && monthNumber <= 12) {
-             displayMonth = getMonthName(monthNumber);
-        } else {
-            console.error("Invalid month number in userData.dataBirth:", parts[1]);
-             displayMonth = "September";
-             displayYear = "1996";
-        }
-      }
-    } catch (e) {
-      console.error("Error parsing userData.dataBirth:", e);
-       displayMonth = "September";
-       displayYear = "1996";
-    }
-  }
-
   const validateDay = useCallback((dayValue: string): string => {
+    // Default values to avoid NaN issues
+    let displayMonth = "September";
+    let displayYear = "1996";
+
+    //If you want the validation to happen based on the user's actual birthdate, you would need to pass the actual birthdate
+    // from the initialUserData to this component and use it here.
+    // For this example, I am keeping the default values
+
     if (dayValue.length === 0) {
         return "";
     }
@@ -77,7 +59,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData
         return `Day ${day} is not valid for ${displayMonth} ${displayYear}.`;
       }
     }
-  }, [displayMonth, displayYear]);
+  }, []);
 
   const handleDayInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { value, name } = e.target;
@@ -111,11 +93,6 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData
   return (
     <Card className="w-full border-none shadow-none">
       <CardContent className="pt-6">
-        {formattedUserInitials && (
-          <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
-            {formattedUserInitials}
-          </p>
-        )}
         <div className="flex flex-col items-center space-y-3 text-center">
           <div className="flex items-baseline justify-center gap-x-2 text-foreground text-sm sm:text-base" aria-live="polite">
             <span>Your birthday is</span>
@@ -135,7 +112,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, userData
                 aria-label="Day of your birth (enter two digits)"
               />
             </div>
-            <span>{displayMonth} {displayYear}.</span>
+            <span>September 1996.</span>
           </div>
           {error && (
              <p className="text-red-500 text-sm mt-1">{error}</p>

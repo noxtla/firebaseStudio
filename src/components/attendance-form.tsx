@@ -1,3 +1,6 @@
+/**
+ * Client-side functionality.
+ */
 "use client";
 
 import { useState, type ChangeEvent, useEffect, useCallback } from 'react';
@@ -35,28 +38,18 @@ interface AttendanceFormProps {
 export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'ssnLast4' | 'birthDay'>>({
-    ssnLast4: '',
-    birthDay: '',
+    ssnLast4: initialUserData?.SSN?.slice(-4) || '',
+    birthDay: initialUserData?.BirthDay || '',
   });
 
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
-  const [userInitials, setUserInitials] = useState<string | null>(null);
   const [isBirthDayInputValid, setIsBirthDayInputValid] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false); // Added loading state
 
   const { toast } = useToast();
   const router = useRouter();
-
-  useEffect(() => {
-    if (initialUserData && initialUserData.Name) {
-      const nameParts = initialUserData.Name.split(' ');
-      const initials = nameParts.map(part => part.charAt(0).toUpperCase()).join('');
-      setUserInitials(initials);
-    }
-  }, [initialUserData]);
-
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -153,17 +146,13 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS; 
   const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
 
-  const formatInitialsForDisplay = (initials: string): string => {
-    return initials
-      .split('')
-      .map(char => `${char}****`)
+  const formatInitialsForDisplay = (fullName: string | undefined): string => {
+    if (!fullName) return '';
+    return fullName
+      .split(' ')
+      .map(part => part.charAt(0) + '****')
       .join(' ');
   };
-
-  let formattedUserInitialsForStep: string | null = null;
-  if (userInitials && currentStep === 2) { 
-    formattedUserInitialsForStep = formatInitialsForDisplay(userInitials);
-  }
 
   const renderActiveStepContent = () => {
     switch (currentStep) {
@@ -179,7 +168,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           <BirthDayStep
             formData={formData}
             onInputChange={handleInputChange}
-            userData={initialUserData} 
             onValidationChange={handleBirthDayValidationChange}
           />
         );
@@ -188,7 +176,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
             capturedImage={capturedImage}
-            formattedUserInitials={formattedUserInitialsForStep}
+            formattedUserInitials={formatInitialsForDisplay(initialUserData?.Name)}
           />
         );
       case 3: 
