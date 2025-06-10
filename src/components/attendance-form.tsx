@@ -39,7 +39,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'ssnLast4' | 'birthDay'>>({
     ssnLast4: '',
-    birthDay: initialUserData?.birth_date || '',
+    birthDay: '',
   });
   const [isSsnValid, setIsSsnValid] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -178,6 +178,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formData={formData}
             onInputChange={handleInputChange}
             onValidationChange={handleBirthDayValidationChange}
+            birthDate={initialUserData.birth_date}
           />
         );
       case 2: 

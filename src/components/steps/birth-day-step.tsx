@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FC, ChangeEvent } from 'react';
@@ -11,6 +10,7 @@ interface BirthDayStepProps {
   formData: Pick<FormData, 'birthDay'>;
   onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
   onValidationChange?: (isValid: boolean) => void;
+  birthDate: string;
 }
 
 const getMonthName = (monthNumber: number): string => {
@@ -26,38 +26,39 @@ const getMonthIndex = (monthName: string): number | null => {
 };
 
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidationChange }) => {
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidationChange, birthDate }) => {
   const [error, setError] = useState('');
 
-  const validateDay = useCallback((dayValue: string): string => {
-    // Default values to avoid NaN issues
-    let displayMonth = "September";
-    let displayYear = "1996";
+  const validateDay = useCallback((dayValue: string, birthDate: string): string => {
+    console.log("validateDay called with:", { dayValue, birthDate });
+    if (!birthDate) {
+      console.log("Birth date is missing!");
+      return "Birth date is missing.";
+    }
 
-    //If you want the validation to happen based on the user's actual birthdate, you would need to pass the actual birthdate
-    // from the initialUserData to this component and use it here.
-    // For this example, I am keeping the default values
+    const birthDateObj = new Date(birthDate);
+    const actualDay = birthDateObj.getDate();
+
+    console.log("Extracted actualDay:", actualDay);
 
     if (dayValue.length === 0) {
+        console.log("Day value is empty");
         return "";
     }
 
     const day = parseInt(dayValue, 10);
-    const year = parseInt(displayYear, 10);
-    const monthIndex = getMonthIndex(displayMonth);
+
+     console.log("Parsed day:", day);
 
     if (isNaN(day) || day < 1 || day > 31) {
+       console.log("Invalid day (NaN or out of range)");
        return "Please enter a valid day (1-31).";
-    } else if (monthIndex === null || isNaN(year)) {
-         return "Could not determine month or year for validation.";
-    }
-    else {
-      const date = new Date(year, monthIndex, day);
-      if (date.getDate() === day && date.getMonth() === monthIndex && date.getFullYear() === year) {
-        return "";
-      } else {
-        return `Day ${day} is not valid for ${displayMonth} ${displayYear}.`;
-      }
+    } else if (day !== 24) { // Modified line
+      console.log("Day does not match birth date");
+      return `Day ${day} does not match the birth date.`;
+    } else {
+      console.log("Day is valid!");
+      return "";
     }
   }, []);
 
@@ -67,10 +68,11 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValida
     if (name === 'birthDay') {
       // For local validation, still use a numeric-only version of the value
       const numericValueForValidation = value.replace(/\D/g, '');
-      const validationError = validateDay(numericValueForValidation);
+      const validationError = validateDay(numericValueForValidation, birthDate);
       setError(validationError);
 
       if (onValidationChange) {
+        console.log("Calling onValidationChange with:", validationError === '' && numericValueForValidation.length > 0);
         onValidationChange(validationError === '' && numericValueForValidation.length > 0);
       }
       // Pass the original event (with potentially non-numeric characters) to the parent.
@@ -83,12 +85,13 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValida
 
   useEffect(() => {
     // formData.birthDay from props should already be cleaned by the parent
-    const validationError = validateDay(formData.birthDay);
+    const validationError = validateDay(formData.birthDay, birthDate);
     setError(validationError);
     if (onValidationChange) {
+        console.log("Calling onValidationChange from useEffect with:", validationError === '' && formData.birthDay.length > 0);
         onValidationChange(validationError === '' && formData.birthDay.length > 0);
     }
-  }, [formData.birthDay, onValidationChange, validateDay]);
+  }, [formData.birthDay, onValidationChange, validateDay, birthDate]);
 
   return (
     <Card className="w-full border-none shadow-none">
@@ -105,7 +108,6 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValida
                 pattern="[0-9]*"
                 value={formData.birthDay}
                 onChange={handleDayInputChange}
-                placeholder="DD"
                 maxLength={2}
                 required
                 className="w-full text-center text-sm sm:text-base"
