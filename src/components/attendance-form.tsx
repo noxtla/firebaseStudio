@@ -81,7 +81,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
         return formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4);
       case 1:
         return isBirthDayInputValid;
-      case 2:
+      case 2: 
         return !!capturedImage && !!capturedLocation;
       default:
         return true;
