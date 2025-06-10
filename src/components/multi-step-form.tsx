@@ -90,7 +90,7 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) {
       setIsProcessingWebhook(true); // Start loading
       try {
-        const response = await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
+        const response = await fetch('https://noxtla.app.n8n.cloud/webhook/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

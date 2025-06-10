@@ -87,19 +87,47 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       return;
     }
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate 1.5 second delay
+    try {
+      const response = await fetch("https://noxtla.app.n8n.cloud/webhook/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          capturedImage,
+          captureTimestamp,
+          capturedLocation,
+          userData,
+          action: "capturedImage",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setSubmissionResponse(JSON.stringify(result));
+      setSubmissionState('submitted');
+      toast({
+        variant: "success",
+        title: "Attendance Recorded",
+        description: "Your attendance has been successfully recorded.",
+      });
+    } catch (error: any) {
+      console.error("Submission error:", error);
+      setSubmissionResponse(`Submission failed: ${error.message}`);
+      setSubmissionState('reviewing');
+      toast({
+        variant: "destructive",
+        title: "Submission Error",
+        description: "Failed to record attendance. Please try again.",
+      });
+    }
 
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('attendanceSubmitted', 'true');
     }
-    setSubmissionResponse(JSON.stringify({ "Success": "Attendance recorded (Simulated)" }));
-    setSubmissionState('submitted');
-    toast({
-      variant: "success",
-      title: "Attendance Recorded (Simulated)",
-      description: "Your attendance has been successfully simulated.",
-    });
   };
 
   const handleActualRestart = async () => {
