@@ -38,8 +38,8 @@ interface AttendanceFormProps {
 export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'ssnLast4' | 'birthDay'>>({
-    ssnLast4: initialUserData?.SSN?.slice(-4) || '',
-    birthDay: initialUserData?.BirthDay || '',
+    ssnLast4: '',
+    birthDay: initialUserData?.birth_date || '',
   });
   const [isSsnValid, setIsSsnValid] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -52,8 +52,12 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const router = useRouter();
 
   useEffect(() => {
-    setIsSsnValid(formData.ssnLast4.length === 4 && /^\d{4}$/.test(formData.ssnLast4));
-  }, [formData.ssnLast4]);
+    const isValid = formData.ssnLast4.length === 4 &&
+      /^\d{4}$/.test(formData.ssnLast4) &&
+      initialUserData?.SSN?.slice(-4) === formData.ssnLast4;
+
+    setIsSsnValid(isValid);
+  }, [formData.ssnLast4, initialUserData?.SSN]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
