@@ -95,7 +95,7 @@ export default function MultiStepForm() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ phoneNumber: formData.phoneNumber }),
+          body: JSON.stringify({ phoneNumber: formData.phoneNumber, action: 'phoneNumberLogin' }),
         });
 
         if (response.status === 404) {
