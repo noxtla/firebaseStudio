@@ -1,12 +1,9 @@
-
-"use client";
-
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin, ShieldAlert, AlertTriangle } from 'lucide-react';
-import type { FormData, UserData, CapturedLocation } from '@/types';
+import type { FormData, CapturedLocation } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
@@ -20,8 +17,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface UserData {
+  Name: string;
+  phoneNumber: string;
+  SSN: string;
+  birth_date: string;
+  Position: string;
+}
+
 interface CompletionScreenProps {
-  formData: Pick<FormData, 'phoneNumber' | 'ssnLast4' | 'birthDay'>;
   capturedImage: string | null;
   captureTimestamp: string | null;
   capturedLocation: CapturedLocation | null;
@@ -29,31 +33,26 @@ interface CompletionScreenProps {
   onRestart: () => void;
 }
 
-const getMonthNameFromDate = (dateString: string | undefined): string => {
-  if (!dateString) return "Month";
+const formatDate = (dateString: string): string => {
   try {
-    const [_, monthNumStr] = dateString.split('-');
-    const monthNum = parseInt(monthNumStr, 10);
-    const date = new Date();
-    date.setMonth(monthNum - 1);
-    return date.toLocaleString('en-US', { month: 'long' });
-  } catch {
-    return "Month";
-  }
-};
+    const date = new Date(dateString);
 
-const getYearFromDate = (dateString: string | undefined): string => {
-  if (!dateString) return "Year";
-  try {
-    const [yearStr] = dateString.split('-');
-    return yearStr;
-  } catch {
-    return "Year";
+    // Adjust for potential timezone offset
+    const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    };
+    return utcDate.toLocaleDateString(undefined, options);
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return 'Invalid Date';
   }
 };
 
 const CompletionScreen: FC<CompletionScreenProps> = ({
-  formData,
   capturedImage,
   captureTimestamp,
   capturedLocation,
@@ -64,7 +63,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
-  const [isRestarting, setIsRestarting] = useState(false); // Added for "Done" button
+  const [isRestarting, setIsRestarting] = useState(false);
 
   const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
@@ -109,14 +108,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem('currentTruckNumber'); 
     }
-    onRestart(); 
-    // setIsRestarting(false); // Component will unmount
+    onRestart();
   };
-
-  const birthDayDisplay = userData?.dataBirth && formData.birthDay
-    ? `${formData.birthDay} ${getMonthNameFromDate(userData.dataBirth)} ${getYearFromDate(userData.dataBirth)}`
-    : `${formData.birthDay || 'N/A'}`;
-
 
   return (
     <>
@@ -164,13 +157,13 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <h3 className="font-semibold text-lg mb-2">Summary:</h3>
                 <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                   {userData && <li>Name: {userData.Name}</li>}
-                  <li>Phone: {formData.phoneNumber || (userData?.phoneNumber || '')}</li>
-                  <li>SSN (Last 4): ••••{formData.ssnLast4 ? formData.ssnLast4.slice(-4) : '****'}</li>
-                  <li>Birth Day: {birthDayDisplay}</li>
-                  {userData && <li>Position: {userData.Puesto}</li> }
+                  {userData && <li>Phone: {userData.phoneNumber}</li>}
+                  {userData && <li>SSN (Last 4): ••••{userData.SSN ? userData.SSN.slice(-4) : '****'}</li>}
+                  {userData && <li>Birth Date: {userData.birth_date ? formatDate(userData.birth_date) : 'N/A'}</li>}
+                  {userData && <li>Position: {userData.Position}</li>}
                 </ul>
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="font-semibold text-lg">Capture Details:</h3>
                 {captureTimestamp && (
