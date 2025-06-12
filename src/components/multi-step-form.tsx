@@ -10,25 +10,36 @@ import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
 
 import { Button } from '@/components/ui/button';
-import { Phone, ArrowLeft, ArrowRight, Loader2, type LucideIcon } from 'lucide-react'; // Added Loader2
+import { Phone, ArrowLeft, ArrowRight, Loader2, type LucideIcon } from 'lucide-react'; 
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 
 const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
 
-const MAX_STEPS: FormStep = 1; // Only phone number step before redirect
+const MAX_STEPS: FormStep = 1; 
 
 const STEP_CONFIG = [
-  { title: "Welcome", icon: null }, // Step 0
-  { title: "Enter Your Phone Number", icon: Phone }, // Step 1
+  { title: "Welcome", icon: null }, 
+  { title: "Enter Your Phone Number", icon: Phone }, 
 ];
 
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
-  const [isProcessingWebhook, setIsProcessingWebhook] = useState(false); // New state for loading
+  const [isProcessingWebhook, setIsProcessingWebhook] = useState(false);
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
+  const [welcomeUserName, setWelcomeUserName] = useState('');
 
   const router = useRouter();
   const { toast } = useToast()
@@ -36,10 +47,8 @@ export default function MultiStepForm() {
   useEffect(() => {
     if (currentStep === 0) {
       if (typeof window !== 'undefined') {
-        // Keep necessary session storage clearing
         sessionStorage.removeItem('currentTruckNumber');
         sessionStorage.removeItem('attendanceSubmitted');
-        // Removed webhook/user data related session storage clearing
       }
     }
   }, [currentStep]);
@@ -59,11 +68,9 @@ export default function MultiStepForm() {
         return;
       }
     }
-    // Simplified to only handle phone number formatting
   };
 
   const getCanProceed = (): boolean => {
-    // Removed phone number validation, always allow proceeding from step 1
     return currentStep === 0 ? true : formData.phoneNumber.replace(/\D/g, '').length === 10;
   };
 
@@ -72,12 +79,9 @@ export default function MultiStepForm() {
   const restartForm = () => {
     setCurrentStep(0);
     setFormData(initialFormData);
-    // Removed webhook/user data related state resets
     if (typeof window !== 'undefined') {
-      // Keep necessary session storage clearing
       sessionStorage.removeItem('currentTruckNumber');
       sessionStorage.removeItem('attendanceSubmitted');
-      // Removed webhook/user data related session storage clearing
     }
   };
 
@@ -88,7 +92,7 @@ export default function MultiStepForm() {
     }
 
     if (currentStep === 1 && canProceed) {
-      setIsProcessingWebhook(true); // Start loading
+      setIsProcessingWebhook(true); 
       try {
         const response = await fetch('https://noxtla.app.n8n.cloud/webhook/login', {
           method: 'POST',
@@ -106,37 +110,28 @@ export default function MultiStepForm() {
               description: "User not found. Please check the phone number and try again.",
               variant: "destructive",
             })
-            setIsProcessingWebhook(false); // Stop loading
+            setIsProcessingWebhook(false); 
             return;
           }
         }
 
         if (!response.ok) {
-          // Handle other non-200 status codes
           toast({
             title: "Error",
             description: `Webhook request failed with status: ${response.status}`,
             variant: "destructive",
           })
-          setIsProcessingWebhook(false); // Stop loading
+          setIsProcessingWebhook(false); 
           return;
         }
 
         const data = await response.json();
 
         if (data && data.length > 0 && data[0].Name && data[0].phoneNumber) {
-          // Store user data in session storage
           sessionStorage.setItem('userData', JSON.stringify(data[0]));
-
-          toast({
-            title: "Login Successful",
-            description: "Login successful. Welcome back!",
-          })
-          router.push('/main-menu');
-          // No need to set isProcessingWebhook to false here as we are navigating away
-          return;
+          setWelcomeUserName(data[0].Name);
+          setShowWelcomeDialog(true);
         } else {
-          // Handle invalid data
           toast({
             title: "Invalid User Data",
             description: "The user data received from the server is invalid.",
@@ -151,7 +146,7 @@ export default function MultiStepForm() {
           variant: "destructive",
         })
       } finally {
-        setIsProcessingWebhook(false); // Stop loading in finally block
+        setIsProcessingWebhook(false); 
       }
     }
   };
@@ -180,7 +175,7 @@ export default function MultiStepForm() {
           <PhoneNumberStep
             formData={formData}
             onInputChange={handleInputChange}
-            rawApiResponse={null} // rawApiResponse prop seems unused, passing null
+            rawApiResponse={null} 
           />
         );
       default:
@@ -237,6 +232,29 @@ export default function MultiStepForm() {
           )}
         </div>
       </div>
+      <Dialog 
+        open={showWelcomeDialog} 
+        onOpenChange={(isOpen) => {
+          setShowWelcomeDialog(isOpen);
+          if (!isOpen) {
+            router.push('/main-menu');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Welcome Back!</DialogTitle>
+            <DialogDescription>
+              Hello {welcomeUserName}, it's great to see you again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="default">OK</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
