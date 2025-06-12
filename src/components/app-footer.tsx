@@ -1,21 +1,20 @@
 "use client";
 
 import Link from 'next/link';
-import { Home, MessageSquare, Bell, User as UserIcon } from 'lucide-react';
+import { Home, MessageSquare, User as UserIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import NotificationCenter from './notification-center';
 
 interface NavItem {
   href: string;
   icon: React.ElementType;
   label: string;
-  notificationCount?: number;
 }
 
 const navItems: NavItem[] = [
   { href: '/main-menu', icon: Home, label: 'Home' },
   { href: '#', icon: MessageSquare, label: 'Chat' }, // Placeholder href
-  { href: '#', icon: Bell, label: 'Notifications', notificationCount: 13 }, // Placeholder href, example count
   { href: '#', icon: UserIcon, label: 'Profile' }, // Placeholder href
 ];
 
@@ -23,7 +22,6 @@ export default function AppFooter() {
   const pathname = usePathname();
 
   // Determine if the footer should be visible based on the current path
-  // For example, hide on login page ('/')
   const hiddenPaths = ['/']; // Removed '/attendance' from here
   if (hiddenPaths.includes(pathname)) {
     return null;
@@ -48,18 +46,12 @@ export default function AppFooter() {
                     className={cn("h-6 w-6 sm:h-7 sm:w-7", isActive ? "text-primary" : "")}
                     strokeWidth={isActive ? 2.5 : 2}
                   />
-                  {item.notificationCount && item.notificationCount > 0 && (
-                    <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
-                      {item.notificationCount > 9 ? '9+' : item.notificationCount}
-                    </span>
-                  )}
                 </div>
-                {/* Optional: Add labels below icons if needed, but image shows icons only */}
-                {/* <span className={cn("mt-1 text-xs", isActive ? "font-semibold" : "")}>{item.label}</span> */}
               </a>
             </Link>
           );
         })}
+        <NotificationCenter />
       </nav>
     </footer>
   );
