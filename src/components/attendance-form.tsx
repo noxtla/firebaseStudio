@@ -126,6 +126,11 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     if (currentStep > 0) { // Only go back if not on the first step
       setCurrentStep((prev) => (prev - 1) as FormStep);
       if (currentStep === 1) { 
+        // Clear SSN field and disable next when going back from Birth Day to SSN
+ setFormData(prev => ({...prev, ssnLast4: ''}));
+ setIsSsnValid(false);
+      }
+      if (currentStep === 2) { 
          setFormData(prev => ({...prev, birthDay: ''}));
          setIsBirthDayInputValid(false); 
       }
