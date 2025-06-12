@@ -1,10 +1,9 @@
 "use client";
 
 import Link from 'next/link';
-import { Home, MessageSquare, User as UserIcon } from 'lucide-react';
+import { Home, MessageSquare, User as UserIcon, Bell } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import NotificationCenter from './notification-center';
 
 interface NavItem {
   href: string;
@@ -15,7 +14,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/main-menu', icon: Home, label: 'Home' },
   { href: '#', icon: MessageSquare, label: 'Chat' }, // Placeholder href
-  { href: '#', icon: UserIcon, label: 'Profile' }, // Placeholder href
 ];
 
 export default function AppFooter() {
@@ -51,7 +49,38 @@ export default function AppFooter() {
             </Link>
           );
         })}
-        <NotificationCenter />
+         <Link key="notifications" href="/notifications" legacyBehavior>
+            <a
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center p-2 text-muted-foreground transition-colors hover:text-primary",
+                pathname === "/notifications" && "text-primary"
+              )}
+              aria-label="Notifications"
+            >
+              <div className="relative">
+                <Bell
+                  className={cn("h-6 w-6 sm:h-7 sm:w-7", pathname === "/notifications" ? "text-primary" : "")}
+                  strokeWidth={pathname === "/notifications" ? 2.5 : 2}
+                />
+              </div>
+            </a>
+          </Link>
+           <Link key="profile" href="#" legacyBehavior>
+            <a
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center p-2 text-muted-foreground transition-colors hover:text-primary",
+                pathname === "#" && "text-primary"
+              )}
+              aria-label="Profile"
+            >
+              <div className="relative">
+                <UserIcon
+                  className={cn("h-6 w-6 sm:h-7 sm:w-7", pathname === "#" ? "text-primary" : "")}
+                  strokeWidth={pathname === "#" ? 2.5 : 2}
+                />
+              </div>
+            </a>
+          </Link>
       </nav>
     </footer>
   );
