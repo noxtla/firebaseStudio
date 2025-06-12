@@ -1,123 +1,211 @@
 "use client";
 
 import type { FC, ChangeEvent } from 'react';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import type { FormData } from '@/types';
 import { useState, useEffect, useCallback } from 'react'; // Import useCallback
+import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const currentYear = new Date().getFullYear();
 
 interface BirthDayStepProps {
-  formData: Pick<FormData, 'birthDay'>;
-  onInputChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  formData: { birthMonth: string; birthDay: string; birthYear: string };
+  onInputChange: (e: { name: keyof Pick<FormData, 'birthMonth' | 'birthDay' | 'birthYear'>; value: string }) => void;
   onValidationChange?: (isValid: boolean) => void;
-  birthDate: string;
 }
 
-const getMonthName = (monthNumber: number): string => {
-  const date = new Date();
-  date.setMonth(monthNumber - 1);
-  return date.toLocaleString('en-US', { month: 'long' });
-};
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidationChange }) => {  
+  const [combinedError, setCombinedError] = useState('');
+  const [dayOptions, setDayOptions] = useState<string[]>([]);
 
-const getMonthIndex = (monthName: string): number | null => {
-  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const index = monthNames.findIndex(name => name.toLowerCase() === monthName.toLowerCase());
-  return index !== -1 ? index : null;
-};
-
-
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidationChange, birthDate }) => {
-  const [error, setError] = useState('');
-
-  const validateDay = useCallback((dayValue: string, birthDate: string): string => {
-    console.log("validateDay called with:", { dayValue, birthDate });
-    if (!birthDate) {
-      console.log("Birth date is missing!");
-      return "Birth date is missing.";
+  const validateDate = useCallback((month: string, day: string, year: string): { isValid: boolean; error: string } => {
+    // Check if all fields are filled
+    if (!month || !day || !year) {
+      return { isValid: false, error: '' }; // No error message if incomplete
     }
 
-    const birthDateObj = new Date(birthDate);
-    const actualDay = birthDateObj.getDate();
+    const monthInt = parseInt(month, 10);
+    const dayInt = parseInt(day, 10);
+    const yearInt = parseInt(year, 10);
 
-    console.log("Extracted actualDay:", actualDay);
-
-    if (dayValue.length === 0) {
-        console.log("Day value is empty");
-        return "";
+    // Basic number and range validation
+    if (isNaN(monthInt) || monthInt < 1 || monthInt > 12) {
+      return { isValid: false, error: "Invalid month." };
+    }
+    if (isNaN(dayInt) || dayInt < 1 || dayInt > 31) { 
+      return { isValid: false, error: "Invalid day." };
+    }
+    if (isNaN(yearInt) || yearInt < 1900 || yearInt > currentYear) { // Basic year range
+        return { isValid: false, error: `Invalid year. Must be between 1900 and ${currentYear}.` };
     }
 
-    const day = parseInt(dayValue, 10);
-
-     console.log("Parsed day:", day);
-
-    if (isNaN(day) || day < 1 || day > 31) {
-       console.log("Invalid day (NaN or out of range)");
-       return "Please enter a valid day (1-31).";
-    } else if (day !== 24) { // Modified line
-      console.log("Day does not match birth date");
-      return `Day ${day} does not match the birth date.`;
-    } else {
-      console.log("Day is valid!");
-      return "";
+    // Validate day based on month and leap year using Date object behavior
+    const date = new Date(yearInt, monthInt - 1, dayInt);
+    if (date.getMonth() !== monthInt - 1 || date.getDate() !== dayInt || date.getFullYear() !== yearInt) {
+      return { isValid: false, error: "Invalid date for the selected month and year." };
     }
+
+    // Age restriction (at least 21 years old)
+    const today = new Date();
+    const birthDate = new Date(yearInt, monthInt - 1, dayInt);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 21) {
+      return { isValid: false, error: "You must be at least 21 years old." };
+    }
+
+    return { isValid: true, error: "" };
   }, []);
 
-  const handleDayInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { value, name } = e.target;
-
-    if (name === 'birthDay') {
-      // For local validation, still use a numeric-only version of the value
-      const numericValueForValidation = value.replace(/\D/g, '');
-      const validationError = validateDay(numericValueForValidation, birthDate);
-      setError(validationError);
-
-      if (onValidationChange) {
-        console.log("Calling onValidationChange with:", validationError === '' && numericValueForValidation.length > 0);
-        onValidationChange(validationError === '' && numericValueForValidation.length > 0);
-      }
-      // Pass the original event (with potentially non-numeric characters) to the parent.
-      // The parent's onInputChange will handle cleaning (e.g., .replace(/\D/g, '')).
-      onInputChange(e);
-    } else {
-       onInputChange(e);
-    }
+  const handleSelectChange = (name: keyof Pick<FormData, 'birthMonth' | 'birthDay' | 'birthYear'>, value: string) => {
+    onInputChange({ name, value });
   };
 
-  useEffect(() => {
-    // formData.birthDay from props should already be cleaned by the parent
-    const validationError = validateDay(formData.birthDay, birthDate);
-    setError(validationError);
+
+  const handleBlur = useCallback(() => {
+    // Validate on blur of any field
+    const { isValid, error } = validateDate(formData.birthMonth, formData.birthDay, formData.birthYear);
+    setCombinedError(error);
+
+    // Only report overall validation status when all fields have content
+    const allFieldsFilled = formData.birthMonth.length > 0 && formData.birthDay.length > 0 && formData.birthYear.length > 0;
     if (onValidationChange) {
-        console.log("Calling onValidationChange from useEffect with:", validationError === '' && formData.birthDay.length > 0);
-        onValidationChange(validationError === '' && formData.birthDay.length > 0);
+        onValidationChange(allFieldsFilled && isValid);
     }
-  }, [formData.birthDay, onValidationChange, validateDay, birthDate]);
+  }, [formData.birthMonth, formData.birthDay, formData.birthYear, onValidationChange, validateDate]);
+
+  // Effect to update validation state whenever form data changes
+  useEffect(() => {
+    // Check overall validity only if all fields are filled, but always update the error message
+    const { isValid, error } = validateDate(formData.birthMonth, formData.birthDay, formData.birthYear);
+    setCombinedError(error); // Update combined error regardless of completeness
+
+    // Report validation status to parent only when all fields are filled
+    const allFieldsFilled = formData.birthMonth.length > 0 && formData.birthDay.length > 0 && formData.birthYear.length > 0;
+    if (onValidationChange && allFieldsFilled) { // Only validate if all fields are filled
+        onValidationChange(allFieldsFilled && isValid);
+    }
+  }, [formData.birthMonth, formData.birthDay, formData.birthYear, onValidationChange, validateDate]);
+
+  // Effect to update day options based on selected month and year
+  useEffect(() => {
+    const monthInt = parseInt(formData.birthMonth, 10);
+    const yearInt = parseInt(formData.birthYear, 10);
+
+    if (!isNaN(monthInt) && !isNaN(yearInt)) {
+      // Get the number of days in the selected month and year
+      const daysInMonth = new Date(yearInt, monthInt, 0).getDate();
+      const newDayOptions = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, '0'));
+      setDayOptions(newDayOptions);
+
+      // If the currently selected day is greater than the new number of days, reset the day
+      if (parseInt(formData.birthDay, 10) > daysInMonth) {
+        onInputChange({ name: 'birthDay', value: '' });
+      }
+
+    } else if (!isNaN(monthInt)) {
+         // If only month is selected, default to 31 days (will be validated later with year)
+         const newDayOptions = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+         setDayOptions(newDayOptions);
+    } else {
+        setDayOptions([]);
+        if (formData.birthDay.length > 0) {
+             onInputChange({ name: 'birthDay', value: '' });
+        }
+    }
+  }, [formData.birthMonth, formData.birthYear, formData.birthDay, onInputChange]);
+
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  const years = Array.from({ length: currentYear - 1996 + 1 }, (_, i) => (currentYear - i).toString());
+
+  const allFieldsFilled = formData.birthMonth.length > 0 && formData.birthDay.length > 0 && formData.birthYear.length > 0;
+  const showCombinedError = combinedError && allFieldsFilled;
+
 
   return (
     <Card className="w-full border-none shadow-none">
       <CardContent className="pt-6">
-        <div className="flex flex-col items-center space-y-3 text-center">
+        <div className="flex flex-col items-center space-y-6 text-center">
           <div className="flex items-baseline justify-center gap-x-2 text-foreground text-sm sm:text-base" aria-live="polite">
-            <span>Your birthday is</span>
-            <div className="inline-block w-16 align-baseline">
-              <Input
+            <span>Your birthday is:</span>
+            <div className="inline-block w-14 align-baseline">
+               <Select
+                id="birthMonth"
+                name="birthMonth"
+                value={formData.birthMonth}
+                onValueChange={(value) => handleSelectChange('birthMonth', value)}
+                required
+                // className={cn("w-full text-center text-sm sm:text-base", (monthError || combinedError) && "border-red-500")} // Add error class if needed
+                aria-label="Month of your birth (enter two digits)"
+               >
+                 <SelectTrigger className="w-full text-center text-sm sm:text-base">
+                    <SelectValue placeholder="MM" />
+                 </SelectTrigger>
+                 <SelectContent>
+                    {monthNames.map((month, index) => (
+                        <SelectItem key={index} value={(index + 1).toString().padStart(2, '0')}>
+                            {month}
+                        </SelectItem>
+                    ))}
+                 </SelectContent>
+               </Select>
+            </div>
+            <span>/</span>
+            <div className="inline-block w-14 align-baseline">
+               <Select
                 id="birthDay"
                 name="birthDay"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 value={formData.birthDay}
-                onChange={handleDayInputChange}
-                maxLength={2}
+                onValueChange={(value) => handleSelectChange('birthDay', value)}
                 required
-                className="w-full text-center text-sm sm:text-base"
+                // className={cn("w-full text-center text-sm sm:text-base", (dayError || combinedError) && "border-red-500")} // Add error class if needed
                 aria-label="Day of your birth (enter two digits)"
-              />
+                placeholder="DD"
+               >
+                 <SelectTrigger className="w-full text-center text-sm sm:text-base">
+                    <SelectValue placeholder="DD" />
+                 </SelectTrigger>
+                 <SelectContent>
+                    {dayOptions.map((day) => (
+                        <SelectItem key={day} value={day}>
+                            {day}
+                        </SelectItem>
+                    ))}
+                 </SelectContent>
+               </Select>
             </div>
-            <span>September 1996.</span>
+             <span>/</span>
+            <div className="inline-block w-20 align-baseline">
+               <Select
+                id="birthYear"
+                name="birthYear"
+                value={formData.birthYear}
+                onValueChange={(value) => handleSelectChange('birthYear', value)}
+                required
+                // className={cn("w-full text-center text-sm sm:text-base", (yearError || combinedError) && "border-red-500")} // Add error class if needed
+                aria-label="Year of your birth (enter four digits)"
+                placeholder="YYYY"
+               >
+                 <SelectTrigger className="w-full text-center text-sm sm:text-base">
+                    <SelectValue placeholder="YYYY" />
+                 </SelectTrigger>
+                 <SelectContent>
+                    {years.map((year) => (
+                        <SelectItem key={year} value={year}>
+                            {year}
+                        </SelectItem>
+                    ))}
+                 </SelectContent>
+               </Select>
+            </div>
           </div>
-          {error && (
-             <p className="text-red-500 text-sm mt-1">{error}</p>
+          {showCombinedError && ( 
+             <p className="text-red-500 text-sm mt-1">{combinedError}</p>
           )}
         </div>
       </CardContent>

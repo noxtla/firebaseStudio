@@ -38,8 +38,10 @@ interface AttendanceFormProps {
 export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'ssnLast4' | 'birthDay'>>({
-    ssnLast4: '',
-    birthDay: '',
+ ssnLast4: '',
+ birthYear: '',
+ birthMonth: '',
+ birthDay: '',
   });
   const [isSsnValid, setIsSsnValid] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -60,11 +62,25 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   }, [formData.ssnLast4, initialUserData?.SSN]);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    if (name === "birthDay") {
-        const numericValue = value.replace(/\D/g, '');
-        setFormData((prev) => ({ ...prev, [name]: numericValue }));
-    } else {
+ const { name, value } = e.target;
+
+    // Handle birth date inputs specifically
+    if (name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
+      // Ensure only digits are captured for date inputs
+      const numericValue = value.replace(/\D/g, '');
+ setFormData(prev => ({
+ ...prev,
+        [name]: numericValue
+      }));
+    } else if (name === "ssnLast4") {
+      // Handle SSN separately to ensure only digits
+      const numericValue = value.replace(/\D/g, '');
+      setFormData((prev) => ({ ...prev, [name]: numericValue }));
+    }
+
+
+ else {
+ // For other inputs, use the original value
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
