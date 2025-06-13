@@ -60,16 +60,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setIsSsnValid(isValid);
   }, [formData.ssnLast4, initialUserData?.SSN]);
 
-  // **NUEVO:** Valida la fecha de nacimiento cuando cambia
-  // Esta lógica ahora vive en el componente padre.
-  useEffect(() => {
-    const { birthMonth, birthDay, birthYear } = formData;
-    // La fecha es válida para proceder si todos los campos están llenos.
-    const isValid = !!(birthMonth && birthDay && birthYear);
-    setIsBirthDayInputValid(isValid);
-  }, [formData.birthMonth, formData.birthDay, formData.birthYear]);
-
-
   // **MODIFICADO y MEJORADO:**
   // Este handler ahora acepta tanto un evento de input como un objeto {name, value}.
   // Está envuelto en useCallback para un rendimiento óptimo.
@@ -82,7 +72,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-  }, []); // El array de dependencias vacío es correcto aquí.
+  }, [setFormData]); // El array de dependencias vacío es correcto aquí.
 
 
   const handlePhotoCaptured = (
@@ -95,7 +85,9 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCapturedLocation(location || null);
   };
 
-  // La función `handleBirthDayValidationChange` ya no es necesaria y ha sido eliminada.
+  const handleBirthDayValidationChange = (isValid: boolean) => {
+    setIsBirthDayInputValid(isValid);
+  }
 
   const getCanProceed = (): boolean => {
     switch (currentStep) {
@@ -188,11 +180,11 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           />
         );
       case 1:
-        // **MODIFICADO:** Pasando las props correctas al nuevo BirthDayStep
         return (
           <BirthDayStep
             formData={formData}
             onInputChange={handleInputChange}
+            onValidityChange={handleBirthDayValidationChange}
           />
         );
       case 2:
@@ -204,12 +196,22 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           />
         );
       case 3:
+        // 1. Construct the full birth date string from the form state.
+        const fullBirthDate = `${formData.birthYear}-${formData.birthMonth}-${formData.birthDay}`;
+
+        // 2. Create a new, complete user data object that satisfies the type.
+        //    We use the spread operator (...) to copy existing properties from initialUserData
+        //    and then add/overwrite the properties we've collected.
+        const completeUserData = {
+            ...initialUserData, // Copies Name, SSN, phoneNumber, Position, etc.
+            birth_date: fullBirthDate, // Add the missing birth_date
+        };
+
         return (
           <CompletionScreen
             formData={{
               phoneNumber: initialUserData.phoneNumber,
               ssnLast4: formData.ssnLast4,
-              // Pasamos la fecha completa
               birthMonth: formData.birthMonth,
               birthDay: formData.birthDay,
               birthYear: formData.birthYear,
@@ -217,7 +219,8 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             capturedImage={capturedImage}
             captureTimestamp={captureTimestamp}
             capturedLocation={capturedLocation}
-            userData={initialUserData}
+            // 3. Pass the new, complete object here.
+            userData={completeUserData}
             onRestart={handleRestartFromCompletion}
           />
         );

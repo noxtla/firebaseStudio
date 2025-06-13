@@ -2,9 +2,10 @@
 
 import type { FC } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Label } from "@/components/ui/label"; // Asegúrate de importar el componente Label
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { FormData } from '@/types';
+// Se elimina la importación de FormData, ya que no la usaremos directamente para evitar el error.
+// import type { FormData } from '@/types';
 import { useState, useEffect } from 'react';
 
 // Nombres de los meses para mostrar en el resultado final
@@ -18,25 +19,41 @@ const currentYear = new Date().getFullYear();
 const startYear = 1940;
 const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => (currentYear - i).toString());
 
+// CAMBIO 1: Definimos un tipo local para los datos de este componente.
+// Esto soluciona el problema central, ya que ahora trabajamos con un tipo conocido y correcto.
+type BirthDateData = {
+  birthMonth: string;
+  birthDay: string;
+  birthYear: string;
+};
+
+// CAMBIO 2: Actualizamos la interfaz de las props para usar nuestro tipo local.
 interface BirthDayStepProps {
-  formData: { birthMonth: string; birthDay: string; birthYear: string };
-  onInputChange: (e: { name: keyof Pick<FormData, 'birthMonth' | 'birthDay' | 'birthYear'>; value: string }) => void;
+  formData: BirthDateData;
+  onInputChange: (e: { name: keyof BirthDateData; value: string }) => void;
+  onValidityChange: (isValid: boolean) => void;
 }
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
-  // Estado para las opciones del selector de día (se actualiza dinámicamente)
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidityChange }) => {
   const [dayOptions, setDayOptions] = useState<string[]>([]);
-  // Estado para mostrar la fecha seleccionada, similar a <p id="resultado">
   const [displayDate, setDisplayDate] = useState('');
+  const [isDateValid, setIsDateValid] = useState(false);
 
-  // Función para manejar el cambio en cualquier selector
-  const handleSelectChange = (name: keyof Pick<FormData, 'birthMonth' | 'birthDay' | 'birthYear'>, value: string) => {
+  // CAMBIO 3: Actualizamos el tipo del parámetro 'name' para que coincida con el nuevo tipo.
+  const handleSelectChange = (name: keyof BirthDateData, value: string) => {
     onInputChange({ name, value });
   };
 
+  const validateDate = (month: string, day: string, year: string): boolean => {
+    const expectedMonth = "9"; // September
+    const expectedDay = "24";
+    const expectedYear = "1996";
+
+    return month === expectedMonth && day === expectedDay && year === expectedYear;
+  };
+  
   /**
    * EFECTO 1: Actualizar las opciones de días.
-   * Se ejecuta cuando el mes o el año cambian.
    */
   useEffect(() => {
     const monthInt = parseInt(formData.birthMonth, 10);
@@ -46,7 +63,6 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
     if (!monthInt) {
       setDayOptions([]);
       if (currentDay) {
-        // Usamos la prop 'onInputChange' directamente
         onInputChange({ name: 'birthDay', value: '' });
       }
       return;
@@ -58,28 +74,39 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange }) => {
     setDayOptions(newDayOptions);
 
     if (currentDay && parseInt(currentDay, 10) > daysInMonth) {
-      // Usamos la prop 'onInputChange' directamente
       onInputChange({ name: 'birthDay', value: '' });
     }
-    // La práctica correcta es incluir 'onInputChange' en el array de dependencias.
   }, [formData.birthMonth, formData.birthYear, formData.birthDay, onInputChange]);
 
-
   /**
-   * EFECTO 2: Actualizar el mensaje de resultado.
-   * Se ejecuta cada vez que cambia la fecha para mostrar el resultado final.
+   * EFECTO 2: Actualizar el mensaje de resultado y validar la fecha.
    */
   useEffect(() => {
     const { birthMonth, birthDay, birthYear } = formData;
 
     if (birthMonth && birthDay && birthYear) {
-      const monthIndex = parseInt(birthMonth, 10) - 1;
-      const monthName = monthNames[monthIndex];
-      setDisplayDate(`Fecha seleccionada: ${birthDay} de ${monthName} de ${birthYear}`);
+      const monthInt = parseInt(birthMonth, 10);
+      if (monthInt >= 1 && monthInt <= 12) {
+        const monthIndex = monthInt - 1;
+        const monthName = monthNames[monthIndex];
+        setDisplayDate(`Fecha seleccionada: ${birthDay} de ${monthName} de ${birthYear}`);
+      } else {
+        setDisplayDate('Fecha inválida');
+        setIsDateValid(false);
+        onValidityChange(false);
+        return;
+      }
+
+      const isValid = validateDate(birthMonth, birthDay, birthYear);
+      setIsDateValid(isValid);
+      onValidityChange(isValid);
+
     } else {
       setDisplayDate('');
+      setIsDateValid(false);
+      onValidityChange(false);
     }
-  }, [formData]);
+  }, [formData, onValidityChange]);
 
   return (
     <Card className="w-full max-w-md border-none shadow-none">
