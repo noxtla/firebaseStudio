@@ -20,8 +20,7 @@ import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
-
-const MAX_ATTENDANCE_STEPS: FormStep = 3; 
+const MAX_ATTENDANCE_STEPS: FormStep = 3;
 
 const attendanceStepLabels = ["SSN", "Birth Day", "Photo", "Done"];
 const ATTENDANCE_STEP_CONFIG = [
@@ -37,53 +36,54 @@ interface AttendanceFormProps {
 
 export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
-  const [formData, setFormData] = useState<Pick<FormData, 'ssnLast4' | 'birthDay'>>({
- ssnLast4: '',
- birthYear: '',
- birthMonth: '',
- birthDay: '',
+  const [formData, setFormData] = useState({
+    ssnLast4: '',
+    birthYear: '',
+    birthMonth: '',
+    birthDay: '',
   });
   const [isSsnValid, setIsSsnValid] = useState(false);
+  const [isBirthDayInputValid, setIsBirthDayInputValid] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
-  const [isBirthDayInputValid, setIsBirthDayInputValid] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false); // Added loading state
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const { toast } = useToast();
   const router = useRouter();
 
+  // Valida el SSN cuando cambia
   useEffect(() => {
     const isValid = formData.ssnLast4.length === 4 &&
       /^\d{4}$/.test(formData.ssnLast4) &&
       initialUserData?.SSN?.slice(-4) === formData.ssnLast4;
-
     setIsSsnValid(isValid);
   }, [formData.ssnLast4, initialUserData?.SSN]);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
- const { name, value } = e.target;
+  // **NUEVO:** Valida la fecha de nacimiento cuando cambia
+  // Esta lógica ahora vive en el componente padre.
+  useEffect(() => {
+    const { birthMonth, birthDay, birthYear } = formData;
+    // La fecha es válida para proceder si todos los campos están llenos.
+    const isValid = !!(birthMonth && birthDay && birthYear);
+    setIsBirthDayInputValid(isValid);
+  }, [formData.birthMonth, formData.birthDay, formData.birthYear]);
 
-    // Handle birth date inputs specifically
-    if (name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
-      // Ensure only digits are captured for date inputs
+
+  // **MODIFICADO y MEJORADO:**
+  // Este handler ahora acepta tanto un evento de input como un objeto {name, value}.
+  // Está envuelto en useCallback para un rendimiento óptimo.
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
+    const { name, value } = 'target' in e ? e.target : e;
+
+    if (name === 'ssnLast4' || name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
       const numericValue = value.replace(/\D/g, '');
- setFormData(prev => ({
- ...prev,
-        [name]: numericValue
-      }));
-    } else if (name === "ssnLast4") {
-      // Handle SSN separately to ensure only digits
-      const numericValue = value.replace(/\D/g, '');
-      setFormData((prev) => ({ ...prev, [name]: numericValue }));
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
+  }, []); // El array de dependencias vacío es correcto aquí.
 
-
- else {
- // For other inputs, use the original value
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
 
   const handlePhotoCaptured = (
     imageDataUrl: string | null,
@@ -95,17 +95,15 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCapturedLocation(location || null);
   };
 
-  const handleBirthDayValidationChange = useCallback((isValid: boolean) => {
-    setIsBirthDayInputValid(isValid);
-  }, []);
+  // La función `handleBirthDayValidationChange` ya no es necesaria y ha sido eliminada.
 
   const getCanProceed = (): boolean => {
     switch (currentStep) {
       case 0:
         return isSsnValid;
       case 1:
-        return isBirthDayInputValid;
-      case 2: 
+        return isBirthDayInputValid; // Ahora usa el estado local
+      case 2:
         return !!capturedImage && !!capturedLocation;
       default:
         return true;
@@ -117,13 +115,13 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const nextStep = async () => {
     if (canProceed) {
       setIsNavigating(true);
-      await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       if (currentStep === 0) {
         toast({ variant: "success", title: "Success", description: "SSN format accepted." });
         setCurrentStep(1);
       } else if (currentStep === 1) {
-        toast({ variant: "success", title: "Success", description: "Birth day verified." });
+        toast({ variant: "success", title: "Success", description: "Birth day selected." });
         setCurrentStep(2);
       } else if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
@@ -134,45 +132,41 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     }
   };
 
-
   const prevStep = async () => {
     setIsNavigating(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-    if (currentStep > 0) { // Only go back if not on the first step
+    if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (currentStep === 1) { 
-        // Clear SSN field and disable next when going back from Birth Day to SSN
- setFormData(prev => ({...prev, ssnLast4: ''}));
- setIsSsnValid(false);
+      // **LÓGICA DE LIMPIEZA MEJORADA**
+      if (currentStep === 1) { // Volviendo a SSN
+        setFormData(prev => ({...prev, ssnLast4: ''}));
+        setIsSsnValid(false);
       }
-      if (currentStep === 2) { 
-         setFormData(prev => ({...prev, birthDay: ''}));
-         setIsBirthDayInputValid(false); 
+      if (currentStep === 2) { // Volviendo a Fecha de Nacimiento
+        // Limpiamos la fecha completa para evitar estados inconsistentes
+        setFormData(prev => ({...prev, birthMonth: '', birthDay: '', birthYear: ''}));
+        setIsBirthDayInputValid(false);
       }
-      if (currentStep === 2) { 
+      if (currentStep === 3) { // Volviendo a Foto
         setCapturedImage(null);
         setCaptureTimestamp(null);
         setCapturedLocation(null);
       }
-    } else {
-      // Do nothing or provide feedback if at the first step and "Previous" is clicked
-      console.log("Cannot go back from the first step.");
     }
     setIsNavigating(false);
   };
 
   const handleRestartFromCompletion = () => {
-    // This function is passed to CompletionScreen, loading state handled there
     router.push('/main-menu');
   };
-  
+
   const ActiveIcon = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.icon : null;
   const activeTitle = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.title : "";
-  
-  const showAppHeader = true; 
-  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS; 
-  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS; 
+
+  const showAppHeader = true;
+  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS;
+  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS;
   const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
 
   const formatInitialsForDisplay = (fullName: string | undefined): string => {
@@ -194,15 +188,14 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           />
         );
       case 1:
+        // **MODIFICADO:** Pasando las props correctas al nuevo BirthDayStep
         return (
           <BirthDayStep
             formData={formData}
             onInputChange={handleInputChange}
-            onValidationChange={handleBirthDayValidationChange}
-            birthDate={initialUserData.birth_date}
           />
         );
-      case 2: 
+      case 2:
         return (
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
@@ -210,18 +203,21 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formattedUserInitials={formatInitialsForDisplay(initialUserData?.Name)}
           />
         );
-      case 3: 
+      case 3:
         return (
           <CompletionScreen
             formData={{
-              phoneNumber: initialUserData.phoneNumber, 
+              phoneNumber: initialUserData.phoneNumber,
               ssnLast4: formData.ssnLast4,
+              // Pasamos la fecha completa
+              birthMonth: formData.birthMonth,
               birthDay: formData.birthDay,
+              birthYear: formData.birthYear,
             }}
             capturedImage={capturedImage}
             captureTimestamp={captureTimestamp}
             capturedLocation={capturedLocation}
-            userData={initialUserData} 
+            userData={initialUserData}
             onRestart={handleRestartFromCompletion}
           />
         );
@@ -229,27 +225,27 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
         return null;
     }
   };
-  
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
        <Toaster />
-      
+
       <div className="w-full max-w-md mx-auto pt-6 sm:pt-8 md:pt-12">
         {showAppHeader && <AppHeader className="my-8" />}
       </div>
-       
+
       <div className="w-full max-w-md mx-auto px-4">
         {showStepper && (
           <ProgressStepper
-            currentStepIndex={currentStep} 
-            steps={attendanceStepLabels.slice(0, -1)} 
+            currentStepIndex={currentStep}
+            steps={attendanceStepLabels.slice(0, -1)}
             className="mb-6 w-full"
           />
         )}
         {showStepTitle && ActiveIcon && activeTitle && (
               <div className={cn(
                 "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
-                "text-lg sm:text-xl" 
+                "text-lg sm:text-xl"
               )}>
                 <ActiveIcon className={cn("h-6 w-6 sm:h-7 sm:w-7", "text-primary")} />
                 <span>{activeTitle}</span>
