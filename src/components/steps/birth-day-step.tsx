@@ -4,9 +4,7 @@ import type { FC } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// Se elimina la importación de FormData, ya que no la usaremos directamente para evitar el error.
-// import type { FormData } from '@/types';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Nombres de los meses para mostrar en el resultado final
 const monthNames = [
@@ -19,38 +17,54 @@ const currentYear = new Date().getFullYear();
 const startYear = 1940;
 const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => (currentYear - i).toString());
 
-// CAMBIO 1: Definimos un tipo local para los datos de este componente.
-// Esto soluciona el problema central, ya que ahora trabajamos con un tipo conocido y correcto.
 type BirthDateData = {
   birthMonth: string;
   birthDay: string;
   birthYear: string;
 };
 
-// CAMBIO 2: Actualizamos la interfaz de las props para usar nuestro tipo local.
 interface BirthDayStepProps {
   formData: BirthDateData;
   onInputChange: (e: { name: keyof BirthDateData; value: string }) => void;
   onValidityChange: (isValid: boolean) => void;
+  expectedBirthDate: string;
 }
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidityChange }) => {
+const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidityChange, expectedBirthDate }) => {
   const [dayOptions, setDayOptions] = useState<string[]>([]);
   const [displayDate, setDisplayDate] = useState('');
   const [isDateValid, setIsDateValid] = useState(false);
 
-  // CAMBIO 3: Actualizamos el tipo del parámetro 'name' para que coincida con el nuevo tipo.
   const handleSelectChange = (name: keyof BirthDateData, value: string) => {
     onInputChange({ name, value });
   };
 
-  const validateDate = (month: string, day: string, year: string): boolean => {
-    const expectedMonth = "9"; // September
-    const expectedDay = "24";
-    const expectedYear = "1996";
+  const validateDate = useCallback((month: string, day: string, year: string): boolean => {
+    if (!expectedBirthDate) return false;
 
-    return month === expectedMonth && day === expectedDay && year === expectedYear;
-  };
+    try {
+      const expectedDate = new Date(expectedBirthDate);
+      // Check for invalid date string from props
+      if (isNaN(expectedDate.getTime())) {
+        console.error("Invalid expectedBirthDate prop:", expectedBirthDate);
+        return false;
+      }
+
+      const expectedYear = expectedDate.getUTCFullYear();
+      const expectedMonth = expectedDate.getUTCMonth() + 1; // getUTCMonth is 0-indexed
+      const expectedDay = expectedDate.getUTCDate();
+
+      // Compare with form data (which are strings)
+      return (
+        year === String(expectedYear) &&
+        month === String(expectedMonth) &&
+        day === String(expectedDay)
+      );
+    } catch (e) {
+      console.error("Error parsing expectedBirthDate:", e);
+      return false;
+    }
+  }, [expectedBirthDate]);
   
   /**
    * EFECTO 1: Actualizar las opciones de días.
@@ -106,7 +120,7 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidi
       setIsDateValid(false);
       onValidityChange(false);
     }
-  }, [formData, onValidityChange]);
+  }, [formData, onValidityChange, validateDate]);
 
   return (
     <Card className="w-full max-w-md border-none shadow-none">

@@ -185,6 +185,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formData={formData}
             onInputChange={handleInputChange}
             onValidityChange={handleBirthDayValidationChange}
+            expectedBirthDate={initialUserData.birth_date}
           />
         );
       case 2:

@@ -1,4 +1,3 @@
-
 export interface FormData {
   phoneNumber: string;
   ssnLast4: string;
@@ -13,7 +12,7 @@ export interface UserData {
   Puesto: string;
   phoneNumber: string;
   NSS: number | string; // NSS can be string or number
-  dataBirth: string; // Expected format "YYYY-MM-DD"
+  birth_date: string; // Can be a date string like "Fri Apr 21 1995..."
   flagTime?: string; // Optional
   Vehicles?: string[]; // Optional array of vehicle numbers
 }
