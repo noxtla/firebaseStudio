@@ -92,16 +92,8 @@ export default function MainMenuPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
-  
-  // --- LÓGICA DE DESHABILITACIÓN (COMENTADA PARA PRUEBAS) ---
-  // const [isAttendanceDisabled, setIsAttendanceDisabled] = useState(false);
 
   useEffect(() => {
-    // --- LÓGICA DE DESHABILITACIÓN (COMENTADA PARA PRUEBAS) ---
-    // if (sessionStorage.getItem('attendanceDisabled') === 'true') {
-    //   setIsAttendanceDisabled(true);
-    // }
-    
     const userData = sessionStorage.getItem('userData');
     if (!userData) {
       router.push('/');
@@ -110,9 +102,12 @@ export default function MainMenuPage() {
 
   const handleAttendanceClick = async () => {
     setIsCheckingAttendance(true);
+    console.log("--- INICIO DE VALIDACIÓN DE ASISTENCIA ---");
+
     try {
       const storedUserData = sessionStorage.getItem('userData');
       if (!storedUserData) {
+        console.error("[FALLO] No se encontraron datos de usuario en sessionStorage.");
         toast({
           title: "Error",
           description: "User session not found. Please log in again.",
@@ -123,60 +118,80 @@ export default function MainMenuPage() {
       }
       
       const existingUserData: UserData = JSON.parse(storedUserData);
-      
-      // *** NUEVO: Limpiar el número de teléfono antes de enviarlo ***
       const cleanPhoneNumber = existingUserData.phoneNumber.replace(/\D/g, '');
+      
+      console.log(`[PASO 1] Datos enviados al webhook:`, {
+        phoneNumber: cleanPhoneNumber,
+        action: 'attendance' 
+      });
 
       const response = await fetch(WEBHOOK_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phoneNumber: cleanPhoneNumber, // Se envía el número limpio
+          phoneNumber: cleanPhoneNumber,
           action: 'attendance' 
         }),
       });
       
+      console.log(`[PASO 2] Respuesta recibida del servidor. Status: ${response.status}, OK: ${response.ok}`);
+      
       const responseData = await response.json();
+      console.log("[PASO 3] Datos de la respuesta (JSON):", responseData);
 
-      if (response.ok && responseData.length > 0) {
+      if (response.ok && responseData && responseData.length > 0) {
+        console.log("[CHECKPOINT A] La respuesta fue exitosa (status 200 y con datos).");
         const userInfo = responseData[0];
-        const reformatDate = (dateStr: string) => {
-          if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
-          const [day, month, year] = dateStr.split('-');
-          return `${year}-${month}-${day}`;
-        };
 
-        const completeUserData: UserData = {
-          ...existingUserData,
-          Name: userInfo.full_name || existingUserData.Name,
-          SSN: userInfo.ssn,
-          birth_date: reformatDate(userInfo.birth_date),
-        };
+        console.log(`[CHECKPOINT B] Evaluando 'is_on_time_window'. Valor recibido:`, userInfo.is_on_time_window);
+        
+        if (userInfo.is_on_time_window) {
+          console.log("[ÉXITO] 'is_on_time_window' es verdadero. Preparando para navegar a /attendance.");
+          
+          const reformatDate = (dateStr: string) => {
+            if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
+            const [day, month, year] = dateStr.split('-');
+            return `${year}-${month}-${day}`;
+          };
 
-        sessionStorage.setItem('userData', JSON.stringify(completeUserData));
-        router.push('/attendance');
+          const completeUserData: UserData = {
+            ...existingUserData,
+            Name: userInfo.full_name || existingUserData.Name,
+            SSN: userInfo.ssn,
+            birth_date: reformatDate(userInfo.birth_date),
+          };
+          
+          sessionStorage.setItem('userData', JSON.stringify(completeUserData));
+          router.push('/attendance');
+
+        } else {
+          console.error("[FALLO] 'is_on_time_window' es falso o nulo. No se navegará.");
+          toast({
+            title: "Attendance Not Available",
+            description: "You are outside of the allowed hours to record attendance.",
+            variant: "destructive",
+          });
+        }
       } else {
-        const errorMessage = responseData.myField || "You are outside of the allowed hours to record attendance.";
+        console.error(`[FALLO] La respuesta no fue exitosa. response.ok: ${response.ok}, responseData:`, responseData);
+        const errorMessage = responseData.message || "Failed to check attendance status. Response was not OK or data was empty.";
         toast({
-          title: "Attendance Not Available",
+          title: "Error",
           description: errorMessage,
           variant: "destructive",
         });
-        
-        // --- LÓGICA DE DESHABILITACIÓN (COMENTADA PARA PRUEBAS) ---
-        // setIsAttendanceDisabled(true);
-        // sessionStorage.setItem('attendanceDisabled', 'true');
       }
 
     } catch (error) {
-      console.error('Error during attendance validation:', error);
+      console.error("[ERROR CATASTRÓFICO] Ocurrió un error en el bloque try/catch. Puede ser un problema de red, CORS, o JSON inválido.", error);
       toast({
         title: "Network Error",
-        description: "Could not connect to the server. Please try again.",
+        description: "Could not connect to the server. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
       setIsCheckingAttendance(false);
+      console.log("--- FIN DE VALIDACIÓN DE ASISTENCIA ---");
     }
   };
 
@@ -186,13 +201,7 @@ export default function MainMenuPage() {
       icon: Users, 
       onClick: handleAttendanceClick,
       isLoading: isCheckingAttendance,
-      
-      // El botón solo se deshabilita mientras carga (lógica para pruebas)
       isDisabled: isCheckingAttendance,
-
-      // --- LÓGICA DE DESHABILITACIÓN (PARA PRODUCCIÓN) ---
-      // Para reactivar la deshabilitación permanente, comenta la línea de arriba y descomenta la de abajo
-      // isDisabled: isCheckingAttendance || isAttendanceDisabled,
     },
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '/job-briefing', isDisabled: false },

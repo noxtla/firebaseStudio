@@ -1,209 +1,270 @@
+/**
+ * Client-side functionality.
+ */
 "use client";
 
-import { useState, type FC, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, type ChangeEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  Users,
-  Truck,
-  ClipboardList,
-  BookHeart,
-  type LucideIcon,
-  Loader2,
-} from 'lucide-react';
-import AppHeader from '@/components/app-header';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { Toaster } from '@/components/ui/toaster';
-import type { UserData } from '@/types';
+import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
-import { WEBHOOK_URL } from '@/config/appConfig';
 
-interface MenuItemProps {
-  title: string;
-  icon: LucideIcon;
-  href?: string;
-  isPrimary?: boolean;
-  onClick?: () => Promise<void> | void;
-  isDisabled?: boolean;
-  isLoading?: boolean;
+import AppHeader from './app-header';
+import ProgressStepper from './progress-stepper';
+import SsnStep from './steps/ssn-step';
+import BirthDayStep from './steps/birth-day-step';
+import PhotoStep from './steps/photo-step';
+import CompletionScreen from './steps/completion-screen';
+
+import { Button } from '@/components/ui/button';
+import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Toaster } from "@/components/ui/toaster";
+
+const MAX_ATTENDANCE_STEPS: FormStep = 3;
+
+const attendanceStepLabels = ["SSN", "Birth Day", "Photo", "Done"];
+const ATTENDANCE_STEP_CONFIG = [
+  { title: "Enter Last 4 of SSN", icon: Info },
+  { title: "Day of Birth", icon: CalendarDays },
+  { title: "Take a Photo", icon: CameraIconLucide },
+  { title: "Send Your Information", icon: CheckCircle2 },
+];
+
+interface AttendanceFormProps {
+    initialUserData: UserData;
 }
 
-const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true, onClick, isDisabled, isLoading }) => {
-  const content = (
-    <Card
-      className={cn(
-        "w-full flex flex-col items-center justify-center transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-lg border-none shadow-none",
-        isPrimary ? "bg-card p-4 sm:p-6 h-full" : "bg-secondary p-3",
-        (isDisabled || isLoading) && "opacity-50 cursor-not-allowed hover:scale-100 hover:shadow-none",
-        isLoading && "cursor-wait"
-      )}
-    >
-      <CardContent className={cn(
-        "flex-1 flex flex-col items-center justify-center text-center gap-2",
-        isPrimary ? "space-y-2 sm:space-y-3" : "space-y-1.5",
-        "p-0"
-      )}>
-        {isLoading ? (
-          <Loader2 className={cn("animate-spin text-primary", isPrimary ? "h-10 w-10 sm:h-12 sm:w-12" : "h-6 w-6")} />
-        ) : (
-          <Icon className={cn("text-primary", isPrimary ? "h-10 w-10 sm:h-12 sm:w-12" : "h-6 w-6")} />
-        )}
-        <p className={cn("font-medium text-foreground", isPrimary ? "text-base sm:text-lg" : "text-sm")}>{title}</p>
-      </CardContent>
-    </Card>
-  );
+export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
+  const [currentStep, setCurrentStep] = useState<FormStep>(0);
+  const [formData, setFormData] = useState({
+    ssnLast4: '',
+    birthYear: '',
+    birthMonth: '',
+    birthDay: '',
+  });
+  const [isSsnValid, setIsSsnValid] = useState(false);
+  const [isBirthDayInputValid, setIsBirthDayInputValid] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
+  const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (isDisabled || isLoading) {
-      e.preventDefault();
-      return;
-    }
-    if (onClick) {
-      e.preventDefault();
-      onClick();
-    }
-  };
-
-  if (href && !onClick && !isDisabled && !isLoading) {
-    return (
-      <Link href={href} passHref legacyBehavior>
-        <a className="flex h-full w-full">
-          {content}
-        </a>
-      </Link>
-    );
-  }
-
-  return (
-    <div
-      onClick={handleClick}
-      className={cn("flex h-full w-full cursor-pointer", isDisabled || isLoading ? "pointer-events-none" : "")}
-      role="button"
-      tabIndex={isDisabled || isLoading ? -1 : 0}
-      aria-disabled={isDisabled || isLoading}
-    >
-      {content}
-    </div>
-  );
-};
-
-export default function MainMenuPage() {
-  const router = useRouter();
   const { toast } = useToast();
-  const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    // Check if userData exists in sessionStorage, if not redirect to login
-    const userData = sessionStorage.getItem('userData');
-    if (!userData) {
-      router.push('/');
+    const isValid = formData.ssnLast4.length === 4 &&
+      /^\d{4}$/.test(formData.ssnLast4) &&
+      initialUserData?.SSN?.slice(-4) === formData.ssnLast4;
+    setIsSsnValid(isValid);
+  }, [formData.ssnLast4, initialUserData?.SSN]);
+
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
+    const { name, value } = 'target' in e ? e.target : e;
+
+    if (name === 'ssnLast4' || name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
+      const numericValue = value.replace(/\D/g, '');
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
     }
-  }, [router]);
+  }, [setFormData]); 
 
-  const handleAttendanceClick = async () => {
-    setIsCheckingAttendance(true);
-    try {
-      const storedUserData = sessionStorage.getItem('userData');
-      if (!storedUserData) {
-        toast({
-          title: "Error",
-          description: "User session not found. Please log in again.",
-          variant: "destructive",
-        });
-        router.push('/');
-        return;
-      }
-      
-      const existingUserData: UserData = JSON.parse(storedUserData);
-      
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: existingUserData.phoneNumber,
-          action: 'attendance' 
-        }),
-      });
-      
-      const responseData = await response.json();
 
-      if (response.ok && responseData.length > 0) {
-        const userInfo = responseData[0];
-        const reformatDate = (dateStr: string) => {
-          if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
-          const [day, month, year] = dateStr.split('-');
-          return `${year}-${month}-${day}`;
-        };
+  const handlePhotoCaptured = (
+    imageDataUrl: string | null,
+    timestamp?: string,
+    location?: CapturedLocation | null
+  ) => {
+    setCapturedImage(imageDataUrl);
+    setCaptureTimestamp(timestamp || null);
+    setCapturedLocation(location || null);
+  };
 
-        const completeUserData: UserData = {
-          ...existingUserData,
-          Name: userInfo.full_name || existingUserData.Name,
-          SSN: userInfo.ssn,
-          birth_date: reformatDate(userInfo.birth_date),
-        };
+  const handleBirthDayValidationChange = (isValid: boolean) => {
+    setIsBirthDayInputValid(isValid);
+  }
 
-        sessionStorage.setItem('userData', JSON.stringify(completeUserData));
-        router.push('/attendance');
-      } else {
-        const errorMessage = responseData.myField || "You are outside of the allowed hours to record attendance.";
-        toast({
-          title: "Attendance Not Available",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        // REMOVED: The lines that disabled the button have been removed.
-      }
-
-    } catch (error) {
-      console.error('Error during attendance validation:', error);
-      toast({
-        title: "Network Error",
-        description: "Could not connect to the server. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCheckingAttendance(false);
+  const getCanProceed = (): boolean => {
+    switch (currentStep) {
+      case 0:
+        return isSsnValid;
+      case 1:
+        return isBirthDayInputValid;
+      case 2:
+        return !!capturedImage && !!capturedLocation;
+      default:
+        return true;
     }
   };
 
-  const primaryMenuItems: MenuItemProps[] = [
-    { 
-      title: 'Attendance', 
-      icon: Users, 
-      onClick: handleAttendanceClick,
-      isLoading: isCheckingAttendance,
-      // REVERTED: The button is only disabled while loading.
-      isDisabled: isCheckingAttendance,
-    },
-    { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
-    { title: 'Job Briefing', icon: ClipboardList, href: '/job-briefing', isDisabled: false },
-    { title: 'Safety', icon: BookHeart, href: '/safety/modules', isDisabled: false },
-  ];
+  const canProceed = getCanProceed();
 
-  const secondaryMenuItems: MenuItemProps[] = [];
+  const nextStep = async () => {
+    if (canProceed) {
+      setIsNavigating(true);
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      if (currentStep === 0) {
+        toast({ variant: "success", title: "Success", description: "SSN format accepted." });
+        setCurrentStep(1);
+      } else if (currentStep === 1) {
+        toast({ variant: "success", title: "Success", description: "Birth day selected." });
+        setCurrentStep(2);
+      } else if (currentStep < MAX_ATTENDANCE_STEPS) {
+        setCurrentStep((prev) => (prev + 1) as FormStep);
+      }
+      setIsNavigating(false);
+    } else {
+        console.log("Cannot proceed: current step data is not valid.");
+    }
+  };
+
+  const prevStep = async () => {
+    setIsNavigating(true);
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    if (currentStep > 0) {
+      setCurrentStep((prev) => (prev - 1) as FormStep);
+      if (currentStep === 1) {
+        setFormData(prev => ({...prev, ssnLast4: ''}));
+        setIsSsnValid(false);
+      }
+      if (currentStep === 2) {
+        setFormData(prev => ({...prev, birthMonth: '', birthDay: '', birthYear: ''}));
+        setIsBirthDayInputValid(false);
+      }
+      if (currentStep === 3) {
+        setCapturedImage(null);
+        setCaptureTimestamp(null);
+        setCapturedLocation(null);
+      }
+    }
+    setIsNavigating(false);
+  };
+
+  const handleRestartFromCompletion = () => {
+    router.push('/main-menu');
+  };
+
+  const ActiveIcon = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.icon : null;
+  const activeTitle = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.title : "";
+
+  const showAppHeader = true;
+  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS;
+  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS;
+  const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
+
+  const formatInitialsForDisplay = (fullName: string | undefined): string => {
+    if (!fullName) return '';
+    return fullName
+      .split(' ')
+      .map(part => part.charAt(0) + '****')
+      .join(' ');
+  };
+
+  const renderActiveStepContent = () => {
+    // *** NUEVA COMPROBACIÓN DE SEGURIDAD ***
+    if (!initialUserData?.SSN) {
+      return <p className="text-destructive text-center p-4">Error: El SSN del usuario no está disponible. No se puede continuar.</p>;
+    }
+
+    switch (currentStep) {
+      case 0:
+        return (
+          <SsnStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            isSsnValid={isSsnValid}
+          />
+        );
+      case 1:
+        // *** NUEVA COMPROBACIÓN DE SEGURIDAD ***
+        if (!initialUserData.birth_date) {
+            return <p className="text-destructive text-center p-4">Error: La fecha de nacimiento del usuario no está disponible. No se puede continuar.</p>;
+        }
+        return (
+          <BirthDayStep
+            formData={formData}
+            onInputChange={handleInputChange}
+            onValidityChange={handleBirthDayValidationChange}
+            expectedBirthDate={initialUserData.birth_date}
+          />
+        );
+      case 2:
+        return (
+          <PhotoStep
+            onPhotoCaptured={handlePhotoCaptured}
+            capturedImage={capturedImage}
+            formattedUserInitials={formatInitialsForDisplay(initialUserData?.Name)}
+          />
+        );
+      case 3:
+        return (
+          <CompletionScreen
+            capturedImage={capturedImage}
+            captureTimestamp={captureTimestamp}
+            capturedLocation={capturedLocation}
+            userData={initialUserData}
+            onRestart={handleRestartFromCompletion}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
-      <Toaster />
-      <AppHeader className="my-2 sm:my-4" />
+    <div className="flex flex-col min-h-screen bg-background">
+       <Toaster />
 
-      <div className="w-full flex-1 flex flex-col items-center justify-center">
-        <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
-          {primaryMenuItems.map((item) => (
-            <div key={item.title} className="flex">
-              <MenuItem {...item} />
-            </div>
-          ))}
-        </div>
+      <div className="w-full max-w-md mx-auto pt-6 sm:pt-8 md:pt-12">
+        {showAppHeader && <AppHeader className="my-8" />}
       </div>
 
-      <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 flex flex-row justify-center items-center gap-2 sm:gap-4">
-        {secondaryMenuItems.map((item) => (
-          <div key={item.title} className="flex-1 max-w-[200px] sm:max-w-[240px]">
-            <MenuItem {...item} />
+      <div className="w-full max-w-md mx-auto px-4">
+        {showStepper && (
+          <ProgressStepper
+            currentStepIndex={currentStep}
+            steps={attendanceStepLabels.slice(0, -1)}
+            className="mb-6 w-full"
+          />
+        )}
+        {showStepTitle && ActiveIcon && activeTitle && (
+              <div className={cn(
+                "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
+                "text-lg sm:text-xl"
+              )}>
+                <ActiveIcon className={cn("h-6 w-6 sm:h-7 sm:w-7", "text-primary")} />
+                <span>{activeTitle}</span>
+              </div>
+        )}
+      </div>
+
+      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
+        <div className="w-full max-w-md mx-auto">
+          <div className="animate-step-enter w-full" key={currentStep}>
+            {renderActiveStepContent()}
           </div>
-        ))}
+
+          {showNavButtons && (
+            <div className="w-full mt-8 flex justify-between">
+              <Button
+                variant="ghost"
+                onClick={prevStep}
+                disabled={isNavigating}
+              >
+                {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
+                {isNavigating ? "Loading..." : "Previous"}
+              </Button>
+              <Button onClick={nextStep} disabled={!canProceed || isNavigating}>
+                {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isNavigating ? "Loading..." : "Next"}
+                {isNavigating ? null : <ArrowRight className="ml-2 h-4 w-4" />}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
