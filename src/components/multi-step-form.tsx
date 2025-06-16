@@ -23,6 +23,8 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 
+import {UserData} from '@/types'
+
 const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
@@ -127,9 +129,13 @@ export default function MultiStepForm() {
 
         const data = await response.json();
 
-        if (data && data.length > 0 && data[0].Name && data[0].phoneNumber) {
-          sessionStorage.setItem('userData', JSON.stringify(data[0]));
-          setWelcomeUserName(data[0].Name);
+        if (data && data.Name) {
+          const userData: UserData = {
+            Name: data.Name,
+            phoneNumber: formData.phoneNumber,
+          };
+          sessionStorage.setItem('userData', JSON.stringify(userData));
+          setWelcomeUserName(data.Name);
           setShowWelcomeDialog(true);
         } else {
           toast({
