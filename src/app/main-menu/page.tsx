@@ -7,19 +7,17 @@ import {
   Users,
   Truck,
   ClipboardList,
-  ShieldCheck,
-  MessageSquare,
-  AlertTriangle as AlertTriangleIcon,
+  BookHeart,
   type LucideIcon,
   Loader2,
-  BookHeart, // Icon for Safety
-  Wrench,
 } from 'lucide-react';
 import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Toaster } from '@/components/ui/toaster';
 import type { UserData } from '@/types';
+import { useToast } from "@/hooks/use-toast";
+import { WEBHOOK_URL } from '@/config/appConfig';
 
 interface MenuItemProps {
   title: string;
@@ -92,27 +90,116 @@ const MenuItem: FC<MenuItemProps> = ({ title, icon: Icon, href, isPrimary = true
 
 export default function MainMenuPage() {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isCheckingAttendance, setIsCheckingAttendance] = useState(false);
+  
+  // --- LÓGICA DE DESHABILITACIÓN (COMENTADA PARA PRUEBAS) ---
+  // const [isAttendanceDisabled, setIsAttendanceDisabled] = useState(false);
 
   useEffect(() => {
-    // Check if userData exists in sessionStorage
-    if (typeof window !== 'undefined') {
-      const userData = sessionStorage.getItem('userData');
-      if (!userData) {
-        // If not, redirect to the login page
-        router.push('/');
-      }
+    // --- LÓGICA DE DESHABILITACIÓN (COMENTADA PARA PRUEBAS) ---
+    // if (sessionStorage.getItem('attendanceDisabled') === 'true') {
+    //   setIsAttendanceDisabled(true);
+    // }
+    
+    const userData = sessionStorage.getItem('userData');
+    if (!userData) {
+      router.push('/');
     }
   }, [router]);
 
+  const handleAttendanceClick = async () => {
+    setIsCheckingAttendance(true);
+    try {
+      const storedUserData = sessionStorage.getItem('userData');
+      if (!storedUserData) {
+        toast({
+          title: "Error",
+          description: "User session not found. Please log in again.",
+          variant: "destructive",
+        });
+        router.push('/');
+        return;
+      }
+      
+      const existingUserData: UserData = JSON.parse(storedUserData);
+      
+      // *** NUEVO: Limpiar el número de teléfono antes de enviarlo ***
+      const cleanPhoneNumber = existingUserData.phoneNumber.replace(/\D/g, '');
+
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: cleanPhoneNumber, // Se envía el número limpio
+          action: 'attendance' 
+        }),
+      });
+      
+      const responseData = await response.json();
+
+      if (response.ok && responseData.length > 0) {
+        const userInfo = responseData[0];
+        const reformatDate = (dateStr: string) => {
+          if (!/^\d{2}-\d{2}-\d{4}$/.test(dateStr)) return dateStr;
+          const [day, month, year] = dateStr.split('-');
+          return `${year}-${month}-${day}`;
+        };
+
+        const completeUserData: UserData = {
+          ...existingUserData,
+          Name: userInfo.full_name || existingUserData.Name,
+          SSN: userInfo.ssn,
+          birth_date: reformatDate(userInfo.birth_date),
+        };
+
+        sessionStorage.setItem('userData', JSON.stringify(completeUserData));
+        router.push('/attendance');
+      } else {
+        const errorMessage = responseData.myField || "You are outside of the allowed hours to record attendance.";
+        toast({
+          title: "Attendance Not Available",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        
+        // --- LÓGICA DE DESHABILITACIÓN (COMENTADA PARA PRUEBAS) ---
+        // setIsAttendanceDisabled(true);
+        // sessionStorage.setItem('attendanceDisabled', 'true');
+      }
+
+    } catch (error) {
+      console.error('Error during attendance validation:', error);
+      toast({
+        title: "Network Error",
+        description: "Could not connect to the server. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCheckingAttendance(false);
+    }
+  };
+
   const primaryMenuItems: MenuItemProps[] = [
-    { title: 'Attendance', icon: Users, href: '/attendance' },
+    { 
+      title: 'Attendance', 
+      icon: Users, 
+      onClick: handleAttendanceClick,
+      isLoading: isCheckingAttendance,
+      
+      // El botón solo se deshabilita mientras carga (lógica para pruebas)
+      isDisabled: isCheckingAttendance,
+
+      // --- LÓGICA DE DESHABILITACIÓN (PARA PRODUCCIÓN) ---
+      // Para reactivar la deshabilitación permanente, comenta la línea de arriba y descomenta la de abajo
+      // isDisabled: isCheckingAttendance || isAttendanceDisabled,
+    },
     { title: 'Vehicles', icon: Truck, href: '/vehicles/enter-truck-number', isDisabled: false },
     { title: 'Job Briefing', icon: ClipboardList, href: '/job-briefing', isDisabled: false },
     { title: 'Safety', icon: BookHeart, href: '/safety/modules', isDisabled: false },
   ];
 
-  const secondaryMenuItems: MenuItemProps[] = [
-  ];
+  const secondaryMenuItems: MenuItemProps[] = [];
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
