@@ -1,3 +1,4 @@
+
 export interface FormData {
   phoneNumber: string;
   ssnLast4: string;
@@ -7,14 +8,13 @@ export interface FormData {
 export type FormStep = 0 | 1 | 2 | 3 | 4 | 5; // 0: Initial, 1: Phone, 2: SSN, 3: BirthDay, 4: Photo, 5: Complete
 
 export interface UserData {
-  SSN: any;
+  SSN?: any;
   Name: string;
-  Puesto: string;
   phoneNumber: string;
-  NSS: number | string; // NSS can be string or number
-  birth_date: string; // Can be a date string like "Fri Apr 21 1995..."
-  flagTime?: string; // Optional
-  Vehicles?: string[]; // Optional array of vehicle numbers
+  NSS?: number | string;
+  birth_date?: string;
+  // flagTime is now fetched on-demand and handled within the attendance flow
+  Vehicles?: string[]; // Vehicle data is now fetched on-demand
 }
 
 export interface CapturedLocation {
@@ -58,3 +58,14 @@ export interface JobBriefingFormData {
 }
 
 // Define Zod schemas for validation later if needed for each step
+The following snippets may be helpful:
+
+
+## Next steps
+
+* Explore the [Firebase Studio documentation](/docs/studio).
+* [Get started with Firebase Studio](https://studio.firebase.google.com/).
+
+Send feedback
+
+please ignore this.

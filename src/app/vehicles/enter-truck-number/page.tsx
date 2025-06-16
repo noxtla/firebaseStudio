@@ -14,84 +14,95 @@ import type { UserData } from '@/types';
 
 export default function EnterTruckNumberPage() {
   const [truckNumber, setTruckNumber] = useState('');
-  const [validVehicleNumbers, setValidVehicleNumbers] = useState<string[]>([]);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
+  const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoadingInitialData(true);
-    setErrorMessage(null);
+    const fetchVehicleDetails = async (currentUser: UserData) => {
+      try {
+        const response = await fetch('https://noxtla.app.n8n.cloud/webhook/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phoneNumber: currentUser.phoneNumber,
+            action: 'vehicules' // MODIFIED as requested
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch vehicle details.');
+        }
+        
+        const data = await response.json();
+        
+        if (data && data[0]?.Vehicles) {
+          const updatedUserData = { ...currentUser, Vehicles: data[0].Vehicles };
+          sessionStorage.setItem('userData', JSON.stringify(updatedUserData));
+        } else {
+           console.warn("User has no vehicles assigned.");
+        }
+
+      } catch (error: any) {
+        console.error("Error fetching vehicle details:", error);
+        setErrorMessage(error.message || "Could not load vehicle data.");
+        toast({
+          title: "Error",
+          description: "Could not load vehicle data. Please try again later.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (typeof window !== 'undefined') {
       const storedUserData = sessionStorage.getItem('userData');
       if (storedUserData) {
-        try {
-          const parsedUserData: UserData = JSON.parse(storedUserData);
-          if (parsedUserData.Vehicles && parsedUserData.Vehicles.length > 0) {
-            setValidVehicleNumbers(parsedUserData.Vehicles.map(v => String(v).replace(/\D/g, '')));
-            setIsLoadingInitialData(false); // Set loading to false here
-          } else {
-            console.warn("No vehicles are assigned to this user in session data, but proceeding is allowed if format is correct.");
-             setIsLoadingInitialData(false); // Stop loading if no vehicles but data is present
-          }
-        } catch (error) {
-          console.error("Failed to parse user data from session storage", error);
-          setErrorMessage("Failed to load user data. Please try logging in again.");
-          toast({
-            title: "Data Error",
-            description: "Could not load user data. Please try logging in again.",
-            variant: "destructive",
-          });
-          setIsLoadingInitialData(false); // Stop loading on error
+        const parsedUserData: UserData = JSON.parse(storedUserData);
+        if (!parsedUserData.Vehicles) {
+          fetchVehicleDetails(parsedUserData);
+        } else {
+          setIsLoading(false);
         }
       } else {
-        setErrorMessage("User data not found. Please log in again.");
         toast({
           title: "Login Required",
           description: "User information is missing. Please log in again.",
           variant: "destructive",
         });
-        setIsLoadingInitialData(false); // Stop loading on error
+        router.replace('/');
       }
     }
   }, [router, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value;
-    const numbers = rawValue.replace(/\D/g, ''); 
-    let formattedNumber = '';
-
-    if (numbers.length > 0) {
-      if (numbers.length <= 3) {
-        formattedNumber = numbers;
-      } else if (numbers.length <= 7) {
-        formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
-      } else {
-        formattedNumber = `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}`;
-      }
-    }
-    setTruckNumber(formattedNumber);
+    const rawValue = e.target.value.replace(/\D/g, ''); 
+    setTruckNumber(rawValue);
   };
 
-  const isTruckNumberValidForSubmission = useMemo(() => {
-        return true
-  }, [truckNumber, isLoadingInitialData, errorMessage, validVehicleNumbers]);
-
   const handleSubmit = async () => {
-
+    if (truckNumber.trim().length === 0) {
+        toast({
+            title: "Input Required",
+            description: "Please enter a truck number.",
+            variant: "destructive",
+        });
+        return;
+    }
+    
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('currentTruckNumber', truckNumber);
     }
     router.push('/vehicles/actions');
-    // setIsSubmitting(false); // Component unmounts
   };
 
-  const isButtonDisabled =  isSubmitting;
+  const isButtonDisabled = isLoading || isSubmitting;
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
@@ -110,30 +121,29 @@ export default function EnterTruckNumberPage() {
             <CardTitle className="text-2xl text-center font-heading-style">Enter Truck Number</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 pt-2">
-            {isLoadingInitialData && (
+            {isLoading && (
               <div className="flex items-center justify-center text-muted-foreground">
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Loading vehicle information...
               </div>
             )}
-            {errorMessage && !isLoadingInitialData && (
+            {errorMessage && !isLoading && (
               <p className="text-sm text-center text-destructive">
                 Error: {errorMessage}
               </p>
             )}
-            {!isLoadingInitialData && !errorMessage && (
+            {!isLoading && !errorMessage && (
               <div className="space-y-2">
                 <Label htmlFor="truckNumber" className="sr-only">Truck Number</Label>
                 <Input
                   id="truckNumber"
                   value={truckNumber}
                   onChange={handleInputChange}
-                  placeholder="e.g., 123-4567"
+                  placeholder="e.g., 1234567"
                   className="text-base text-center"
                   aria-label="Truck Number"
                   inputMode="numeric" 
-                  pattern="[0-9-]*" 
-                  maxLength={8} 
+                  pattern="[0-9]*" 
                   disabled={isSubmitting}
                 />
               </div>
@@ -147,7 +157,7 @@ export default function EnterTruckNumberPage() {
               disabled={isButtonDisabled}
             >
               {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {isSubmitting ? "Loading..." : "Continue"}
+              {isLoading ? "Loading..." : isSubmitting ? "Proceeding..." : "Continue"}
             </Button>
           </CardFooter>
         </Card>

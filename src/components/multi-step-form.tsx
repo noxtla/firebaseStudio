@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
@@ -37,7 +36,7 @@ const STEP_CONFIG = [
 export default function MultiStepForm() {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
   const [formData, setFormData] = useState<Pick<FormData, 'phoneNumber'>>(initialFormData);
-  const [isProcessingWebhook, setIsProcessingWebhook] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   const [welcomeUserName, setWelcomeUserName] = useState('');
 
@@ -47,8 +46,7 @@ export default function MultiStepForm() {
   useEffect(() => {
     if (currentStep === 0) {
       if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('currentTruckNumber');
-        sessionStorage.removeItem('attendanceSubmitted');
+        sessionStorage.clear(); // Clear all session data on initial load
       }
     }
   }, [currentStep]);
@@ -76,15 +74,6 @@ export default function MultiStepForm() {
 
   const canProceed = getCanProceed();
 
-  const restartForm = () => {
-    setCurrentStep(0);
-    setFormData(initialFormData);
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('currentTruckNumber');
-      sessionStorage.removeItem('attendanceSubmitted');
-    }
-  };
-
   const nextStep = async () => {
     if (currentStep === 0) {
       setCurrentStep(1);
@@ -92,9 +81,10 @@ export default function MultiStepForm() {
     }
 
     if (currentStep === 1 && canProceed) {
-      setIsProcessingWebhook(true); 
+      setIsProcessing(true); 
+
       try {
-        const response = await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
+        const response = await fetch('https://noxtla.app.n8n.cloud/webhook/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -102,51 +92,35 @@ export default function MultiStepForm() {
           body: JSON.stringify({ phoneNumber: formData.phoneNumber, action: 'phoneNumberLogin' }),
         });
 
-        if (response.status === 404) {
-          const errorData = await response.json();
-          if (errorData.Error === "UserNotFound") {
-            toast({
-              title: "User Not Found",
-              description: "User not found. Please check the phone number and try again.",
-              variant: "destructive",
-            })
-            setIsProcessingWebhook(false); 
-            return;
-          }
-        }
-
         if (!response.ok) {
-          toast({
-            title: "Error",
-            description: `Webhook request failed with status: ${response.status}`,
-            variant: "destructive",
-          })
-          setIsProcessingWebhook(false); 
-          return;
+           const errorData = await response.json().catch(() => ({ Error: "User not found or server error." }));
+           throw new Error(errorData.Error || `Login failed: ${response.statusText}`);
         }
 
         const data = await response.json();
 
-        if (data && data.length > 0 && data[0].Name && data[0].phoneNumber) {
-          sessionStorage.setItem('userData', JSON.stringify(data[0]));
-          setWelcomeUserName(data[0].Name);
+        if (data && data.length > 0 && data[0].full_name && data[0].phone) {
+          const userDataForSession = {
+            Name: data[0].full_name,
+            phoneNumber: data[0].phone,
+          };
+          
+          sessionStorage.setItem('userData', JSON.stringify(userDataForSession));
+          setWelcomeUserName(data[0].full_name);
           setShowWelcomeDialog(true);
         } else {
-          toast({
-            title: "Invalid User Data",
-            description: "The user data received from the server is invalid.",
-            variant: "destructive",
-          })
+          throw new Error("Invalid user data received from the server.");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error sending phone number to webhook:', error);
         toast({
-          title: "Error",
-          description: "Failed to connect to the server. Please try again.",
+          title: "Login Failed",
+          description: error.message || "Failed to connect to the server. Please try again.",
           variant: "destructive",
-        })
+        });
+        setIsProcessing(false);
       } finally {
-        setIsProcessingWebhook(false); 
+        setIsProcessing(false);
       }
     }
   };
@@ -154,11 +128,9 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (typeof window !== 'undefined') {
-      }
     }
   };
-
+  
   const ActiveIcon = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.icon : null;
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
 
@@ -194,8 +166,7 @@ export default function MultiStepForm() {
           <div className={cn(
             "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
             "text-2xl sm:text-3xl font-heading-style"
-          )}>
-            <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
+          )}> <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
             <span>{activeTitle}</span>
           </div>
         )}
@@ -212,12 +183,12 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 0 || isProcessingWebhook}
+                disabled={currentStep === 0 || isProcessing}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
-              <Button onClick={nextStep} disabled={!canProceed || isProcessingWebhook}>
-                {isProcessingWebhook ? (
+              <Button onClick={nextStep} disabled={!canProceed || isProcessing}>
+                {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing...
@@ -235,10 +206,10 @@ export default function MultiStepForm() {
       <Dialog 
         open={showWelcomeDialog} 
         onOpenChange={(isOpen) => {
-          setShowWelcomeDialog(isOpen);
           if (!isOpen) {
             router.push('/main-menu');
           }
+          setShowWelcomeDialog(isOpen);
         }}
       >
         <DialogContent>
@@ -250,7 +221,7 @@ export default function MultiStepForm() {
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="default">OK</Button>
+              <Button variant="default" onClick={() => router.push('/main-menu')}>OK</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
