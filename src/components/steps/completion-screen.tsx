@@ -67,6 +67,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 
   const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
+  const [faceMatchMessage, setFaceMatchMessage] = useState<string>("");
 
   useEffect(() => {
     setIsMounted(true);
@@ -103,6 +104,16 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
       });
 
       if (!response.ok) {
+        const errorData = await response.json();
+        console.log("Error data:", errorData);
+        if (Array.isArray(errorData) && errorData.length > 0 && errorData[0].response?.body?.Failed === "Face does not match profile") {
+            const personName = errorData[0].response.body["Person is"];
+            console.log("Person name:", personName);
+            setFaceMatchMessage(`Face does not match profile. You are: ${personName}`);
+            setFaceMatchAlertOpen(true);
+            console.log("isFaceMatchAlertOpen:", isFaceMatchAlertOpen);
+            return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -269,7 +280,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             <AlertDialogTitle>Verification Failed</AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription className="text-center">
-            Face does not match profile. Attempting to impersonate another individual is a serious offense and will result in immediate termination and potential legal action.
+            {faceMatchMessage || "Face does not match profile. Attempting to impersonate another individual is a serious offense and will result in immediate termination and potential legal action."}
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => { setFaceMatchAlertOpen(false); onRestart(); }}>OK</AlertDialogAction>
