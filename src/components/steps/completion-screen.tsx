@@ -89,7 +89,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
 
     try {
-      const response = await fetch("https://noxtla.app.n8n.cloud/webhook/login", {
+      const response = await fetch("https://noxtla.app.n8n.cloud/webhook-test/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
