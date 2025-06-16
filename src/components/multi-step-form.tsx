@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { FormData, FormStep } from '@/types';
+import { WEBHOOK_URL } from '@/config/appConfig';
 
 import AppHeader from './app-header';
 import InitialScreen from './steps/initial-screen';
@@ -94,7 +94,7 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) {
       setIsProcessingWebhook(true); 
       try {
-        const response = await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
+        const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

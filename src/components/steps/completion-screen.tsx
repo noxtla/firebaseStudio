@@ -7,6 +7,7 @@ import type { FormData, CapturedLocation } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import { WEBHOOK_URL } from '@/config/appConfig';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,7 +90,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
 
     try {
-      const response = await fetch("https://noxtla.app.n8n.cloud/webhook-test/login", {
+      const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
