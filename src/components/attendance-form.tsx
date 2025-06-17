@@ -106,10 +106,9 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
       await new Promise(resolve => setTimeout(resolve, 300));
 
       if (currentStep === 0) {
-        toast({ variant: "success", title: "Success", description: "SSN format accepted." });
         setCurrentStep(1);
       } else if (currentStep === 1) {
-        toast({ variant: "success", title: "Success", description: "Birth day selected." });
+        // toast({ variant: "success", title: "Success", description: "Birth day selected." }); // REMOVED
         setCurrentStep(2);
       } else if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
