@@ -16,7 +16,7 @@ import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
@@ -79,6 +79,12 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCapturedImage(imageDataUrl);
     setCaptureTimestamp(timestamp || null);
     setCapturedLocation(location || null);
+  };
+  
+  const handleRetakePhoto = () => {
+    setCapturedImage(null);
+    setCaptureTimestamp(null);
+    setCapturedLocation(null);
   };
 
   const handleBirthDayValidationChange = useCallback((isValid: boolean) => {
@@ -253,20 +259,40 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           </div>
 
           {showNavButtons && (
-            <div className="w-full mt-8 flex justify-between">
-              <Button
-                variant="ghost"
-                onClick={prevStep}
-                disabled={isNavigating}
-              >
-                {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
-                {isNavigating ? "Loading..." : "Previous"}
-              </Button>
-              <Button onClick={nextStep} disabled={!canProceed || isNavigating}>
-                {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isNavigating ? "Loading..." : "Next"}
-                {isNavigating ? null : <ArrowRight className="ml-2 h-4 w-4" />}
-              </Button>
+            <div className="w-full mt-8 flex justify-between items-center">
+                <Button
+                    variant="ghost"
+                    onClick={prevStep}
+                    disabled={isNavigating}
+                    className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide prev while camera is active but no photo taken
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {currentStep === 2 && capturedImage && (
+                      <Button
+                          variant="outline"
+                          onClick={handleRetakePhoto}
+                          disabled={isNavigating}
+                          aria-label="Retake photo"
+                      >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Retake
+                      </Button>
+                  )}
+
+                  <Button 
+                    onClick={nextStep} 
+                    disabled={!canProceed || isNavigating}
+                    className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide next/ok while camera is active but no photo taken
+                  >
+                      {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {isNavigating ? "Loading..." : (currentStep === 2 ? 'OK' : 'Next')}
+                      {(isNavigating || currentStep === 2) ? null : <ArrowRight className="ml-2 h-4 w-4" />}
+                  </Button>
+                </div>
             </div>
           )}
         </div>

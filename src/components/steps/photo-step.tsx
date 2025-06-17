@@ -1,8 +1,7 @@
-
 "use client";
 
 import type { FC } from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
@@ -27,17 +26,49 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imagePreviewContainerRef = useRef<HTMLDivElement>(null); // Ref for the image container
+  const [countdown, setCountdown] = useState<number | null>(null);
   const { toast } = useToast();
 
   const [locationData, setLocationData] = useState<CapturedLocation | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const [locationErrorMsg, setLocationErrorMsg] = useState<string | null>(null);
 
+  const handleCapture = useCallback(() => {
+    if (videoRef.current && canvasRef.current && stream) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.translate(canvas.width, 0);
+        context.scale(-1, 1);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        context.setTransform(1, 0, 0, 1, 0, 0);
+
+        const imageDataUrl = canvas.toDataURL('image/jpeg');
+        const captureTimestamp = new Date().toISOString();
+        onPhotoCaptured(imageDataUrl, captureTimestamp, locationData);
+        toast({
+          title: "Photo Captured!",
+          description: "Your photo has been successfully captured.",
+          variant: "default",
+          action: <CheckCircle className="text-green-500" />,
+        });
+      }
+    }
+  }, [stream, onPhotoCaptured, locationData, toast]);
+
   useEffect(() => {
     if (capturedImage) {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
+      }
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
       }
       return;
     }
@@ -60,6 +91,14 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
             videoRef.current.srcObject = mediaStream;
           }
           setHasCameraPermission(true);
+          
+          if (containerRef.current) {
+            containerRef.current.requestFullscreen().catch(err => {
+              console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+          }
+          setCountdown(3);
+
         } catch (err) {
           if (isCameraCancelled) return;
           console.error("Error accessing camera:", err);
@@ -102,6 +141,19 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
       setStream(null);
     };
   }, [capturedImage, toast]);
+
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown > 0) {
+      const timerId = setTimeout(() => {
+        setCountdown(c => c !== null ? c - 1 : null);
+      }, 1000);
+      return () => clearTimeout(timerId);
+    } else if (countdown === 0) {
+      handleCapture();
+      setCountdown(null);
+    }
+  }, [countdown, handleCapture]);
 
 
   useEffect(() => {
@@ -150,38 +202,12 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
     }
   }, [stream, hasCameraPermission, capturedImage, locationStatus, toast]);
 
-
-  const handleCapture = () => {
-    if (videoRef.current && canvasRef.current && stream) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext('2d');
-      if (context) {
-        context.translate(canvas.width, 0);
-        context.scale(-1, 1);
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        context.setTransform(1, 0, 0, 1, 0, 0);
-
-        const imageDataUrl = canvas.toDataURL('image/jpeg');
-        const captureTimestamp = new Date().toISOString();
-        onPhotoCaptured(imageDataUrl, captureTimestamp, locationData);
-        toast({
-          title: "Photo Captured!",
-          description: "Your photo has been successfully captured.",
-          variant: "default", 
-          action: <CheckCircle className="text-green-500" />,
+  const handleImageClick = () => {
+    if (imagePreviewContainerRef.current) {
+        imagePreviewContainerRef.current.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable full-screen mode for image: ${err.message} (${err.name})`);
         });
-      }
     }
-  };
-
-  const retakePhoto = () => {
-    onPhotoCaptured(null);
-    setLocationData(null);
-    setLocationStatus('idle');
-    setLocationErrorMsg(null);
   };
 
   const renderLocationStatus = () => {
@@ -223,24 +249,20 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
     return null;
   };
 
-  const getCaptureButtonText = () => {
-    if (locationStatus === 'idle') return 'Waiting for Location...';
-    if (locationStatus === 'fetching') return 'Fetching Location...';
-    if (locationStatus === 'error') return 'Location Unavailable';
-    if (locationStatus === 'success') return 'Capture Photo';
-    return 'Capture Photo';
-  };
-
-  const CaptureButtonIcon = (locationStatus === 'idle' || locationStatus === 'fetching') ? Loader2 : CameraIcon;
-  const isCaptureButtonDisabled = locationStatus !== 'success';
-
   return (
-    <Card className="w-full border-none shadow-none">
+    <Card ref={containerRef} className="w-full border-none shadow-none bg-background">
       <CardContent className="space-y-4 pt-6">
         <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
           {formattedUserInitials}
         </p>
-        <div className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative border border-input">
+        <div ref={imagePreviewContainerRef} className="aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center relative border border-input">
+          {countdown !== null && countdown > 0 && stream && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10">
+                  <span className="text-white text-9xl font-bold" style={{ textShadow: '0 0 15px black' }}>
+                      {countdown}
+                  </span>
+              </div>
+          )}
           <video
             ref={videoRef}
             autoPlay
@@ -254,7 +276,13 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
           />
 
           {capturedImage && (
-             <Image src={capturedImage} alt="Captured photo" layout="fill" objectFit="contain" data-ai-hint="person selfie" className="transform scale-x-[-1]" />
+            <div 
+                className="w-full h-full cursor-pointer"
+                onClick={handleImageClick}
+                title="Click to view full screen"
+             >
+                <Image src={capturedImage} alt="Captured photo" layout="fill" objectFit="contain" data-ai-hint="person selfie" className="transform scale-x-[-1]" />
+            </div>
           )}
 
           {hasCameraPermission === null && !capturedImage && (
@@ -280,23 +308,6 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
 
         {renderLocationStatus()}
 
-        {!capturedImage && hasCameraPermission === true && stream && (
-          <Button
-            onClick={handleCapture}
-            className="w-full"
-            size="lg"
-            aria-label="Capture photo"
-            disabled={isCaptureButtonDisabled}
-          >
-            <CaptureButtonIcon className={cn("mr-2 h-5 w-5", (locationStatus === 'idle' || locationStatus === 'fetching') && "animate-spin")} />
-            {getCaptureButtonText()}
-          </Button>
-        )}
-        {capturedImage && (
-           <Button onClick={retakePhoto} variant="outline" className="w-full" size="lg" aria-label="Retake photo">
-            <RefreshCw className="mr-2 h-5 w-5" /> Retake Photo
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

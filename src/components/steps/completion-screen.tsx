@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Loader2, MapPin, ShieldAlert, AlertTriangle } from 'lucide-react';
-// *** CAMBIO 1: Importar los tipos globales en lugar de definirlos localmente ***
 import type { UserData, CapturedLocation } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -19,18 +18,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-// *** CAMBIO 2: La definición local de UserData se ha eliminado de aquí ***
-
 interface CompletionScreenProps {
   capturedImage: string | null;
   captureTimestamp: string | null;
   capturedLocation: CapturedLocation | null;
-  userData: UserData | null; // Ahora usa el tipo global importado
+  userData: UserData | null;
   onRestart: () => void;
 }
 
 const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A'; // Manejar el caso de que la fecha sea undefined
+  if (!dateString) return 'N/A';
   try {
     const date = new Date(dateString);
     const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
@@ -62,17 +59,20 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
   const [faceMatchMessage, setFaceMatchMessage] = useState<string>("");
+  
+  // --- Estados para el nuevo diálogo de éxito ---
+  const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-
   const handleSubmit = async () => {
     setSubmissionState('submitting');
     setSubmissionResponse(null);
-    
-    if (!capturedImage || !userData) { // Comprobación de seguridad
+
+    if (!capturedImage || !userData) {
       toast({
         variant: "destructive",
         title: "Error de Envío",
@@ -99,21 +99,36 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         const errorData = await response.json();
         if (Array.isArray(errorData) && errorData.length > 0 && errorData[0].response?.body?.Failed === "Face does not match profile") {
             const personName = errorData[0].response.body["Person is"];
-            setFaceMatchMessage(`La cara no coincide con el perfil. Usted es: ${personName}`);
+            setFaceMatchMessage(`El rostro no coincide con el perfil. El sistema lo ha identificado como: ${personName}`);
             setFaceMatchAlertOpen(true);
+            setSubmissionState('reviewing');
+            return;
+        }
+        if (errorData.Error === "User is outside of the designated work area") {
+            setWorkAreaAlertOpen(true);
+            setSubmissionState('reviewing');
             return;
         }
         throw new Error(`Error HTTP! status: ${response.status}`);
       }
 
+      // --- Lógica de éxito actualizada ---
       const result = await response.json();
-      setSubmissionResponse(JSON.stringify(result));
-      setSubmissionState('submitted');
-      toast({
-        variant: "success",
-        title: "Asistencia Registrada",
-        description: "Su asistencia ha sido registrada exitosamente.",
-      });
+      setSubmissionState('submitted'); // Muestra la pantalla de éxito en el fondo
+
+      if (Array.isArray(result) && result.length > 0 && result[0].recognizedName) {
+        const name = result[0].recognizedName;
+        setSuccessMessage(`Asistencia registrada: ${name}`);
+        setIsSuccessAlertOpen(true); // Abre el diálogo de éxito personalizado
+      } else {
+        // Si la respuesta es exitosa pero no tiene el formato esperado, muestra un toast genérico
+        toast({
+          variant: "success",
+          title: "Asistencia Registrada",
+          description: "Su asistencia ha sido registrada exitosamente.",
+        });
+        setSubmissionResponse(JSON.stringify(result));
+      }
     } catch (error: any) {
       console.error("Error de envío:", error);
       setSubmissionResponse(`El envío falló: ${error.message}`);
@@ -134,12 +149,11 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     setIsRestarting(true);
     await new Promise(resolve => setTimeout(resolve, 300));
     if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('currentTruckNumber'); 
+        sessionStorage.removeItem('currentTruckNumber');
     }
     onRestart();
   };
-  
-  // *** CAMBIO 3: Comprobación de seguridad antes de renderizar ***
+
   if (!userData) {
     return <p className="text-destructive text-center p-4">Error: Faltan los datos del usuario para mostrar el resumen.</p>;
   }
@@ -159,19 +173,22 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             {submissionResponse && (
               <CardContent className="pt-4">
                 <div className="mt-4 p-3 bg-muted rounded-md w-full overflow-x-auto">
-                  <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Respuesta Simulada:</h4>
+                  <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Respuesta del Servidor:</h4>
                   <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
                     {submissionResponse}
                   </pre>
                 </div>
               </CardContent>
             )}
-            <CardFooter className="flex justify-center pt-6">
-              <Button onClick={handleActualRestart} size="lg" aria-label="Finalizar" disabled={isRestarting}>
-                {isRestarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isRestarting ? "Cargando..." : "Finalizar"}
-              </Button>
-            </CardFooter>
+            {/* El botón de finalizar solo se muestra si el diálogo de éxito no está activo */}
+            {!isSuccessAlertOpen && (
+              <CardFooter className="flex justify-center pt-6">
+                <Button onClick={handleActualRestart} size="lg" aria-label="Finalizar" disabled={isRestarting}>
+                  {isRestarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {isRestarting ? "Cargando..." : "Finalizar"}
+                </Button>
+              </CardFooter>
+            )}
           </>
         ) : (
           <>
@@ -190,14 +207,8 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 <h3 className="font-semibold text-lg mb-2">Resumen:</h3>
                 <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
                   <li>Nombre: {userData.Name}</li>
-                  <li>Teléfono: {userData.phoneNumber}</li>
-                  {/* Se comprueba que SSN exista antes de mostrarlo */}
-                  <li>SSN (Últimos 4): {userData.SSN ? `••••${userData.SSN.slice(-4)}` : 'N/A'}</li>
-                  <li>Fecha de Nacimiento: {formatDate(userData.birth_date)}</li>
-                  <li>Puesto: {userData.Position || 'N/A'}</li>
                 </ul>
               </div>
-
               <div className="space-y-2">
                 <h3 className="font-semibold text-lg">Detalles de Captura:</h3>
                 {captureTimestamp && (
@@ -206,13 +217,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
                 {capturedLocation ? (
                   <p className="text-sm text-muted-foreground flex items-center">
                     <MapPin className="h-4 w-4 mr-1 text-primary" />
-                    Ubicación: Lat {capturedLocation.latitude.toFixed(4)}, Lon {capturedLocation.longitude.toFixed(4)} (Precisión: {capturedLocation.accuracy.toFixed(0)}m)
+                    Ubicación Capturada
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground">Datos de ubicación: No disponibles o permiso denegado.</p>
                 )}
               </div>
-
               {capturedImage && (
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg">Foto Capturada:</h3>
@@ -253,7 +263,51 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         )}
       </Card>
 
-      {/* Resto de los AlertDialogs se mantiene igual... */}
+      <AlertDialog open={isWorkAreaAlertOpen} onOpenChange={setWorkAreaAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="items-center">
+             <AlertTriangle className="h-10 w-10 text-yellow-500 mb-2" />
+            <AlertDialogTitle>Ubicación no Autorizada</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="text-center">
+            Parece que se encuentra fuera del área de trabajo designada. Por favor, muévase a una ubicación autorizada e intente de nuevo.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setWorkAreaAlertOpen(false); onRestart(); }}>Aceptar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isFaceMatchAlertOpen} onOpenChange={setFaceMatchAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="items-center">
+            <ShieldAlert className="h-10 w-10 text-red-600 mb-2" />
+            <AlertDialogTitle>Verificación Fallida</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="text-center">
+            {faceMatchMessage || "El rostro no coincide con el perfil. Intentar suplantar la identidad de otra persona es una ofensa grave y resultará en la terminación inmediata del empleo y posibles acciones legales."}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setFaceMatchAlertOpen(false); onRestart(); }}>Aceptar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* --- Nuevo Diálogo de Éxito --- */}
+      <AlertDialog open={isSuccessAlertOpen} onOpenChange={setIsSuccessAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="items-center">
+            <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
+            <AlertDialogTitle>¡Éxito!</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="text-center">
+            {successMessage}
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => { setIsSuccessAlertOpen(false); handleActualRestart(); }}>Finalizar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
