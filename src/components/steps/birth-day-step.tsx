@@ -1,209 +1,208 @@
 "use client";
 
-import type { FC } from 'react';
+import React, { useState, useEffect, useMemo, type FC } from 'react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useEffect, useCallback } from 'react';
-
-// Nombres de los meses para mostrar en el resultado final
-const monthNames = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-];
-
-// Generamos los años dinámicamente
-const currentYear = new Date().getFullYear();
-const startYear = 1940;
-const years = Array.from({ length: currentYear - startYear + 1 }, (_, i) => (currentYear - i).toString());
-
-type BirthDateData = {
-  birthMonth: string;
-  birthDay: string;
-  birthYear: string;
-};
 
 interface BirthDayStepProps {
-  formData: BirthDateData;
-  onInputChange: (e: { name: keyof BirthDateData; value: string }) => void;
+  onInputChange: (e: { name: 'birthMonth' | 'birthDay' | 'birthYear'; value: string }) => void;
   onValidityChange: (isValid: boolean) => void;
-  expectedBirthDate: string;
+  expectedBirthDate: string; // "YYYY-MM-DD" format
+  onMaxAttemptsReached: () => void;
 }
 
-const BirthDayStep: FC<BirthDayStepProps> = ({ formData, onInputChange, onValidityChange, expectedBirthDate }) => {
-  const [dayOptions, setDayOptions] = useState<string[]>([]);
-  const [displayDate, setDisplayDate] = useState('');
-  const [isDateValid, setIsDateValid] = useState(false);
+const MONTHS_ABBR = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const MONTHS_FULL = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const YEAR_RANGE_START = 1940;
+const CURRENT_YEAR = new Date().getFullYear();
 
-  const handleSelectChange = (name: keyof BirthDateData, value: string) => {
-    onInputChange({ name, value });
-  };
+const Tile: FC<{ onClick: () => void; isSelected: boolean; children: React.ReactNode; className?: string }> = ({ onClick, isSelected, children, className }) => (
+    <div
+        onClick={onClick}
+        className={cn(
+            "aspect-square flex justify-center items-center border-2 border-border rounded-lg cursor-pointer text-base font-medium transition-all duration-200 ease-in-out hover:scale-105 hover:border-primary",
+            "sm:rounded-xl",
+            isSelected && "bg-primary text-primary-foreground border-primary scale-105 font-bold",
+            className
+        )}
+    >
+        {children}
+    </div>
+);
 
-  const validateDate = useCallback((month: string, day: string, year: string): boolean => {
-    if (!expectedBirthDate) return false;
+const BirthDayStep: FC<BirthDayStepProps> = ({ onInputChange, onValidityChange, expectedBirthDate, onMaxAttemptsReached }) => {
+    const [view, setView] = useState<'month' | 'day' | 'year'>('month');
+    const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+    const [selectedDay, setSelectedDay] = useState<number | null>(null);
+    const [selectedYear, setSelectedYear] = useState<number | null>(null);
 
-    try {
-      const expectedDate = new Date(expectedBirthDate);
-      // Check for invalid date string from props
-      if (isNaN(expectedDate.getTime())) {
-        console.error("Invalid expectedBirthDate prop:", expectedBirthDate);
-        return false;
-      }
-
-      const expectedYear = expectedDate.getUTCFullYear();
-      const expectedMonth = expectedDate.getUTCMonth() + 1; // getUTCMonth is 0-indexed
-      const expectedDay = expectedDate.getUTCDate();
-
-      // Compare with form data (which are strings)
-      return (
-        year === String(expectedYear) &&
-        month === String(expectedMonth) &&
-        day === String(expectedDay)
-      );
-    } catch (e) {
-      console.error("Error parsing expectedBirthDate:", e);
-      return false;
-    }
-  }, [expectedBirthDate]);
-  
-  /**
-   * EFECTO 1: Actualizar las opciones de días.
-   */
-  useEffect(() => {
-    const monthInt = parseInt(formData.birthMonth, 10);
-    const yearInt = parseInt(formData.birthYear, 10);
-    const currentDay = formData.birthDay;
-
-    if (!monthInt) {
-      setDayOptions([]);
-      if (currentDay) {
-        onInputChange({ name: 'birthDay', value: '' });
-      }
-      return;
-    }
+    const [monthFailures, setMonthFailures] = useState(0);
+    const [dayFailures, setDayFailures] = useState(0);
+    const [yearFailures, setYearFailures] = useState(0);
     
-    const daysInMonth = new Date(yearInt || new Date().getFullYear(), monthInt, 0).getDate();
-    const newDayOptions = Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString());
+    const [isShaking, setIsShaking] = useState(false);
+    const [dayOptions, setDayOptions] = useState<number[]>([]);
+    const [yearOptions, setYearOptions] = useState<number[]>([]);
+
+    const { correctDay, correctMonth, correctYear } = useMemo(() => {
+        // CORRECCIÓN: Analizar la fecha en formato YYYY-MM-DD.
+        const parts = expectedBirthDate.split('-');
+        if (parts.length === 3) {
+            return {
+                correctYear: parseInt(parts[0], 10),
+                correctMonth: parseInt(parts[1], 10) - 1,
+                correctDay: parseInt(parts[2], 10),
+            };
+        }
+        return { correctDay: 0, correctMonth: 0, correctYear: 0 };
+    }, [expectedBirthDate]);
+
+    useEffect(() => {
+        if (view === 'day') {
+            const daysInMonth = new Date(correctYear, correctMonth + 1, 0).getDate();
+            const randomOffset = Math.floor(Math.random() * 12);
+            let startDay = correctDay - randomOffset;
+            startDay = Math.max(1, startDay);
+            startDay = Math.min(startDay, Math.max(1, daysInMonth - 11));
+            setDayOptions(Array.from({ length: 12 }, (_, i) => startDay + i));
+        }
+    }, [view, correctDay, correctMonth, correctYear]);
+
+    useEffect(() => {
+        if (view === 'year') {
+            const randomOffset = Math.floor(Math.random() * 12);
+            let startYear = correctYear - randomOffset;
+            startYear = Math.max(YEAR_RANGE_START, startYear);
+            startYear = Math.min(startYear, CURRENT_YEAR - 11);
+            setYearOptions(Array.from({ length: 12 }, (_, i) => startYear + i));
+        }
+    }, [view, correctYear]);
+
+    const triggerShake = () => {
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+    };
+
+    const handleMonthSelect = (month: number) => {
+        if (month === correctMonth) {
+            setSelectedMonth(month);
+            setView('day');
+        } else {
+            setMonthFailures(prev => prev + 1);
+            triggerShake();
+        }
+    };
+
+    const handleDaySelect = (day: number) => {
+        if (day === correctDay) {
+            setSelectedDay(day);
+            setView('year');
+        } else {
+            setDayFailures(prev => prev + 1);
+            triggerShake();
+        }
+    };
+
+    const handleYearSelect = (year: number) => {
+        if (year === correctYear) {
+            setSelectedYear(year);
+        } else {
+            setYearFailures(prev => prev + 1);
+            triggerShake();
+        }
+    };
+
+    useEffect(() => {
+        if (monthFailures >= 3 || dayFailures >= 3 || yearFailures >= 3) {
+            onMaxAttemptsReached();
+        }
+    }, [monthFailures, dayFailures, yearFailures, onMaxAttemptsReached]);
+
+    useEffect(() => {
+        const isCompleteAndCorrect = selectedMonth === correctMonth && selectedDay === correctDay && selectedYear === correctYear;
+        
+        if (isCompleteAndCorrect) {
+            onInputChange({ name: 'birthMonth', value: String(selectedMonth + 1) });
+            onInputChange({ name: 'birthDay', value: String(selectedDay) });
+            onInputChange({ name: 'birthYear', value: String(selectedYear) });
+            onValidityChange(true);
+        } else {
+            onValidityChange(false);
+        }
+    }, [selectedYear, selectedDay, selectedMonth, correctYear, correctMonth, correctDay, onInputChange, onValidityChange]);
+
+    const goBack = () => {
+        if (view === 'year') {
+            setSelectedYear(null);
+            setView('day');
+        } else if (view === 'day') {
+            setSelectedDay(null);
+            setView('month');
+        }
+    };
     
-    setDayOptions(newDayOptions);
+    const getHeaderText = () => {
+        switch (view) {
+            case 'month': return 'Elige el mes';
+            case 'day': return `Día de ${selectedMonth !== null ? MONTHS_FULL[selectedMonth] : ''}`;
+            case 'year': return '¿En qué año?';
+        }
+    };
+    
+    const getSummaryText = () => {
+        if (selectedYear !== null) return `${selectedDay} de ${MONTHS_FULL[selectedMonth!]} de ${selectedYear}`;
+        if (selectedDay !== null) return `${selectedDay} de ${MONTHS_FULL[selectedMonth!]}...`;
+        if (selectedMonth !== null) return `${MONTHS_FULL[selectedMonth]}...`;
+        return '\u00A0';
+    };
 
-    if (currentDay && parseInt(currentDay, 10) > daysInMonth) {
-      onInputChange({ name: 'birthDay', value: '' });
-    }
-  }, [formData.birthMonth, formData.birthYear, formData.birthDay, onInputChange]);
+    const gridLayout = "grid grid-cols-3 sm:grid-cols-4 gap-3 sm:gap-4";
 
-  /**
-   * EFECTO 2: Actualizar el mensaje de resultado y validar la fecha.
-   */
-  useEffect(() => {
-    const { birthMonth, birthDay, birthYear } = formData;
+    return (
+        <Card className={cn("w-full max-w-md border-none shadow-none flex flex-col", isShaking && "animate-shake")}>
+            <CardContent className="pt-2 sm:pt-6 flex flex-col flex-grow">
+                <div className="flex items-center mb-4 flex-shrink-0">
+                    {view !== 'month' && (
+                        <Button variant="ghost" size="icon" onClick={goBack} className="mr-2">
+                            <ChevronLeft className="h-6 w-6" />
+                        </Button>
+                    )}
+                    <h2 className="text-xl sm:text-2xl font-semibold text-foreground text-center flex-grow">{getHeaderText()}</h2>
+                    {view !== 'month' && <div className="w-10" />}
+                </div>
 
-    if (birthMonth && birthDay && birthYear) {
-      const monthInt = parseInt(birthMonth, 10);
-      if (monthInt >= 1 && monthInt <= 12) {
-        const monthIndex = monthInt - 1;
-        const monthName = monthNames[monthIndex];
-        setDisplayDate(`Fecha seleccionada: ${birthDay} de ${monthName} de ${birthYear}`);
-      } else {
-        setDisplayDate('Fecha inválida');
-        setIsDateValid(false);
-        onValidityChange(false);
-        return;
-      }
+                <div className="flex-grow pr-2 -mr-2">
+                    {view === 'month' && (
+                        <div className={gridLayout}>
+                            {MONTHS_ABBR.map((abbr, index) => (
+                                <Tile key={abbr} onClick={() => handleMonthSelect(index)} isSelected={selectedMonth === index}>{abbr}</Tile>
+                            ))}
+                        </div>
+                    )}
+                    {view === 'day' && (
+                        <div className={gridLayout}>
+                            {dayOptions.map((day) => (
+                                <Tile key={day} onClick={() => handleDaySelect(day)} isSelected={selectedDay === day}>{day}</Tile>
+                            ))}
+                        </div>
+                    )}
+                    {view === 'year' && (
+                        <div className={gridLayout}>
+                            {yearOptions.map(year => (
+                                <Tile key={year} onClick={() => handleYearSelect(year)} isSelected={selectedYear === year}>{year}</Tile>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
-      const isValid = validateDate(birthMonth, birthDay, birthYear);
-      setIsDateValid(isValid);
-      onValidityChange(isValid);
-
-    } else {
-      setDisplayDate('');
-      setIsDateValid(false);
-      onValidityChange(false);
-    }
-  }, [formData, onValidityChange, validateDate]);
-
-  return (
-    <Card className="w-full max-w-md border-none shadow-none">
-      <CardContent className="pt-6">
-        <div className="flex flex-col items-center space-y-6 text-center">
-          <h2 className="text-xl font-semibold text-foreground">Ingresa tu fecha de nacimiento</h2>
-          
-          <div className="flex w-full justify-center gap-x-4">
-            
-            <div className="flex flex-1 flex-col items-start gap-y-1.5">
-              <Label htmlFor="birthMonth">Mes</Label>
-              <Select
-                name="birthMonth"
-                value={formData.birthMonth}
-                onValueChange={(value) => handleSelectChange('birthMonth', value)}
-              >
-                <SelectTrigger id="birthMonth">
-                  <SelectValue placeholder="Mes" />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthNames.map((month, index) => (
-                    <SelectItem key={month} value={(index + 1).toString()}>
-                      {month}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex flex-1 flex-col items-start gap-y-1.5">
-              <Label htmlFor="birthDay">Día</Label>
-              <Select
-                name="birthDay"
-                value={formData.birthDay}
-                onValueChange={(value) => handleSelectChange('birthDay', value)}
-                disabled={dayOptions.length === 0}
-              >
-                <SelectTrigger id="birthDay">
-                  <SelectValue placeholder="Día" />
-                </SelectTrigger>
-                <SelectContent>
-                  {dayOptions.map((day) => (
-                    <SelectItem key={day} value={day}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex flex-1 flex-col items-start gap-y-1.5">
-              <Label htmlFor="birthYear">Año</Label>
-              <Select
-                name="birthYear"
-                value={formData.birthYear}
-                onValueChange={(value) => handleSelectChange('birthYear', value)}
-              >
-                <SelectTrigger id="birthYear">
-                  <SelectValue placeholder="Año" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((year) => (
-                    <SelectItem key={year} value={year}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="mt-4 min-h-[28px]">
-             {displayDate && (
-                <p className="text-lg font-semibold text-foreground">
-                    {displayDate}
-                </p>
-             )}
-          </div>
-
-        </div>
-      </CardContent>
-    </Card>
-  );
+                <div className="text-center text-lg sm:text-xl font-bold text-primary mt-4 h-8 flex-shrink-0">
+                    <p>{getSummaryText()}</p>
+                </div>
+            </CardContent>
+        </Card>
+    );
 };
 
 export default BirthDayStep;

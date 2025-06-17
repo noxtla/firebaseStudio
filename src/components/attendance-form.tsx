@@ -16,7 +16,7 @@ import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 
@@ -52,7 +52,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const { toast } = useToast();
   const router = useRouter();
 
-  // Valida el SSN cuando cambia
   useEffect(() => {
     const isValid = formData.ssnLast4.length === 4 &&
       /^\d{4}$/.test(formData.ssnLast4) &&
@@ -60,9 +59,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setIsSsnValid(isValid);
   }, [formData.ssnLast4, initialUserData?.SSN]);
 
-  // **MODIFICADO y MEJORADO:**
-  // Este handler ahora acepta tanto un evento de input como un objeto {name, value}.
-  // Está envuelto en useCallback para un rendimiento óptimo.
   const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
     const { name, value } = 'target' in e ? e.target : e;
 
@@ -72,7 +68,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
-  }, [setFormData]); // El array de dependencias vacío es correcto aquí.
+  }, [setFormData]); 
 
 
   const handlePhotoCaptured = (
@@ -84,17 +80,32 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCaptureTimestamp(timestamp || null);
     setCapturedLocation(location || null);
   };
+  
+  const handleRetakePhoto = () => {
+    setCapturedImage(null);
+    setCaptureTimestamp(null);
+    setCapturedLocation(null);
+  };
 
-  const handleBirthDayValidationChange = (isValid: boolean) => {
+  const handleBirthDayValidationChange = useCallback((isValid: boolean) => {
     setIsBirthDayInputValid(isValid);
-  }
+  }, []);
+
+  const handleMaxAttemptsReached = () => {
+    toast({
+      title: "Too Many Incorrect Attempts",
+      description: "You have been returned to the main menu for security.",
+      variant: "destructive",
+    });
+    router.push('/main-menu');
+  };
 
   const getCanProceed = (): boolean => {
     switch (currentStep) {
       case 0:
         return isSsnValid;
       case 1:
-        return isBirthDayInputValid; // Ahora usa el estado local
+        return isBirthDayInputValid;
       case 2:
         return !!capturedImage && !!capturedLocation;
       default:
@@ -110,10 +121,8 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
       await new Promise(resolve => setTimeout(resolve, 300));
 
       if (currentStep === 0) {
-        toast({ variant: "success", title: "Success", description: "SSN format accepted." });
         setCurrentStep(1);
       } else if (currentStep === 1) {
-        toast({ variant: "success", title: "Success", description: "Birth day selected." });
         setCurrentStep(2);
       } else if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
@@ -130,17 +139,15 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      // **LÓGICA DE LIMPIEZA MEJORADA**
-      if (currentStep === 1) { // Volviendo a SSN
+      if (currentStep === 1) {
         setFormData(prev => ({...prev, ssnLast4: ''}));
         setIsSsnValid(false);
       }
-      if (currentStep === 2) { // Volviendo a Fecha de Nacimiento
-        // Limpiamos la fecha completa para evitar estados inconsistentes
+      if (currentStep === 2) {
         setFormData(prev => ({...prev, birthMonth: '', birthDay: '', birthYear: ''}));
         setIsBirthDayInputValid(false);
       }
-      if (currentStep === 3) { // Volviendo a Foto
+      if (currentStep === 3) {
         setCapturedImage(null);
         setCaptureTimestamp(null);
         setCapturedLocation(null);
@@ -170,6 +177,10 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   };
 
   const renderActiveStepContent = () => {
+    if (!initialUserData?.SSN) {
+      return <p className="text-destructive text-center p-4">Error: El SSN del usuario no está disponible. No se puede continuar.</p>;
+    }
+
     switch (currentStep) {
       case 0:
         return (
@@ -180,12 +191,15 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           />
         );
       case 1:
+        if (!initialUserData.birth_date) {
+            return <p className="text-destructive text-center p-4">Error: La fecha de nacimiento del usuario no está disponible. No se puede continuar.</p>;
+        }
         return (
           <BirthDayStep
-            formData={formData}
             onInputChange={handleInputChange}
             onValidityChange={handleBirthDayValidationChange}
             expectedBirthDate={initialUserData.birth_date}
+            onMaxAttemptsReached={handleMaxAttemptsReached}
           />
         );
       case 2:
@@ -197,31 +211,12 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           />
         );
       case 3:
-        // 1. Construct the full birth date string from the form state.
-        const fullBirthDate = `${formData.birthYear}-${formData.birthMonth}-${formData.birthDay}`;
-
-        // 2. Create a new, complete user data object that satisfies the type.
-        //    We use the spread operator (...) to copy existing properties from initialUserData
-        //    and then add/overwrite the properties we've collected.
-        const completeUserData = {
-            ...initialUserData, // Copies Name, SSN, phoneNumber, Position, etc.
-            birth_date: fullBirthDate, // Add the missing birth_date
-        };
-
         return (
           <CompletionScreen
-            formData={{
-              phoneNumber: initialUserData.phoneNumber,
-              ssnLast4: formData.ssnLast4,
-              birthMonth: formData.birthMonth,
-              birthDay: formData.birthDay,
-              birthYear: formData.birthYear,
-            }}
             capturedImage={capturedImage}
             captureTimestamp={captureTimestamp}
             capturedLocation={capturedLocation}
-            // 3. Pass the new, complete object here.
-            userData={completeUserData}
+            userData={initialUserData}
             onRestart={handleRestartFromCompletion}
           />
         );
@@ -264,20 +259,40 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           </div>
 
           {showNavButtons && (
-            <div className="w-full mt-8 flex justify-between">
-              <Button
-                variant="ghost"
-                onClick={prevStep}
-                disabled={isNavigating}
-              >
-                {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowLeft className="mr-2 h-4 w-4" />}
-                {isNavigating ? "Loading..." : "Previous"}
-              </Button>
-              <Button onClick={nextStep} disabled={!canProceed || isNavigating}>
-                {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isNavigating ? "Loading..." : "Next"}
-                {isNavigating ? null : <ArrowRight className="ml-2 h-4 w-4" />}
-              </Button>
+            <div className="w-full mt-8 flex justify-between items-center">
+                <Button
+                    variant="ghost"
+                    onClick={prevStep}
+                    disabled={isNavigating}
+                    className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide prev while camera is active but no photo taken
+                >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Previous
+                </Button>
+
+                <div className="flex items-center gap-2">
+                  {currentStep === 2 && capturedImage && (
+                      <Button
+                          variant="outline"
+                          onClick={handleRetakePhoto}
+                          disabled={isNavigating}
+                          aria-label="Retake photo"
+                      >
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Retake
+                      </Button>
+                  )}
+
+                  <Button 
+                    onClick={nextStep} 
+                    disabled={!canProceed || isNavigating}
+                    className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide next/ok while camera is active but no photo taken
+                  >
+                      {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {isNavigating ? "Loading..." : (currentStep === 2 ? 'OK' : 'Next')}
+                      {(isNavigating || currentStep === 2) ? null : <ArrowRight className="ml-2 h-4 w-4" />}
+                  </Button>
+                </div>
             </div>
           )}
         </div>

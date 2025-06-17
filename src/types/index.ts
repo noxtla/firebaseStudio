@@ -1,60 +1,29 @@
+export interface UserData {
+  Name: string;
+  phoneNumber: string;
+  SSN?: string; // Changed from 'any' to 'string'
+  birth_date?: string; // Expected in YYYY-MM-DD format
+  Position?: string; // Changed from 'Puesto' for consistency
+  flagTime?: string;
+  Vehicles?: string[];
+  // The 'NSS' field from your original type is preserved if needed.
+  NSS?: number | string;
+}
+
+// Other existing types
+export type FormStep = 0 | 1 | 2 | 3;
+
 export interface FormData {
   phoneNumber: string;
   ssnLast4: string;
+  birthMonth: string;
   birthDay: string;
-}
-
-export type FormStep = 0 | 1 | 2 | 3 | 4 | 5; // 0: Initial, 1: Phone, 2: SSN, 3: BirthDay, 4: Photo, 5: Complete
-
-export interface UserData {
-  SSN: any;
-  Name: string;
-  Puesto: string;
-  phoneNumber: string;
-  NSS: number | string; // NSS can be string or number
-  birth_date: string; // Can be a date string like "Fri Apr 21 1995..."
-  flagTime?: string; // Optional
-  Vehicles?: string[]; // Optional array of vehicle numbers
+  birthYear: string;
 }
 
 export interface CapturedLocation {
   latitude: number;
   longitude: number;
   accuracy: number;
-  timestamp: number; // Timestamp from the geolocation API
+  timestamp: number;
 }
-
-// --- Job Briefing Types ---
-export interface JobBriefingFormData {
-  // Step 1: Basic Info
-  date: Date | undefined;
-  time: string;
-  crewNumber: string;
-  crewPhoneNumber: string;
-  generalForemanName: string;
-  foremanName: string;
-  workLocation: string;
-
-  // Step 2: Emergency Contacts & Site Info (to be added)
-  emergencyContactPerson: string;
-  medicalCenterPhone: string;
-  medicalCenterAddress: string;
-  nearestMedicalCenter: string;
-  helicopterService: 'yes' | 'no' | 'plan';
-  helicopterPlanDetails?: string;
-  fireDangerLevel: string; // e.g., 'low', 'medium', 'high', 'extreme'
-  utilityCompanyName: string;
-  utilityCompanyContact: string;
-  utilityCompanyPhone: string;
-  employeeCount: number | undefined;
-  emergencyMeetingPoint: string;
-  environmentalConcerns: 'yes' | 'no';
-  spillContact?: string;
-  
-  // Step 3: Task Description & Crew Readiness (to be added)
-  // Step 4: Human Performance & Foreman Acknowledgment (to be added)
-  // Step 5: High-Energy Sources (to be added)
-  // Step 6: Mitigation Controls (to be added)
-}
-
-// Define Zod schemas for validation later if needed for each step

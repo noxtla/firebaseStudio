@@ -1,4 +1,3 @@
-
 "use client";
 
 import type { FC } from 'react';
@@ -24,11 +23,11 @@ const ProgressStepper: FC<ProgressStepperProps> = ({ currentStepIndex, steps, cl
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-colors duration-300",
-                  isActive
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : isCompleted
-                    ? "bg-primary border-primary text-primary-foreground"
-                    : "bg-card border-border text-foreground" // Default state for white background
+                  isCompleted
+                    ? "bg-success border-success text-success-foreground" // Completed state: Green
+                    : isActive
+                    ? "bg-primary border-primary text-primary-foreground" // Active state: Orange
+                    : "bg-card border-border text-foreground" // Default/Pending state
                 )}
               >
                 {index + 1}
@@ -36,7 +35,11 @@ const ProgressStepper: FC<ProgressStepperProps> = ({ currentStepIndex, steps, cl
               <p
                 className={cn(
                   "mt-1 text-xs w-full px-1 break-words transition-colors duration-300", // Ensure text wraps and has some padding
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground"
+                  isCompleted
+                    ? "text-success font-semibold" // Completed label: Green
+                    : isActive
+                    ? "text-primary font-semibold" // Active label: Orange
+                    : "text-muted-foreground" // Default/pending label
                 )}
                 style={{ minHeight: '2.5em' }} // Ensure consistent height for labels
               >
@@ -46,8 +49,8 @@ const ProgressStepper: FC<ProgressStepperProps> = ({ currentStepIndex, steps, cl
             {index < steps.length - 1 && (
               <div className={cn(
                 "flex-grow h-0.5 transition-colors duration-300",
-                // Line is active if the step it comes from (current `index`) is completed
-                isCompleted ? "bg-primary" : "bg-border"
+                // Line is green if the step it comes from is completed
+                isCompleted ? "bg-success" : "bg-border"
               )} />
             )}
           </React.Fragment>

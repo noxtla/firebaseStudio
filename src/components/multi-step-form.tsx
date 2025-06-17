@@ -1,9 +1,9 @@
-
 "use client";
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep } from '@/types';
+import type { FormData, FormStep, UserData } from '@/types'; // CORRECTED: UserData added to type import
+import { WEBHOOK_URL } from '@/config/appConfig';
 
 import AppHeader from './app-header';
 import InitialScreen from './steps/initial-screen';
@@ -23,6 +23,8 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 
+// The incorrect `import {UserData}` line has been removed.
+
 const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
 };
@@ -40,9 +42,10 @@ export default function MultiStepForm() {
   const [isProcessingWebhook, setIsProcessingWebhook] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   const [welcomeUserName, setWelcomeUserName] = useState('');
+  const [showUserNotFoundDialog, setShowUserNotFoundDialog] = useState(false); // ADDED: State for the dialog
 
   const router = useRouter();
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   useEffect(() => {
     if (currentStep === 0) {
@@ -79,10 +82,6 @@ export default function MultiStepForm() {
   const restartForm = () => {
     setCurrentStep(0);
     setFormData(initialFormData);
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('currentTruckNumber');
-      sessionStorage.removeItem('attendanceSubmitted');
-    }
   };
 
   const nextStep = async () => {
@@ -94,7 +93,7 @@ export default function MultiStepForm() {
     if (currentStep === 1 && canProceed) {
       setIsProcessingWebhook(true); 
       try {
-        const response = await fetch('https://noxtla.app.n8n.cloud/webhook-test/login', {
+        const response = await fetch(WEBHOOK_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -102,17 +101,20 @@ export default function MultiStepForm() {
           body: JSON.stringify({ phoneNumber: formData.phoneNumber, action: 'phoneNumberLogin' }),
         });
 
+        // CORRECTED: Full 404 error handling block
         if (response.status === 404) {
           const errorData = await response.json();
-          if (errorData.Error === "UserNotFound") {
+          if (errorData && errorData.Error === "UserNotFound") {
+            setShowUserNotFoundDialog(true); // Show the specific dialog
+          } else {
             toast({
-              title: "User Not Found",
-              description: "User not found. Please check the phone number and try again.",
-              variant: "destructive",
-            })
-            setIsProcessingWebhook(false); 
-            return;
+                title: "Error",
+                description: "An unknown error occurred. Please try again.",
+                variant: "destructive",
+            });
           }
+          setIsProcessingWebhook(false); 
+          return;
         }
 
         if (!response.ok) {
@@ -120,23 +122,27 @@ export default function MultiStepForm() {
             title: "Error",
             description: `Webhook request failed with status: ${response.status}`,
             variant: "destructive",
-          })
+          });
           setIsProcessingWebhook(false); 
           return;
         }
 
         const data = await response.json();
 
-        if (data && data.length > 0 && data[0].Name && data[0].phoneNumber) {
-          sessionStorage.setItem('userData', JSON.stringify(data[0]));
-          setWelcomeUserName(data[0].Name);
+        if (data && data.Name) {
+          const userData: UserData = {
+            Name: data.Name,
+            phoneNumber: formData.phoneNumber,
+          };
+          sessionStorage.setItem('userData', JSON.stringify(userData));
+          setWelcomeUserName(data.Name);
           setShowWelcomeDialog(true);
         } else {
           toast({
             title: "Invalid User Data",
             description: "The user data received from the server is invalid.",
             variant: "destructive",
-          })
+          });
         }
       } catch (error) {
         console.error('Error sending phone number to webhook:', error);
@@ -144,7 +150,7 @@ export default function MultiStepForm() {
           title: "Error",
           description: "Failed to connect to the server. Please try again.",
           variant: "destructive",
-        })
+        });
       } finally {
         setIsProcessingWebhook(false); 
       }
@@ -154,8 +160,6 @@ export default function MultiStepForm() {
   const prevStep = () => {
     if (currentStep > 0) {
       setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (typeof window !== 'undefined') {
-      }
     }
   };
 
@@ -232,6 +236,8 @@ export default function MultiStepForm() {
           )}
         </div>
       </div>
+
+      {/* Welcome Dialog */}
       <Dialog 
         open={showWelcomeDialog} 
         onOpenChange={(isOpen) => {
@@ -246,6 +252,31 @@ export default function MultiStepForm() {
             <DialogTitle>Welcome Back!</DialogTitle>
             <DialogDescription>
               Hello {welcomeUserName}, it's great to see you again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="default">OK</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADDED: User Not Found Dialog with restart logic */}
+      <Dialog 
+        open={showUserNotFoundDialog} 
+        onOpenChange={(isOpen) => {
+          setShowUserNotFoundDialog(isOpen);
+          if (!isOpen) {
+            restartForm();
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>USER NOT FOUND</DialogTitle>
+            <DialogDescription>
+              Please contact your GF.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
