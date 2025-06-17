@@ -137,7 +137,9 @@ export default function MainMenuPage() {
       console.log(`[PASO 2] Respuesta recibida del servidor. Status: ${response.status}, OK: ${response.ok}`);
       
       const responseData = await response.json();
-      console.log("[PASO 3] Datos de la respuesta (JSON):", responseData);
+
+      // AQUÍ: Este console.log mostrará la respuesta completa del webhook para depuración.
+      console.log("[DEBUG] Respuesta JSON completa del Webhook:", responseData);
 
       if (response.ok && responseData && responseData.length > 0) {
         console.log("[CHECKPOINT A] La respuesta fue exitosa (status 200 y con datos).");

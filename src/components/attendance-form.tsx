@@ -81,9 +81,18 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCapturedLocation(location || null);
   };
 
-  const handleBirthDayValidationChange = (isValid: boolean) => {
+  const handleBirthDayValidationChange = useCallback((isValid: boolean) => {
     setIsBirthDayInputValid(isValid);
-  }
+  }, []);
+
+  const handleMaxAttemptsReached = () => {
+    toast({
+      title: "Too Many Incorrect Attempts",
+      description: "You have been returned to the main menu for security.",
+      variant: "destructive",
+    });
+    router.push('/main-menu');
+  };
 
   const getCanProceed = (): boolean => {
     switch (currentStep) {
@@ -108,7 +117,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
       if (currentStep === 0) {
         setCurrentStep(1);
       } else if (currentStep === 1) {
-        // toast({ variant: "success", title: "Success", description: "Birth day selected." }); // REMOVED
         setCurrentStep(2);
       } else if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
@@ -163,7 +171,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   };
 
   const renderActiveStepContent = () => {
-    // *** NUEVA COMPROBACIÓN DE SEGURIDAD ***
     if (!initialUserData?.SSN) {
       return <p className="text-destructive text-center p-4">Error: El SSN del usuario no está disponible. No se puede continuar.</p>;
     }
@@ -178,16 +185,15 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           />
         );
       case 1:
-        // *** NUEVA COMPROBACIÓN DE SEGURIDAD ***
         if (!initialUserData.birth_date) {
             return <p className="text-destructive text-center p-4">Error: La fecha de nacimiento del usuario no está disponible. No se puede continuar.</p>;
         }
         return (
           <BirthDayStep
-            formData={formData}
             onInputChange={handleInputChange}
             onValidityChange={handleBirthDayValidationChange}
             expectedBirthDate={initialUserData.birth_date}
+            onMaxAttemptsReached={handleMaxAttemptsReached}
           />
         );
       case 2:
