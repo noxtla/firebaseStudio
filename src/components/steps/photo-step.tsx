@@ -21,6 +21,23 @@ interface PhotoStepProps {
   formattedUserInitials: string | null;
 }
 
+// --- Start of Fix: Add interfaces for cross-browser fullscreen support ---
+interface HTMLElementWithFullscreen extends HTMLElement {
+  webkitRequestFullscreen?: () => Promise<void>;
+  mozRequestFullScreen?: () => Promise<void>;
+  msRequestFullscreen?: () => Promise<void>;
+}
+
+interface DocumentWithFullscreen extends Document {
+  webkitExitFullscreen?: () => Promise<void>;
+  mozCancelFullScreen?: () => Promise<void>;
+  msExitFullscreen?: () => Promise<void>;
+  webkitFullscreenElement?: Element;
+  mozFullScreenElement?: Element;
+  msFullscreenElement?: Element;
+}
+// --- End of Fix ---
+
 const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formattedUserInitials }) => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
@@ -34,6 +51,37 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
   const [locationData, setLocationData] = useState<CapturedLocation | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const [locationErrorMsg, setLocationErrorMsg] = useState<string | null>(null);
+  
+  // --- Start of Fix: Add cross-browser utility functions ---
+  const openFullscreen = (element: HTMLElement | null) => {
+    if (!element) return;
+    const el = element as HTMLElementWithFullscreen;
+
+    if (el.requestFullscreen) {
+      el.requestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
+    } else if (el.webkitRequestFullscreen) { /* Safari */
+      el.webkitRequestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
+    } else if (el.msRequestFullscreen) { /* IE11 */
+      el.msRequestFullscreen().catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`));
+    }
+  };
+
+  const closeFullscreen = () => {
+    const doc = document as DocumentWithFullscreen;
+    if (doc.exitFullscreen) {
+      doc.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
+    } else if (doc.webkitExitFullscreen) { /* Safari */
+      doc.webkitExitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
+    } else if (doc.msExitFullscreen) { /* IE11 */
+      doc.msExitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
+    }
+  };
+
+  const isFullscreenActive = () => {
+    const doc = document as DocumentWithFullscreen;
+    return !!(doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement);
+  };
+  // --- End of Fix ---
 
   const handleCapture = useCallback(() => {
     if (videoRef.current && canvasRef.current && stream) {
@@ -67,8 +115,9 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
         stream.getTracks().forEach(track => track.stop());
         setStream(null);
       }
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => console.error("Error exiting fullscreen:", err));
+      // --- Fix: Use cross-browser function to check and exit fullscreen ---
+      if (isFullscreenActive()) {
+        closeFullscreen();
       }
       return;
     }
@@ -92,11 +141,8 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
           }
           setHasCameraPermission(true);
           
-          if (containerRef.current) {
-            containerRef.current.requestFullscreen().catch(err => {
-              console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
-          }
+          // --- Fix: Use cross-browser function to enter fullscreen ---
+          openFullscreen(containerRef.current);
           setCountdown(3);
 
         } catch (err) {
@@ -203,11 +249,8 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
   }, [stream, hasCameraPermission, capturedImage, locationStatus, toast]);
 
   const handleImageClick = () => {
-    if (imagePreviewContainerRef.current) {
-        imagePreviewContainerRef.current.requestFullscreen().catch(err => {
-            console.error(`Error attempting to enable full-screen mode for image: ${err.message} (${err.name})`);
-        });
-    }
+    // --- Fix: Use cross-browser function to enter fullscreen ---
+    openFullscreen(imagePreviewContainerRef.current);
   };
 
   const renderLocationStatus = () => {
