@@ -26,23 +26,6 @@ interface CompletionScreenProps {
   onRestart: () => void;
 }
 
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A';
-  try {
-    const date = new Date(dateString);
-    const utcDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-    const options: Intl.DateTimeFormatOptions = {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    };
-    return utcDate.toLocaleDateString(undefined, options);
-  } catch (error) {
-    console.error("Error al formatear la fecha:", error);
-    return 'Fecha Inválida';
-  }
-};
-
 const CompletionScreen: FC<CompletionScreenProps> = ({
   capturedImage,
   captureTimestamp,
@@ -51,7 +34,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   onRestart
 }) => {
   const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
-  const [submissionResponse, setSubmissionResponse] = useState<string | null>(null);
+  const [recognizedName, setRecognizedName] = useState<string | null>(null);
   const { toast } = useToast();
   const [isMounted, setIsMounted] = useState(false);
   const [isRestarting, setIsRestarting] = useState(false);
@@ -60,7 +43,6 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
   const [faceMatchMessage, setFaceMatchMessage] = useState<string>("");
   
-  // --- Estados para el nuevo diálogo de éxito ---
   const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string>("");
 
@@ -68,9 +50,9 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     setIsMounted(true);
   }, []);
 
+  // Botón "Enviar" en la pantalla de revisión
   const handleSubmit = async () => {
     setSubmissionState('submitting');
-    setSubmissionResponse(null);
 
     if (!capturedImage || !userData) {
       toast({
@@ -83,6 +65,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
 
     try {
+      // Envía la imagen para validación inicial
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,7 +74,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           captureTimestamp,
           capturedLocation,
           userData,
-          action: "capturedImage",
+          action: "capturedImage", // Esta acción valida la imagen
         }),
       });
 
@@ -112,26 +95,23 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         throw new Error(`Error HTTP! status: ${response.status}`);
       }
 
-      // --- Lógica de éxito actualizada ---
       const result = await response.json();
-      setSubmissionState('submitted'); // Muestra la pantalla de éxito en el fondo
+      setSubmissionState('submitted');
 
       if (Array.isArray(result) && result.length > 0 && result[0].recognizedName) {
         const name = result[0].recognizedName;
-        setSuccessMessage(`Asistencia registrada: ${name}`);
-        setIsSuccessAlertOpen(true); // Abre el diálogo de éxito personalizado
+        setRecognizedName(name);
+        setSuccessMessage(`¡Bienvenido, ${name}!`);
+        setIsSuccessAlertOpen(true);
       } else {
-        // Si la respuesta es exitosa pero no tiene el formato esperado, muestra un toast genérico
         toast({
           variant: "success",
           title: "Asistencia Registrada",
           description: "Su asistencia ha sido registrada exitosamente.",
         });
-        setSubmissionResponse(JSON.stringify(result));
       }
     } catch (error: any) {
       console.error("Error de envío:", error);
-      setSubmissionResponse(`El envío falló: ${error.message}`);
       setSubmissionState('reviewing');
       toast({
         variant: "destructive",
@@ -145,13 +125,50 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
     }
   };
 
+  // Botón "Finalizar" en la pantalla de éxito
   const handleActualRestart = async () => {
+    if(isRestarting) return;
     setIsRestarting(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
-    if (typeof window !== 'undefined') {
+    
+    try {
+      console.log("Enviando webhook con action: 'finalAte'...");
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'finalAte', // ACCIÓN CAMBIADA A 'finalAte'
+          capturedImage,
+          captureTimestamp,
+          capturedLocation,
+          userData,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Fallo al enviar el webhook de finalización', await response.text());
+        toast({
+          title: "Advertencia",
+          description: "No se pudo notificar al servidor la finalización, pero su asistencia fue guardada.",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Webhook de finalización enviado con éxito.");
+      }
+    } catch (error) {
+      console.error('Error al enviar el webhook de finalización:', error);
+      toast({
+        title: "Error de Red",
+        description: "No se pudo conectar con el servidor para finalizar.",
+        variant: "destructive",
+      });
+    } finally {
+      if (typeof window !== 'undefined') {
         sessionStorage.removeItem('currentTruckNumber');
+      }
+      onRestart();
     }
-    onRestart();
   };
 
   if (!userData) {
@@ -164,31 +181,20 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         {submissionState === 'submitted' ? (
           <>
             <CardHeader className="items-center pt-6 animate-step-enter">
-              <CheckCircle className="w-16 h-16 text-green-500 mb-4" />
-              <CardTitle className="text-xl sm:text-2xl text-center">¡Asistencia Registrada!</CardTitle>
-              <CardDescription className="text-center text-base px-2">
-                Esperamos que tenga un día exitoso y seguro. Gracias por trabajar para Tree Services.
+              <CheckCircle className="w-20 h-20 text-green-500 mb-4 animate-soft-pulse" />
+              <CardTitle className="text-2xl sm:text-3xl text-center font-bold text-foreground">
+                {recognizedName ? `¡Bienvenido, ${recognizedName}!` : '¡Asistencia Registrada!'}
+              </CardTitle>
+              <CardDescription className="text-center text-lg px-2 mt-2 text-muted-foreground">
+                Que tengas un excelente y seguro día de trabajo.
               </CardDescription>
             </CardHeader>
-            {submissionResponse && (
-              <CardContent className="pt-4">
-                <div className="mt-4 p-3 bg-muted rounded-md w-full overflow-x-auto">
-                  <h4 className="text-sm font-semibold mb-1 text-muted-foreground">Respuesta del Servidor:</h4>
-                  <pre className="text-xs whitespace-pre-wrap break-all bg-background p-2 rounded border text-foreground">
-                    {submissionResponse}
-                  </pre>
-                </div>
-              </CardContent>
-            )}
-            {/* El botón de finalizar solo se muestra si el diálogo de éxito no está activo */}
-            {!isSuccessAlertOpen && (
-              <CardFooter className="flex justify-center pt-6">
-                <Button onClick={handleActualRestart} size="lg" aria-label="Finalizar" disabled={isRestarting}>
-                  {isRestarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {isRestarting ? "Cargando..." : "Finalizar"}
-                </Button>
-              </CardFooter>
-            )}
+            <CardFooter className="flex justify-center pt-8">
+              <Button onClick={handleActualRestart} size="lg" aria-label="Finalizar" disabled={isRestarting}>
+                {isRestarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isRestarting ? "Finalizando..." : "Finalizar"}
+              </Button>
+            </CardFooter>
           </>
         ) : (
           <>
@@ -293,15 +299,14 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* --- Nuevo Diálogo de Éxito --- */}
       <AlertDialog open={isSuccessAlertOpen} onOpenChange={setIsSuccessAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
             <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
-            <AlertDialogTitle>¡Éxito!</AlertDialogTitle>
+            <AlertDialogTitle>{successMessage}</AlertDialogTitle>
           </AlertDialogHeader>
           <AlertDialogDescription className="text-center">
-            {successMessage}
+            Tu asistencia ha sido registrada exitosamente.
           </AlertDialogDescription>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => { setIsSuccessAlertOpen(false); handleActualRestart(); }}>Finalizar</AlertDialogAction>

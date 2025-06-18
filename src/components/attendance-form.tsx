@@ -7,6 +7,7 @@ import { useState, type ChangeEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
+import { WEBHOOK_URL } from '@/config/appConfig';
 
 import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
@@ -118,18 +119,50 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const nextStep = async () => {
     if (canProceed) {
       setIsNavigating(true);
-      await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (currentStep === 0) {
-        setCurrentStep(1);
-      } else if (currentStep === 1) {
-        setCurrentStep(2);
-      } else if (currentStep < MAX_ATTENDANCE_STEPS) {
+      // Si estamos en el paso de la foto (paso 2, botón "OK"), enviamos el webhook de ubicación
+      if (currentStep === 2) {
+        try {
+          console.log("Enviando webhook con action: 'location'...");
+          const response = await fetch(WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'location',
+              capturedLocation: capturedLocation,
+              userData: initialUserData,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error("El webhook de ubicación falló:", errorText);
+            toast({
+              title: "Advertencia",
+              description: "No se pudo pre-registrar la ubicación.",
+              variant: "destructive"
+            });
+          } else {
+            console.log("Webhook de ubicación enviado con éxito.");
+          }
+        } catch (error) {
+          console.error("Error al enviar el webhook de ubicación:", error);
+          toast({
+            title: "Error de Red",
+            description: "No se pudo conectar al servidor para registrar la ubicación.",
+            variant: "destructive"
+          });
+        }
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 300)); // Delay de navegación
+
+      if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
       }
       setIsNavigating(false);
     } else {
-        console.log("Cannot proceed: current step data is not valid.");
+        console.log("No se puede proceder: los datos del paso actual no son válidos.");
     }
   };
 
