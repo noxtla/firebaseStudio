@@ -2,7 +2,7 @@ import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Loader2, MapPin, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { UserCheck, Loader2, ShieldAlert, AlertTriangle } from 'lucide-react';
 import type { UserData, CapturedLocation } from '@/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,9 @@ interface CompletionScreenProps {
   capturedLocation: CapturedLocation | null;
   userData: UserData | null;
   onRestart: () => void;
+  onValidationSuccess: () => void;
+  onFinalSubmit: () => Promise<void>;
+  isValidationComplete: boolean;
 }
 
 const CompletionScreen: FC<CompletionScreenProps> = ({
@@ -31,41 +34,30 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
   captureTimestamp,
   capturedLocation,
   userData,
-  onRestart
+  onValidationSuccess,
+  onFinalSubmit,
+  isValidationComplete,
+  onRestart,
 }) => {
-  const [submissionState, setSubmissionState] = useState<'reviewing' | 'submitting' | 'submitted'>('reviewing');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [recognizedName, setRecognizedName] = useState<string | null>(null);
   const { toast } = useToast();
-  const [isMounted, setIsMounted] = useState(false);
-  const [isRestarting, setIsRestarting] = useState(false);
 
   const [isWorkAreaAlertOpen, setWorkAreaAlertOpen] = useState(false);
   const [isFaceMatchAlertOpen, setFaceMatchAlertOpen] = useState(false);
   const [faceMatchMessage, setFaceMatchMessage] = useState<string>("");
-  
-  const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string>("");
 
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Botón "Enviar" en la pantalla de revisión
-  const handleSubmit = async () => {
-    setSubmissionState('submitting');
-
+  // Botón "Validar Datos Biometricos"
+  const handleValidationSubmit = async () => {
+    setIsSubmitting(true);
     if (!capturedImage || !userData) {
-      toast({
-        variant: "destructive",
-        title: "Error de Envío",
-        description: "Faltan datos de imagen o de usuario. Por favor, reinicie el proceso.",
-      });
-      setSubmissionState('reviewing');
+      toast({ variant: "destructive", title: "Error de Envío" });
+      setIsSubmitting(false);
       return;
     }
 
     try {
-      // Envía la imagen para validación inicial
       const response = await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,202 +66,108 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
           captureTimestamp,
           capturedLocation,
           userData,
-          action: "capturedImage", // Esta acción valida la imagen
+          action: "capturedImage",
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
-        if (Array.isArray(errorData) && errorData.length > 0 && errorData[0].response?.body?.Failed === "Face does not match profile") {
+        if (errorData?.Error === "User is outside of the designated work area") {
+            setWorkAreaAlertOpen(true);
+        } else if (Array.isArray(errorData) && errorData.length > 0 && errorData[0].response?.body?.Failed === "Face does not match profile") {
             const personName = errorData[0].response.body["Person is"];
             setFaceMatchMessage(`El rostro no coincide con el perfil. El sistema lo ha identificado como: ${personName}`);
             setFaceMatchAlertOpen(true);
-            setSubmissionState('reviewing');
-            return;
+        } else {
+           throw new Error('API validation failed');
         }
-        if (errorData.Error === "User is outside of the designated work area") {
-            setWorkAreaAlertOpen(true);
-            setSubmissionState('reviewing');
-            return;
-        }
-        throw new Error(`Error HTTP! status: ${response.status}`);
+        setIsSubmitting(false);
+        return;
       }
-
       const result = await response.json();
-      setSubmissionState('submitted');
-
-      if (Array.isArray(result) && result.length > 0 && result[0].recognizedName) {
-        const name = result[0].recognizedName;
-        setRecognizedName(name);
-        setSuccessMessage(`¡Bienvenido, ${name}!`);
-        setIsSuccessAlertOpen(true);
-      } else {
-        toast({
-          variant: "success",
-          title: "Asistencia Registrada",
-          description: "Su asistencia ha sido registrada exitosamente.",
-        });
+      if (Array.isArray(result) && result.length > 0 && result[0]?.recognizedName) {
+        setRecognizedName(result[0].recognizedName);
       }
-    } catch (error: any) {
-      console.error("Error de envío:", error);
-      setSubmissionState('reviewing');
-      toast({
-        variant: "destructive",
-        title: "Error de Envío",
-        description: "Falló el registro de asistencia. Por favor, inténtelo de nuevo.",
-      });
-    }
-
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('attendanceSubmitted', 'true');
-    }
-  };
-
-  // Botón "Finalizar" en la pantalla de éxito
-  const handleActualRestart = async () => {
-    if(isRestarting) return;
-    setIsRestarting(true);
-    
-    try {
-      console.log("Enviando webhook con action: 'finalAte'...");
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'finalAte', // ACCIÓN CAMBIADA A 'finalAte'
-          capturedImage,
-          captureTimestamp,
-          capturedLocation,
-          userData,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error('Fallo al enviar el webhook de finalización', await response.text());
-        toast({
-          title: "Advertencia",
-          description: "No se pudo notificar al servidor la finalización, pero su asistencia fue guardada.",
-          variant: "destructive",
-        });
-      } else {
-        console.log("Webhook de finalización enviado con éxito.");
-      }
+      onValidationSuccess();
     } catch (error) {
-      console.error('Error al enviar el webhook de finalización:', error);
-      toast({
-        title: "Error de Red",
-        description: "No se pudo conectar con el servidor para finalizar.",
-        variant: "destructive",
-      });
-    } finally {
-      if (typeof window !== 'undefined') {
-        sessionStorage.removeItem('currentTruckNumber');
-      }
-      onRestart();
+      console.error("Error on validation submit:", error);
+      toast({ variant: "destructive", title: "Error de Red", description: "No se pudo validar con el servidor." });
+      setIsSubmitting(false);
     }
   };
 
-  if (!userData) {
-    return <p className="text-destructive text-center p-4">Error: Faltan los datos del usuario para mostrar el resumen.</p>;
-  }
+  const handleRegistrationSubmit = async () => {
+    setIsRegistering(true);
+    await onFinalSubmit();
+    // setIsRegistering(false) is not strictly needed as the component will unmount/change
+  };
+
+  if (!userData) return <p className="text-destructive text-center p-4">Error: Faltan los datos del usuario.</p>;
 
   return (
     <>
       <Card className="w-full border-none shadow-none">
-        {submissionState === 'submitted' ? (
+        {isValidationComplete ? (
+          // Vista de Registro (Paso 5)
           <>
             <CardHeader className="items-center pt-6 animate-step-enter">
-              <CheckCircle className="w-20 h-20 text-green-500 mb-4 animate-soft-pulse" />
+              <UserCheck className="w-20 h-20 text-primary mb-4 animate-soft-pulse" />
               <CardTitle className="text-2xl sm:text-3xl text-center font-bold text-foreground">
-                {recognizedName ? `¡Bienvenido, ${recognizedName}!` : '¡Asistencia Registrada!'}
+                ¡Identidad Confirmada!
               </CardTitle>
               <CardDescription className="text-center text-lg px-2 mt-2 text-muted-foreground">
-                Que tengas un excelente y seguro día de trabajo.
+                Tus datos biométricos, ubicación e identidad han sido confirmados. Presiona el botón 'Registrar Asistencia' para terminar.
               </CardDescription>
             </CardHeader>
             <CardFooter className="flex justify-center pt-8">
-              <Button onClick={handleActualRestart} size="lg" aria-label="Finalizar" disabled={isRestarting}>
-                {isRestarting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                {isRestarting ? "Finalizando..." : "Finalizar"}
+              <Button 
+                onClick={handleRegistrationSubmit}
+                size="lg" 
+                aria-label="Registrar Asistencia" 
+                disabled={isRegistering}
+                className="bg-success text-success-foreground hover:bg-success/90"
+              >
+                {isRegistering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isRegistering ? "Registrando..." : "Registrar Asistencia"}
               </Button>
             </CardFooter>
           </>
         ) : (
+          // Vista de Validación (Paso 4)
           <>
             <CardHeader className="items-center pt-6">
-              <CardTitle
-                className={cn(
-                  "text-xl sm:text-2xl text-center font-heading-style",
-                  isMounted && submissionState === 'reviewing' && "animate-title-pulse"
-                )}
-              >
-                {submissionState === 'submitting' ? 'Procesando...' : 'Enviar su Información'}
+              <CardTitle className={cn("text-xl sm:text-2xl text-center font-heading-style")}>
+                {isSubmitting ? 'Validando...' : 'Validación Biométrica'}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6 pt-6">
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Resumen:</h3>
-                <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
-                  <li>Nombre: {userData.Name}</li>
-                </ul>
-              </div>
-              <div className="space-y-2">
-                <h3 className="font-semibold text-lg">Detalles de Captura:</h3>
-                {captureTimestamp && (
-                  <p className="text-sm text-muted-foreground">Foto capturada el: {new Date(captureTimestamp).toLocaleString()}</p>
-                )}
-                {capturedLocation ? (
-                  <p className="text-sm text-muted-foreground flex items-center">
-                    <MapPin className="h-4 w-4 mr-1 text-primary" />
-                    Ubicación Capturada
-                  </p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Datos de ubicación: No disponibles o permiso denegado.</p>
-                )}
-              </div>
               {capturedImage && (
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg">Foto Capturada:</h3>
-                  <div className="relative aspect-video bg-muted rounded-md overflow-hidden border">
-                    <Image
+                <div className="relative aspect-video bg-muted rounded-md overflow-hidden border">
+                  <Image
                       src={capturedImage}
                       alt="Foto de verificación capturada"
                       layout="fill"
                       objectFit="contain"
                       data-ai-hint="person face"
                       className="transform scale-x-[-1]"
-                    />
-                  </div>
+                  />
                 </div>
               )}
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button
-                onClick={handleSubmit}
+                onClick={handleValidationSubmit}
                 size="lg"
-                aria-label="Enviar información"
-                disabled={submissionState === 'submitting' || !capturedImage}
-                className={cn(
-                  "bg-green-600 hover:bg-green-700 text-white focus-visible:ring-green-500",
-                )}
+                aria-label="Validar Datos Biométricos"
+                disabled={isSubmitting || !capturedImage}
               >
-                {submissionState === 'submitting' ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Por favor espere, validando datos...
-                  </>
-                ) : (
-                  'Enviar'
-                )}
+                {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 'Validar Datos Biométricos'}
               </Button>
             </CardFooter>
           </>
         )}
       </Card>
-
-      <AlertDialog open={isWorkAreaAlertOpen} onOpenChange={setWorkAreaAlertOpen}>
+      
+      <AlertDialog open={isWorkAreaAlertOpen} onOpenChange={(open) => { if (!open) onRestart(); }}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
              <AlertTriangle className="h-10 w-10 text-yellow-500 mb-2" />
@@ -279,12 +177,12 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             Parece que se encuentra fuera del área de trabajo designada. Por favor, muévase a una ubicación autorizada e intente de nuevo.
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setWorkAreaAlertOpen(false); onRestart(); }}>Aceptar</AlertDialogAction>
+            <AlertDialogAction>Aceptar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isFaceMatchAlertOpen} onOpenChange={setFaceMatchAlertOpen}>
+      <AlertDialog open={isFaceMatchAlertOpen} onOpenChange={(open) => { if (!open) onRestart(); }}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
             <ShieldAlert className="h-10 w-10 text-red-600 mb-2" />
@@ -294,22 +192,7 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
             {faceMatchMessage || "El rostro no coincide con el perfil. Intentar suplantar la identidad de otra persona es una ofensa grave y resultará en la terminación inmediata del empleo y posibles acciones legales."}
           </AlertDialogDescription>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setFaceMatchAlertOpen(false); onRestart(); }}>Aceptar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isSuccessAlertOpen} onOpenChange={setIsSuccessAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader className="items-center">
-            <CheckCircle className="h-10 w-10 text-green-500 mb-2" />
-            <AlertDialogTitle>{successMessage}</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription className="text-center">
-            Tu asistencia ha sido registrada exitosamente.
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={() => { setIsSuccessAlertOpen(false); handleActualRestart(); }}>Finalizar</AlertDialogAction>
+            <AlertDialogAction>Aceptar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

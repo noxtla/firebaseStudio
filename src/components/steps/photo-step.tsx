@@ -295,6 +295,15 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
   return (
     <Card ref={containerRef} className="w-full border-none shadow-none bg-background">
       <CardContent className="space-y-4 pt-6">
+        {!capturedImage && (
+          <div className="text-center text-muted-foreground space-y-2">
+            <p>To verify your attendance, please take a clear photo of yourself.</p>
+            <ul className="list-none space-y-1 text-sm">
+              <li>✅ Make sure your face is fully visible.</li>
+              <li>📷 Once your photo is taken, you’re almost done!</li>
+            </ul>
+          </div>
+        )}
         <p className="text-lg text-muted-foreground mb-3 text-center font-heading-style">
           {formattedUserInitials}
         </p>
@@ -351,6 +360,15 @@ const PhotoStep: FC<PhotoStepProps> = ({ onPhotoCaptured, capturedImage, formatt
 
         {renderLocationStatus()}
 
+        {capturedImage && (
+          <Alert variant="default" className="mt-4 text-left">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Importante</AlertTitle>
+              <AlertDescription>
+                Validaremos tu fotografía con nuestros registros biométricos. Cuando estés listo, presiona <strong>OK</strong> para continuar.
+              </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );

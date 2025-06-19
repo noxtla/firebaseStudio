@@ -17,18 +17,29 @@ import PhotoStep from './steps/photo-step';
 import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2, RefreshCw } from 'lucide-react';
+import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const MAX_ATTENDANCE_STEPS: FormStep = 3;
 
-const attendanceStepLabels = ["SSN", "Birth Day", "Photo", "Done"];
+// 5 pasos para la UI
+const stepperLabels = ["SSN", "Birth Day", "Photo", "Validation", "Registered"];
 const ATTENDANCE_STEP_CONFIG = [
   { title: "Enter Last 4 of SSN", icon: Info },
   { title: "Day of Birth", icon: CalendarDays },
-  { title: "Take a Photo", icon: CameraIconLucide },
-  { title: "Send Your Information", icon: CheckCircle2 },
+  { title: "Take Photo & Location", icon: CameraIconLucide },
+  { title: "Biometric Validation", icon: ShieldCheck },
+  { title: "Attendance Registered", icon: CheckCircle2 },
 ];
 
 interface AttendanceFormProps {
@@ -37,6 +48,9 @@ interface AttendanceFormProps {
 
 export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
+  const [isValidationComplete, setIsValidationComplete] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false); // Para el paso final de registro
+  const [showFinalSuccessDialog, setShowFinalSuccessDialog] = useState(false); // Para el diálogo final
   const [formData, setFormData] = useState({
     ssnLast4: '',
     birthYear: '',
@@ -171,34 +185,77 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     await new Promise(resolve => setTimeout(resolve, 300));
 
     if (currentStep > 0) {
-      setCurrentStep((prev) => (prev - 1) as FormStep);
-      if (currentStep === 1) {
-        setFormData(prev => ({...prev, ssnLast4: ''}));
-        setIsSsnValid(false);
-      }
-      if (currentStep === 2) {
-        setFormData(prev => ({...prev, birthMonth: '', birthDay: '', birthYear: ''}));
-        setIsBirthDayInputValid(false);
-      }
-      if (currentStep === 3) {
-        setCapturedImage(null);
-        setCaptureTimestamp(null);
-        setCapturedLocation(null);
+      // Si estamos en la vista de "Registrar Asistencia" (paso 5), volvemos a la de "Validación" (paso 4)
+      if (currentStep === 3 && isValidationComplete) {
+         setIsValidationComplete(false);
+      } else {
+        setCurrentStep((prev) => (prev - 1) as FormStep);
+        if (currentStep === 1) {
+          setFormData(prev => ({...prev, ssnLast4: ''}));
+          setIsSsnValid(false);
+        }
+        if (currentStep === 2) {
+          setFormData(prev => ({...prev, birthMonth: '', birthDay: '', birthYear: ''}));
+          setIsBirthDayInputValid(false);
+        }
+        if (currentStep === 3) {
+          setCapturedImage(null);
+          setCaptureTimestamp(null);
+          setCapturedLocation(null);
+        }
       }
     }
     setIsNavigating(false);
   };
 
+  const handleFinalRegistration = async () => {
+    setIsFinishing(true); // Activa el estado final
+    try {
+      console.log("Enviando webhook con action: 'finalAte'...");
+      const response = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'finalAte',
+          capturedImage,
+          captureTimestamp,
+          capturedLocation,
+          userData: initialUserData,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send completion webhook');
+      }
+      setShowFinalSuccessDialog(true); // Muestra el diálogo de éxito
+    } catch (error) {
+      console.error('Error al enviar el webhook de finalización:', error);
+      toast({
+        title: "Error de Red",
+        description: "No se pudo conectar con el servidor para finalizar. Su asistencia fue guardada, pero la notificación final falló.",
+        variant: "destructive",
+      });
+      // Aún así, muestra el éxito, ya que el registro principal se completó
+      setShowFinalSuccessDialog(true);
+    }
+  };
+
+
   const handleRestartFromCompletion = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('currentTruckNumber');
+    }
     router.push('/main-menu');
   };
 
-  const ActiveIcon = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.icon : null;
-  const activeTitle = currentStep < MAX_ATTENDANCE_STEPS ? ATTENDANCE_STEP_CONFIG[currentStep]?.title : "";
+  // Lógica para determinar el paso activo en la UI
+  const progressStepIndex = isFinishing ? 5 : (currentStep < 3 ? currentStep : (isValidationComplete ? 4 : 3));
+  const ActiveIcon = ATTENDANCE_STEP_CONFIG[progressStepIndex <= 4 ? progressStepIndex : 4]?.icon;
+  const activeTitle = ATTENDANCE_STEP_CONFIG[progressStepIndex <= 4 ? progressStepIndex : 4]?.title;
 
   const showAppHeader = true;
   const showStepper = currentStep <= MAX_ATTENDANCE_STEPS;
-  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS;
+  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS && !isValidationComplete;
   const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
 
   const formatInitialsForDisplay = (fullName: string | undefined): string => {
@@ -250,6 +307,9 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             captureTimestamp={captureTimestamp}
             capturedLocation={capturedLocation}
             userData={initialUserData}
+            onFinalSubmit={handleFinalRegistration}
+            onValidationSuccess={() => setIsValidationComplete(true)}
+            isValidationComplete={isValidationComplete}
             onRestart={handleRestartFromCompletion}
           />
         );
@@ -259,22 +319,23 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-       <Toaster />
+    <>
+      <div className="flex flex-col min-h-screen bg-background">
+         <Toaster />
 
-      <div className="w-full max-w-md mx-auto pt-6 sm:pt-8 md:pt-12">
-        {showAppHeader && <AppHeader className="my-8" />}
-      </div>
+        <div className="w-full max-w-md mx-auto pt-6 sm:pt-8 md:pt-12">
+          {showAppHeader && <AppHeader className="my-8" />}
+        </div>
 
-      <div className="w-full max-w-md mx-auto px-4">
-        {showStepper && (
-          <ProgressStepper
-            currentStepIndex={currentStep}
-            steps={attendanceStepLabels.slice(0, -1)}
-            className="mb-6 w-full"
-          />
-        )}
-        {showStepTitle && ActiveIcon && activeTitle && (
+        <div className="w-full max-w-md mx-auto px-4">
+          {showStepper && (
+            <ProgressStepper
+              currentStepIndex={progressStepIndex}
+              steps={stepperLabels}
+              className="mb-6 w-full"
+            />
+          )}
+          {showStepTitle && ActiveIcon && activeTitle && (
               <div className={cn(
                 "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground font-heading-style",
                 "text-lg sm:text-xl"
@@ -282,54 +343,70 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
                 <ActiveIcon className={cn("h-6 w-6 sm:h-7 sm:w-7", "text-primary")} />
                 <span>{activeTitle}</span>
               </div>
-        )}
-      </div>
-
-      <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
-        <div className="w-full max-w-md mx-auto">
-          <div className="animate-step-enter w-full" key={currentStep}>
-            {renderActiveStepContent()}
-          </div>
-
-          {showNavButtons && (
-            <div className="w-full mt-8 flex justify-between items-center">
-                <Button
-                    variant="ghost"
-                    onClick={prevStep}
-                    disabled={isNavigating}
-                    className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide prev while camera is active but no photo taken
-                >
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Previous
-                </Button>
-
-                <div className="flex items-center gap-2">
-                  {currentStep === 2 && capturedImage && (
-                      <Button
-                          variant="outline"
-                          onClick={handleRetakePhoto}
-                          disabled={isNavigating}
-                          aria-label="Retake photo"
-                      >
-                          <RefreshCw className="mr-2 h-4 w-4" />
-                          Retake
-                      </Button>
-                  )}
-
-                  <Button 
-                    onClick={nextStep} 
-                    disabled={!canProceed || isNavigating}
-                    className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide next/ok while camera is active but no photo taken
-                  >
-                      {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {isNavigating ? "Loading..." : (currentStep === 2 ? 'OK' : 'Next')}
-                      {(isNavigating || currentStep === 2) ? null : <ArrowRight className="ml-2 h-4 w-4" />}
-                  </Button>
-                </div>
-            </div>
           )}
         </div>
+
+        <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
+          <div className="w-full max-w-md mx-auto">
+            <div className="animate-step-enter w-full" key={`${currentStep}-${isValidationComplete}`}>
+              {renderActiveStepContent()}
+            </div>
+
+            {showNavButtons && (
+              <div className="w-full mt-8 flex justify-between items-center">
+                  <Button
+                      variant="ghost"
+                      onClick={prevStep}
+                      disabled={isNavigating}
+                      className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide prev while camera is active but no photo taken
+                  >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Previous
+                  </Button>
+
+                  <div className="flex items-center gap-2">
+                    {currentStep === 2 && capturedImage && (
+                        <Button
+                            variant="outline"
+                            onClick={handleRetakePhoto}
+                            disabled={isNavigating}
+                            aria-label="Retake photo"
+                        >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Retake
+                        </Button>
+                    )}
+
+                    <Button 
+                      onClick={nextStep} 
+                      disabled={!canProceed || isNavigating}
+                      className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide next/ok while camera is active but no photo taken
+                    >
+                        {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {isNavigating ? "Loading..." : (currentStep === 2 ? 'OK' : 'Next')}
+                        {(isNavigating || currentStep === 2) ? null : <ArrowRight className="ml-2 h-4 w-4" />}
+                    </Button>
+                  </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+      
+      <AlertDialog open={showFinalSuccessDialog} onOpenChange={setShowFinalSuccessDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="items-center">
+            <CheckCircle2 className="h-12 w-12 text-success mb-2" />
+            <AlertDialogTitle>Asistencia Completada con Éxito</AlertDialogTitle>
+          </AlertDialogHeader>
+          <AlertDialogDescription className="text-center">
+            ¡Todo listo! Tu registro de asistencia está completo.
+          </AlertDialogDescription>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={handleRestartFromCompletion}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
