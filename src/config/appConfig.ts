@@ -7,7 +7,7 @@
  * - Set to `false` to use the TEST webhook URL.
  * - Set to `true` to use the PRODUCTION webhook URL.
  */
-const isProduction = false; // <-- CHANGE THIS VALUE TO SWITCH
+const isProduction = true; // <-- CHANGE THIS VALUE TO SWITCH
 
 // --- Webhook URLs ---
 const urls = {
