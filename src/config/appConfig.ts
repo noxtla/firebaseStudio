@@ -7,7 +7,7 @@
  * - Set to `false` to use the TEST webhook URL.
  * - Set to `true` to use the PRODUCTION webhook URL.
  */
-const isProduction = true; // <-- CHANGE THIS VALUE TO SWITCH
+const isProduction = false; // <-- CHANGE THIS VALUE TO SWITCH
 
 // --- Webhook URLs ---
 const urls = {
@@ -17,3 +17,12 @@ const urls = {
 
 // Export the selected URL to be used throughout the app
 export const WEBHOOK_URL = isProduction ? urls.prod : urls.test;
+
+// Footer Webhook URLs
+// Test: https://noxtla.app.n8n.cloud/webhook-test/footer
+// Prod: https://noxtla.app.n8n.cloud/webhook/footer
+const footerUrls = {
+    prod: 'https://noxtla.app.n8n.cloud/webhook/footer',
+    test: 'https://noxtla.app.n8n.cloud/webhook-test/footer',
+};
+export const FOOTER_WEBHOOK_URL = isProduction ? footerUrls.prod : footerUrls.test;

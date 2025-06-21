@@ -1,9 +1,13 @@
 "use client";
 
 import Link from 'next/link';
-import { Home, MessageSquare, User as UserIcon, Bell } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Home, MessageSquare, User as UserIcon, Bell, Loader2 } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { useToast } from "@/hooks/use-toast";
+import { FOOTER_WEBHOOK_URL } from '@/config/appConfig';
+import type { UserData } from '@/types';
 
 interface NavItem {
   href: string;
@@ -18,12 +22,76 @@ const navItems: NavItem[] = [
 
 export default function AppFooter() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isNotifying, setIsNotifying] = useState(false);
 
   // Determine if the footer should be visible based on the current path
-  const hiddenPaths = ['/']; // Removed '/attendance' from here
+  const hiddenPaths = ['/'];
   if (hiddenPaths.includes(pathname)) {
     return null;
   }
+
+  const handleNotificationClick = async () => {
+    if (isNotifying) return;
+    setIsNotifying(true);
+
+    try {
+      const storedUserData = sessionStorage.getItem('userData');
+      if (!storedUserData) {
+        toast({
+          title: "Error",
+          description: "User session not found. Please log in again.",
+          variant: "destructive",
+        });
+        router.push('/');
+        return;
+      }
+
+      const userData: UserData = JSON.parse(storedUserData);
+      const phoneNumber = userData.phoneNumber;
+
+      if (!phoneNumber) {
+        toast({
+          title: "Error",
+          description: "Phone number not found in your session.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const url = new URL(FOOTER_WEBHOOK_URL);
+      url.searchParams.append('action', 'notification');
+      url.searchParams.append('phoneNumber', phoneNumber);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+      });
+
+      if (response.ok) {
+        const notificationsData = await response.json();
+        sessionStorage.setItem('notifications', JSON.stringify(notificationsData));
+        router.push('/notifications');
+      } else {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to retrieve notification data.' }));
+        const errorMessage = errorData.message || "An unknown error occurred.";
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error during notification GET request:", error);
+      toast({
+        title: "Network Error",
+        description: "Could not connect to the server. Please check your connection and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsNotifying(false);
+    }
+  };
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background shadow-md">
@@ -49,22 +117,28 @@ export default function AppFooter() {
             </Link>
           );
         })}
-         <Link key="notifications" href="/notifications" legacyBehavior>
-            <a
-              className={cn(
-                "flex flex-1 flex-col items-center justify-center p-2 text-muted-foreground transition-colors hover:text-primary",
-                pathname === "/notifications" && "text-primary"
-              )}
-              aria-label="Notifications"
-            >
-              <div className="relative">
-                <Bell
-                  className={cn("h-6 w-6 sm:h-7 sm:w-7", pathname === "/notifications" ? "text-primary" : "")}
-                  strokeWidth={pathname === "/notifications" ? 2.5 : 2}
-                />
-              </div>
-            </a>
-          </Link>
+         <div
+          onClick={handleNotificationClick}
+          className={cn(
+            "flex flex-1 flex-col items-center justify-center p-2 text-muted-foreground transition-colors hover:text-primary cursor-pointer",
+            pathname === "/notifications" && "text-primary",
+            isNotifying && "pointer-events-none"
+          )}
+          aria-label="Notifications"
+          role="button"
+          tabIndex={0}
+        >
+          <div className="relative">
+            {isNotifying ? (
+              <Loader2 className={cn("h-6 w-6 sm:h-7 sm:w-7 animate-spin")} />
+            ) : (
+              <Bell
+                className={cn("h-6 w-6 sm:h-7 sm:w-7", pathname === "/notifications" ? "text-primary" : "")}
+                strokeWidth={pathname === "/notifications" ? 2.5 : 2}
+              />
+            )}
+          </div>
+        </div>
            <Link key="profile" href="#" legacyBehavior>
             <a
               className={cn(

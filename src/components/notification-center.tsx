@@ -1,22 +1,13 @@
+// src/app/notifications/page.tsx
+
 "use client";
 
-import React, { useState } from 'react';
-import { Bell } from 'lucide-react';
+import React from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
-
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Notification {
   id: string;
@@ -103,26 +94,32 @@ const notifications: Notification[] = [
   },
 ];
 
+const NotificationsPage = () => {
+  const router = useRouter();
 
-export default function NotificationCenter() {
-  const [open, setOpen] = useState(false);
+  const handleBackClick = () => {
+    router.back();
+  };
 
   const newNotifications = notifications.filter(notification => !notification.isRead);
   const readNotifications = notifications.filter(notification => notification.isRead);
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Bell className="h-5 w-5 cursor-pointer" />
-      </AlertDialogTrigger>
-      <AlertDialogContent className="w-full max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle>Notifications</AlertDialogTitle>
-          <AlertDialogDescription>
-            Here are your latest updates.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <ScrollArea className="h-[400px] w-full pr-4">
+    <div className="flex flex-col h-screen">
+      {/* AppBar */}
+      <div className="bg-white border-b border-gray-200 p-4">
+        <div className="container mx-auto flex items-center justify-between">
+          <button onClick={handleBackClick}>
+            <ArrowLeft className="h-6 w-6" />
+          </button>
+          <h1 className="text-lg font-semibold">Notifications</h1>
+          <div></div>{/* Empty div for spacing if needed */}
+        </div>
+      </div>
+
+      {/* Page Body */}
+      <div className="flex-grow overflow-y-auto p-4">
+        <ScrollArea className="h-full w-full pr-4">
           {newNotifications.length > 0 && (
             <div>
               <div className="mb-2 mt-4 text-sm font-semibold">New</div>
@@ -165,10 +162,9 @@ export default function NotificationCenter() {
             </div>
           )}
         </ScrollArea>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Close</AlertDialogCancel>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      </div>
+    </div>
   );
-}
+};
+
+export default NotificationsPage;

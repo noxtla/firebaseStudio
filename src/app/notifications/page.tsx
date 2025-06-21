@@ -1,3 +1,5 @@
+// src/app/notifications/page.tsx
+
 "use client";
 
 import React from 'react';
