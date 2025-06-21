@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface ProfileHeaderProps {
   name: string;
@@ -25,9 +26,11 @@ export default function ProfileHeader({ name, position }: ProfileHeaderProps) {
         <p className="text-gray-500">{username}</p>
         <p className="text-gray-600 mt-1">{position}</p>
       </div>
-      <Button variant="outline" className="w-full max-w-xs">
-        Edit Profile
-      </Button>
+      <Link href="/profile/edit" passHref className="w-full max-w-xs">
+        <Button variant="outline" className="w-full">
+          Edit Profile
+        </Button>
+      </Link>
     </div>
   );
 }

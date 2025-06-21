@@ -32,7 +32,7 @@ export default function JobBriefingPage() {
         <AppHeader className="flex-grow text-center" />
       </div>
 
-      <HorizontalTabBar labels={jobBriefingTabLabels} onTabClick={(tab) => setActiveTab(tab)} />
+      <HorizontalTabBar labels={jobBriefingTabLabels} activeTab={activeTab} onTabClick={(tab) => setActiveTab(tab)} />
 
       <div className="mt-6">
         {renderTabContent()}
