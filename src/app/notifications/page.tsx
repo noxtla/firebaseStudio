@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 // Se ha añadido el ícono 'Bot' de Lucide React
 import { ArrowLeft, Loader2, Bot } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Updated Notification interface to include optional uiColor
@@ -22,27 +21,7 @@ interface Notification {
   uiColor?: string; // Optional field for dynamic UI styling
 }
 
-// Renamed to staticNotifications to serve as a fallback
-const staticNotifications: Notification[] = [
-  {
-    id: "1",
-    userName: "Santiago Muñoz",
-    userAvatarUrl: "url_to_image.png",
-    badgeIcon: "rocket_emoji",
-    metadata: "(following) new post • 13d",
-    content: "PLANTILLA WORKSHOP",
-    isRead: false
-  },
-  {
-    id: "3",
-    userName: "Alice Smith",
-    userAvatarUrl: "url_to_image.png",
-    badgeIcon: "rocket_emoji",
-    metadata: "(following) new post • 2d",
-    content: "Updated Documentation",
-    isRead: true
-  },
-];
+// The static fallback data is no longer needed and has been removed.
 
 const NotificationsPage = () => {
   const router = useRouter();
@@ -50,32 +29,29 @@ const NotificationsPage = () => {
   const [notificationList, setNotificationList] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Steps 2, 3, and 4: Validate, count, and set data with a fallback
   useEffect(() => {
     const storedNotifications = sessionStorage.getItem('notifications');
     if (storedNotifications) {
       try {
         const data = JSON.parse(storedNotifications);
         
-        // Step 2: Validate the data structure
-        if (data && Array.isArray(data.notifications_json)) {
-          // Step 3: Count items before rendering
-          console.log(`[SUCCESS] Found ${data.notifications_json.length} dynamic notifications to render.`);
+        // --- HOTFIX ---
+        // Check if notifications_json is a valid array.
+        // If it's null, undefined, or not an array, treat it as an empty list to show the "no notifications" message.
+        if (Array.isArray(data?.notifications_json)) {
           setNotificationList(data.notifications_json);
         } else {
-          // Step 4: Fallback mechanism if structure is invalid
-          console.warn("[FALLBACK] Dynamic data has invalid structure. Using static notifications.");
-          setNotificationList(staticNotifications);
+          // This handles cases like Carlos's (null value) correctly.
+          setNotificationList([]);
         }
       } catch (error) {
-        // Step 4: Fallback mechanism on parsing error
-        console.error("Failed to parse notifications from sessionStorage. Using static notifications.", error);
-        setNotificationList(staticNotifications);
+        // If JSON parsing fails for any reason, default to an empty list.
+        console.error("Failed to parse notifications from sessionStorage. Displaying empty state.", error);
+        setNotificationList([]);
       }
     } else {
-      // Step 4: Fallback mechanism if no data is found
-      console.warn("[FALLBACK] No notifications found in sessionStorage. Using static notifications.");
-      setNotificationList(staticNotifications);
+      // If no data is in session storage, it also means no notifications.
+      setNotificationList([]);
     }
     setIsLoading(false); // Stop loading after processing
   }, []); 
@@ -84,7 +60,6 @@ const NotificationsPage = () => {
     router.back();
   };
   
-  // The component now uses the 'notificationList' state
   const newNotifications = notificationList.filter(notification => !notification.isRead);
   const readNotifications = notificationList.filter(notification => notification.isRead);
 
@@ -92,8 +67,6 @@ const NotificationsPage = () => {
     <div key={notification.id} className="flex items-center space-x-4 py-3">
       <Avatar className="h-12 w-12">
         <AvatarImage src={notification.userAvatarUrl} alt={notification.userName} />
-        {/* ---- CAMBIO AQUÍ ---- */}
-        {/* Ahora muestra un ícono de robot si el userName es "SystemTreeService" */}
         <AvatarFallback>
           {notification.userName === "SystemTreeService" ? (
             <Bot className="h-6 w-6 text-muted-foreground" />
@@ -153,6 +126,7 @@ const NotificationsPage = () => {
               </div>
             )}
             
+            {/* This condition now works correctly for all users */}
             {notificationList.length === 0 && (
                  <div className="text-center text-gray-500 pt-16">
                     <p>You have no notifications.</p>

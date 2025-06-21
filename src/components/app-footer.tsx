@@ -35,6 +35,9 @@ export default function AppFooter() {
   const handleNotificationClick = async () => {
     if (isNotifying) return;
     setIsNotifying(true);
+    // --- DEBUG PATCH START ---
+    console.log("[DEBUG] Notification fetch initiated.");
+    // --- DEBUG PATCH END ---
 
     try {
       const storedUserData = sessionStorage.getItem('userData');
@@ -69,16 +72,30 @@ export default function AppFooter() {
       // Usar el número de teléfono limpio en la URL
       url.searchParams.append('phoneNumber', cleanPhoneNumber);
 
+      // --- DEBUG PATCH START ---
+      console.log(`[DEBUG] Fetching from URL: ${url.toString()}`);
+      // --- DEBUG PATCH END ---
+
       const response = await fetch(url.toString(), {
         method: 'GET',
       });
 
+      // --- DEBUG PATCH START ---
+      console.log(`[DEBUG] Response status: ${response.status}`);
+      // --- DEBUG PATCH END ---
+
       if (response.ok) {
         const notificationsData = await response.json();
+        // --- DEBUG PATCH START ---
+        console.log("[DEBUG] Raw data from webhook:", JSON.stringify(notificationsData, null, 2));
+        // --- DEBUG PATCH END ---
         sessionStorage.setItem('notifications', JSON.stringify(notificationsData));
         router.push('/notifications');
       } else {
         const errorData = await response.json().catch(() => ({ message: 'Failed to retrieve notification data.' }));
+        // --- DEBUG PATCH START ---
+        console.error("[DEBUG] Error response from webhook:", errorData);
+        // --- DEBUG PATCH END ---
         const errorMessage = errorData.message || "An unknown error occurred.";
         toast({
           title: "Error",
