@@ -60,9 +60,14 @@ export default function AppFooter() {
         return;
       }
       
+      // --- CAMBIO AQUÍ ---
+      // Limpiar el número de teléfono para enviar solo los dígitos
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, '');
+      
       const url = new URL(FOOTER_WEBHOOK_URL);
       url.searchParams.append('action', 'notification');
-      url.searchParams.append('phoneNumber', phoneNumber);
+      // Usar el número de teléfono limpio en la URL
+      url.searchParams.append('phoneNumber', cleanPhoneNumber);
 
       const response = await fetch(url.toString(), {
         method: 'GET',
