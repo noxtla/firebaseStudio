@@ -161,18 +161,18 @@ export default function AppFooter() {
             )}
           </div>
         </div>
-           <Link key="profile" href="#" legacyBehavior>
+           <Link key="profile" href="/profile" legacyBehavior>
             <a
               className={cn(
                 "flex flex-1 flex-col items-center justify-center p-2 text-muted-foreground transition-colors hover:text-primary",
-                pathname === "#" && "text-primary"
+                pathname === "/profile" && "text-primary"
               )}
               aria-label="Profile"
             >
               <div className="relative">
                 <UserIcon
-                  className={cn("h-6 w-6 sm:h-7 sm:w-7", pathname === "#" ? "text-primary" : "")}
-                  strokeWidth={pathname === "#" ? 2.5 : 2}
+                  className={cn("h-6 w-6 sm:h-7 sm:w-7", pathname === "/profile" ? "text-primary" : "")}
+                  strokeWidth={pathname === "/profile" ? 2.5 : 2}
                 />
               </div>
             </a>
