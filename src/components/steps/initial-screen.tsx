@@ -35,15 +35,16 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card px-4">
       <Card className="w-full max-w-md border-none shadow-none bg-card">
         <CardContent className="flex flex-col items-center justify-center gap-y-12 p-6 md:p-8">
-          {/* The local AppHeader is replaced with a themed image */}
-          <Image
-            src="https://placehold.co/200x120/F26522/FFFFFF/png?text=Arborist+Pro&font=lato"
-            alt="Arborist Pro Logo"
-            width={200}
-            height={120}
-            className="rounded-lg shadow-md"
-            priority // Load this image first as it's above the fold
-          />
+          {/* Responsive container for the logo */}
+          <div className="relative w-36 h-36 sm:w-44 sm:h-44">
+            <Image
+              src="https://storage.googleapis.com/proud-booster-358215.appspot.com/e312484f-1779-4531-9f79-679982463b27.png"
+              alt="Asplundh Service Logo"
+              fill
+              className="rounded-2xl shadow-md"
+              priority
+            />
+          </div>
 
           <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
             <Button
@@ -54,7 +55,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
                 !isDisabled && "animate-soft-pulse",
                 "disabled:bg-primary disabled:text-primary-foreground disabled:opacity-60"
               )}
-              aria-label="Enter Your Phone Number to start verification process"
+              aria-label="Start Verification"
               disabled={isDisabled}
             >
               {isLoadingStatus ? (
@@ -63,7 +64,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
                   Checking Access...
                 </>
               ) : (
-                'Enter Your Phone Number'
+                'Start'
               )}
             </Button>
 
