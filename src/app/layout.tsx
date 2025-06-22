@@ -1,10 +1,10 @@
-
-"use client"; // Keep for other client-side logic if any, or remove if no longer needed.
+"use client";
 
 import { Lato, Open_Sans } from 'next/font/google';
 import './globals.css';
-// Button import is removed as it's no longer used for language selection here.
-import AppFooter from '@/components/app-footer'; // Import the AppFooter
+import AppFooter from '@/components/app-footer';
+import AppHeader from '@/components/app-header'; // Import the AppHeader
+import { Toaster } from '@/components/ui/toaster'; // Import the Toaster
 
 const lato = Lato({
   subsets: ['latin'],
@@ -18,34 +18,31 @@ const openSans = Open_Sans({
   weight: ['400', '700', '800'],
 });
 
-// Metadata export removed as it's not allowed in client component layouts.
-// Static title is set directly in the <head> below.
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Language setting function is removed as buttons are removed.
-  // const setLanguage = (lang: 'en' | 'es') => {
-  //   if (typeof window !== 'undefined') {
-  //     localStorage.setItem('preferredLang', lang);
-  //     window.location.reload(); // Reload to apply language change
-  //   }
-  // };
-
   return (
     <html lang="en" className={`${lato.variable} ${openSans.variable}`}>
       <head>
         <title>Tree Services</title>
-        {/* You can add other meta tags here if needed */}
       </head>
-      <body className={`antialiased`}>
-        {/* The div containing language buttons is removed. */}
-        <main className="pb-20"> {/* Added padding-bottom for the footer */}
+      <body className="antialiased">
+        {/* The global header is now part of the root layout */}
+        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container flex h-20 items-center justify-center">
+            <AppHeader />
+          </div>
+        </header>
+
+        {/* The main content area is padded to account for the sticky header and fixed footer */}
+        <main className="pt-8 pb-20">
           {children}
         </main>
-        <AppFooter /> {/* Add the AppFooter component here */}
+
+        <AppFooter />
+        <Toaster />
       </body>
     </html>
   );

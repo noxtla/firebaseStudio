@@ -1,13 +1,13 @@
 "use client";
 
 import type { FC } from 'react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import Image from 'next/image'; // Import Next.js Image component
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import AppHeader from '../app-header';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog'; // Import Dialog components
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 interface InitialScreenProps {
   onNextStep: () => void;
@@ -16,18 +16,17 @@ interface InitialScreenProps {
 const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   const [isButtonEnabled, setIsButtonEnabled] = useState(true);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false); // State for dialog visibility
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const isDisabled = isLoadingStatus || !isButtonEnabled;
 
   const handleButtonClick = () => {
-    setIsDialogOpen(true); // Open the dialog
+    setIsDialogOpen(true);
   };
 
   const handleDialogClose = (open: boolean) => {
-    setIsDialogOpen(open); // Update dialog state
+    setIsDialogOpen(open);
     if (!open) {
-      // If dialog is closing, proceed to the next step
       onNextStep();
     }
   };
@@ -35,13 +34,21 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-card px-4">
       <Card className="w-full max-w-md border-none shadow-none bg-card">
-        <CardContent className="flex flex-col items-center justify-center gap-y-12 p-6 md:p-8"> {/* Changed justify-between to justify-center, removed min-h, added gap-y-12 */}
-          <AppHeader />
+        <CardContent className="flex flex-col items-center justify-center gap-y-12 p-6 md:p-8">
+          {/* The local AppHeader is replaced with a themed image */}
+          <Image
+            src="https://placehold.co/200x120/F26522/FFFFFF/png?text=Arborist+Pro&font=lato"
+            alt="Arborist Pro Logo"
+            width={200}
+            height={120}
+            className="rounded-lg shadow-md"
+            priority // Load this image first as it's above the fold
+          />
 
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}> {/* Control dialog with state */}
+          <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
             <Button
               size="lg"
-              onClick={handleButtonClick} // Open dialog on button click
+              onClick={handleButtonClick}
               className={cn(
                 "w-full max-w-xs text-lg py-6 whitespace-nowrap",
                 !isDisabled && "animate-soft-pulse",
@@ -75,11 +82,6 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
             </DialogContent>
           </Dialog>
 
-          {/* 
-            The message below is intentionally kept as per previous request,
-            even when the button is enabled.
-          */}
-          {/* Removed the old static warning text div */}
            <div className="mt-4 text-center">
             <p className="text-sm font-medium text-muted-foreground">
               For currently active employees only.

@@ -11,10 +11,8 @@ import {
   type LucideIcon,
   Loader2,
 } from 'lucide-react';
-import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { Toaster } from '@/components/ui/toaster';
 import type { UserData } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { WEBHOOK_URL } from '@/config/appConfig';
@@ -138,7 +136,6 @@ export default function MainMenuPage() {
       
       const responseData = await response.json();
 
-      // AQUÍ: Este console.log mostrará la respuesta completa del webhook para depuración.
       console.log("[DEBUG] Respuesta JSON completa del Webhook:", responseData);
 
       if (response.ok && responseData && responseData.length > 0) {
@@ -214,9 +211,7 @@ export default function MainMenuPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-2 sm:p-4">
-      <Toaster />
-      <AppHeader className="my-2 sm:my-4" />
-
+      {/* AppHeader and Toaster are removed as they are now global */}
       <div className="w-full flex-1 flex flex-col items-center justify-center">
         <div className="grid grid-cols-2 grid-rows-2 gap-2 sm:gap-4 w-full h-full max-w-xl p-2">
           {primaryMenuItems.map((item) => (

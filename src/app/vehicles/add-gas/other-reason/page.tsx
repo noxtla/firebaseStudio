@@ -1,9 +1,7 @@
-
 "use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { ChevronLeft, HelpCircle, Loader2 } from 'lucide-react';
@@ -25,7 +23,7 @@ export default function OtherGasReasonPage() {
   const { toast } = useToast();
   const [reason, setReason] = useState<string>("");
   const [customExplanation, setCustomExplanation] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
     if (!reason) {
@@ -46,7 +44,7 @@ export default function OtherGasReasonPage() {
     }
 
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     console.log("Selected 'Other' Gas Reason:", reason);
     console.log("Custom Explanation:", customExplanation);
@@ -56,7 +54,6 @@ export default function OtherGasReasonPage() {
     });
     
     router.back(); 
-    // setIsSubmitting(false); // Component unmounts
   };
 
   const canSubmit = reason && !(reason === "Other Equipment (Specify)" && !customExplanation.trim());
@@ -68,7 +65,7 @@ export default function OtherGasReasonPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        {/* AppHeader removed from here, it is now global */}
       </div>
 
       <div className="flex-grow flex flex-col items-center">

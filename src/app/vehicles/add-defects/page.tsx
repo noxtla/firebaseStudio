@@ -1,9 +1,7 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -126,7 +124,7 @@ export default function AddDefectsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [lang, setLang] = useState<'en' | 'es'>('en');
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDefects, setSelectedDefects] = useState<SelectedDefects>({
     truck: [],
     trailer: [],
@@ -166,7 +164,7 @@ export default function AddDefectsPage() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     const truckDefectsToLog = selectedDefects.truck.join(', ') || currentUiText.toastNone;
     const trailerDefectsToLog = selectedDefects.trailer.join(', ') || currentUiText.toastNone;
@@ -177,8 +175,6 @@ export default function AddDefectsPage() {
       description: `${currentUiText.toastDescriptionTruck}: ${truckDefectsToLog}. ${currentUiText.toastDescriptionTrailer}: ${trailerDefectsToLog}. ${currentUiText.toastDescriptionOtherTruck}: ${selectedDefects.otherTruckText || currentUiText.toastNotApplicable}. ${currentUiText.toastDescriptionOtherTrailer}: ${selectedDefects.otherTrailerText || currentUiText.toastNotApplicable}. ${currentUiText.toastDescriptionGeneral}: ${generalDetailsToLog}`,
     });
     
-    // Optionally navigate back or to another page after submission
-    // router.back(); 
     setIsSubmitting(false);
   };
 
@@ -196,7 +192,7 @@ export default function AddDefectsPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        {/* AppHeader removed from here, it is now global */}
       </div>
 
       <Card className="w-full flex-grow flex flex-col shadow-lg rounded-lg border-none">

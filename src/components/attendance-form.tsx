@@ -9,7 +9,6 @@ import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { WEBHOOK_URL } from '@/config/appConfig';
 
-import AppHeader from './app-header';
 import ProgressStepper from './progress-stepper';
 import SsnStep from './steps/ssn-step';
 import BirthDayStep from './steps/birth-day-step';
@@ -134,7 +133,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     if (canProceed) {
       setIsNavigating(true);
 
-      // Si estamos en el paso de la foto (paso 2, botón "OK"), enviamos el webhook de ubicación
       if (currentStep === 2) {
         try {
           console.log("Enviando webhook con action: 'location'...");
@@ -169,7 +167,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 300)); // Delay de navegación
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
@@ -185,7 +183,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     await new Promise(resolve => setTimeout(resolve, 300));
 
     if (currentStep > 0) {
-      // Si estamos en la vista de "Registrar Asistencia" (paso 5), volvemos a la de "Validación" (paso 4)
       if (currentStep === 3 && isValidationComplete) {
          setIsValidationComplete(false);
       } else {
@@ -209,7 +206,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   };
 
   const handleFinalRegistration = async () => {
-    setIsFinishing(true); // Activa el estado final
+    setIsFinishing(true);
     try {
       console.log("Enviando webhook con action: 'finalAte'...");
       const response = await fetch(WEBHOOK_URL, {
@@ -227,7 +224,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
       if (!response.ok) {
         throw new Error('Failed to send completion webhook');
       }
-      setShowFinalSuccessDialog(true); // Muestra el diálogo de éxito
+      setShowFinalSuccessDialog(true);
     } catch (error) {
       console.error('Error al enviar el webhook de finalización:', error);
       toast({
@@ -235,7 +232,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
         description: "No se pudo conectar con el servidor para finalizar. Su asistencia fue guardada, pero la notificación final falló.",
         variant: "destructive",
       });
-      // Aún así, muestra el éxito, ya que el registro principal se completó
       setShowFinalSuccessDialog(true);
     }
   };
@@ -248,12 +244,11 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     router.push('/main-menu');
   };
 
-  // Lógica para determinar el paso activo en la UI
   const progressStepIndex = isFinishing ? 5 : (currentStep < 3 ? currentStep : (isValidationComplete ? 4 : 3));
   const ActiveIcon = ATTENDANCE_STEP_CONFIG[progressStepIndex <= 4 ? progressStepIndex : 4]?.icon;
   const activeTitle = ATTENDANCE_STEP_CONFIG[progressStepIndex <= 4 ? progressStepIndex : 4]?.title;
-
-  const showAppHeader = true;
+  
+  // AppHeader is now global, so flags to show it are removed.
   const showStepper = currentStep <= MAX_ATTENDANCE_STEPS;
   const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS && !isValidationComplete;
   const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
@@ -323,9 +318,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
       <div className="flex flex-col min-h-screen bg-background">
          <Toaster />
 
-        <div className="w-full max-w-md mx-auto pt-6 sm:pt-8 md:pt-12">
-          {showAppHeader && <AppHeader className="my-8" />}
-        </div>
+         {/* The AppHeader has been removed from here. It is now in the global layout. */}
 
         <div className="w-full max-w-md mx-auto px-4">
           {showStepper && (
@@ -358,7 +351,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
                       variant="ghost"
                       onClick={prevStep}
                       disabled={isNavigating}
-                      className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide prev while camera is active but no photo taken
+                      className={cn(currentStep === 2 && !capturedImage && "invisible")}
                   >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Previous
@@ -380,7 +373,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
                     <Button 
                       onClick={nextStep} 
                       disabled={!canProceed || isNavigating}
-                      className={cn(currentStep === 2 && !capturedImage && "invisible")} // Hide next/ok while camera is active but no photo taken
+                      className={cn(currentStep === 2 && !capturedImage && "invisible")}
                     >
                         {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                         {isNavigating ? "Loading..." : (currentStep === 2 ? 'OK' : 'Next')}

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,9 +14,9 @@ import type { UserData } from '@/types';
 export default function EnterTruckNumberPage() {
   const [truckNumber, setTruckNumber] = useState('');
   const [validVehicleNumbers, setValidVehicleNumbers] = useState<string[]>([]);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -31,10 +30,10 @@ export default function EnterTruckNumberPage() {
           const parsedUserData: UserData = JSON.parse(storedUserData);
           if (parsedUserData.Vehicles && parsedUserData.Vehicles.length > 0) {
             setValidVehicleNumbers(parsedUserData.Vehicles.map(v => String(v).replace(/\D/g, '')));
-            setIsLoadingInitialData(false); // Set loading to false here
+            setIsLoadingInitialData(false);
           } else {
             console.warn("No vehicles are assigned to this user in session data, but proceeding is allowed if format is correct.");
-             setIsLoadingInitialData(false); // Stop loading if no vehicles but data is present
+             setIsLoadingInitialData(false);
           }
         } catch (error) {
           console.error("Failed to parse user data from session storage", error);
@@ -44,7 +43,7 @@ export default function EnterTruckNumberPage() {
             description: "Could not load user data. Please try logging in again.",
             variant: "destructive",
           });
-          setIsLoadingInitialData(false); // Stop loading on error
+          setIsLoadingInitialData(false);
         }
       } else {
         setErrorMessage("User data not found. Please log in again.");
@@ -53,7 +52,7 @@ export default function EnterTruckNumberPage() {
           description: "User information is missing. Please log in again.",
           variant: "destructive",
         });
-        setIsLoadingInitialData(false); // Stop loading on error
+        setIsLoadingInitialData(false);
       }
     }
   }, [router, toast]);
@@ -80,15 +79,13 @@ export default function EnterTruckNumberPage() {
   }, [truckNumber, isLoadingInitialData, errorMessage, validVehicleNumbers]);
 
   const handleSubmit = async () => {
-
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('currentTruckNumber', truckNumber);
     }
     router.push('/vehicles/actions');
-    // setIsSubmitting(false); // Component unmounts
   };
 
   const isButtonDisabled =  isSubmitting;
@@ -100,7 +97,7 @@ export default function EnterTruckNumberPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-6 w-6" />
         </Button>
-        <AppHeader className="flex-grow !text-left ml-0 pl-0" />
+        {/* AppHeader removed from here, it is now global */}
       </div>
 
       <div className="flex-grow flex items-center justify-center">

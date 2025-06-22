@@ -12,15 +12,12 @@ import ProfileStats from "@/components/profile/profile-stats";
 import ActivityChart from "@/components/profile/activity-chart";
 import { Separator } from "@/components/ui/separator";
 
-// Mock data for display purposes
 const mockProfileData = {
-  // username will be generated from the name
   contributions: 10,
   followers: 0,
   following: 11,
   joinedDate: "2025-05-08",
   lastActive: "3d ago",
-  // 26 weeks * 7 days = 182 days of random activity data
   activityData: Array.from({ length: 182 }, () => Math.floor(Math.random() * 5)),
 };
 
@@ -34,9 +31,8 @@ export default function ProfilePage() {
     if (storedData) {
       try {
         const parsedData: UserData = JSON.parse(storedData);
-        // Ensure position exists for the component
         if (!parsedData.Position) {
-            parsedData.Position = "Field Worker"; // Default or placeholder
+            parsedData.Position = "Field Worker";
         }
         setUserData(parsedData);
       } catch (error) {
@@ -58,23 +54,18 @@ export default function ProfilePage() {
   }
 
   if (!userData) {
-    return null; // or a proper error message
+    return null;
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-800 pb-20">
-      {/* Header Bar */}
-      <header className="sticky top-0 bg-white border-b border-gray-200 p-4 z-10">
-          <div className="container mx-auto flex items-center">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
-                <ArrowLeft className="h-6 w-6" />
-            </Button>
-            {/* The title can be added here if needed, like "Profile" */}
-          </div>
-      </header>
-
-      {/* Profile Content */}
+      {/* The local sticky header bar is removed to avoid conflict with the global header. */}
+      
       <main className="flex-grow container mx-auto p-4 md:p-6">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="mb-4">
+            <ArrowLeft className="h-6 w-6" />
+        </Button>
+
         <div className="max-w-3xl mx-auto space-y-6">
           <ProfileHeader
             name={userData.Name}

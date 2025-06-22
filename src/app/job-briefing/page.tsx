@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import HorizontalTabBar from '@/components/horizontal-tab-bar2';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -25,11 +24,11 @@ export default function JobBriefingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
+      {/* The AppHeader is now globally managed in RootLayout */}
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow text-center" />
       </div>
 
       <HorizontalTabBar labels={jobBriefingTabLabels} activeTab={activeTab} onTabClick={(tab) => setActiveTab(tab)} />

@@ -2,10 +2,9 @@
 
 import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData } from '@/types'; // CORRECTED: UserData added to type import
+import type { FormData, FormStep, UserData } from '@/types';
 import { WEBHOOK_URL } from '@/config/appConfig';
 
-import AppHeader from './app-header';
 import InitialScreen from './steps/initial-screen';
 import PhoneNumberStep from './steps/phone-number-step';
 
@@ -22,8 +21,6 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-
-// The incorrect `import {UserData}` line has been removed.
 
 const initialFormData: Pick<FormData, 'phoneNumber'> = {
   phoneNumber: '',
@@ -42,7 +39,7 @@ export default function MultiStepForm() {
   const [isProcessingWebhook, setIsProcessingWebhook] = useState(false);
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   const [welcomeUserName, setWelcomeUserName] = useState('');
-  const [showUserNotFoundDialog, setShowUserNotFoundDialog] = useState(false); // ADDED: State for the dialog
+  const [showUserNotFoundDialog, setShowUserNotFoundDialog] = useState(false);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -101,11 +98,10 @@ export default function MultiStepForm() {
           body: JSON.stringify({ phoneNumber: formData.phoneNumber, action: 'phoneNumberLogin' }),
         });
 
-        // CORRECTED: Full 404 error handling block
         if (response.status === 404) {
           const errorData = await response.json();
           if (errorData && errorData.Error === "UserNotFound") {
-            setShowUserNotFoundDialog(true); // Show the specific dialog
+            setShowUserNotFoundDialog(true);
           } else {
             toast({
                 title: "Error",
@@ -165,8 +161,7 @@ export default function MultiStepForm() {
 
   const ActiveIcon = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.icon : null;
   const activeTitle = currentStep > 0 && currentStep <= MAX_STEPS ? STEP_CONFIG[currentStep]?.title : "";
-
-  const showAppHeader = currentStep !== 0;
+  
   const showStepTitle = currentStep === 1;
   const showNavButtons = currentStep === 1;
 
@@ -189,14 +184,12 @@ export default function MultiStepForm() {
 
   return (
     <div className={cn("flex flex-col min-h-screen")}>
-      <div className={cn("w-full max-w-md mx-auto", { "pt-0": currentStep === 0, "pt-6 sm:pt-8 md:pt-12": currentStep !== 0 })}>
-        {showAppHeader && <AppHeader className="my-8" />}
-      </div>
-
+      {/* The container for the local AppHeader has been removed entirely. */}
+      
       <div className={cn("w-full max-w-md mx-auto px-4", { "hidden": currentStep === 0 })}>
         {showStepTitle && ActiveIcon && activeTitle && (
           <div className={cn(
-            "mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
+            "mt-8 mb-6 flex items-center justify-center font-semibold space-x-3 text-foreground",
             "text-2xl sm:text-3xl font-heading-style"
           )}>
             <ActiveIcon className={cn("h-7 w-7 sm:h-8 sm:w-8", "text-primary")} />
@@ -216,7 +209,7 @@ export default function MultiStepForm() {
               <Button
                 variant="ghost"
                 onClick={prevStep}
-                disabled={currentStep === 0 || isProcessingWebhook}
+                disabled={isProcessingWebhook}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" /> Previous
               </Button>
@@ -237,7 +230,6 @@ export default function MultiStepForm() {
         </div>
       </div>
 
-      {/* Welcome Dialog */}
       <Dialog 
         open={showWelcomeDialog} 
         onOpenChange={(isOpen) => {
@@ -262,7 +254,6 @@ export default function MultiStepForm() {
         </DialogContent>
       </Dialog>
 
-      {/* ADDED: User Not Found Dialog with restart logic */}
       <Dialog 
         open={showUserNotFoundDialog} 
         onOpenChange={(isOpen) => {

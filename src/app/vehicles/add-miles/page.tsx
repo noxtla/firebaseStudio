@@ -1,25 +1,32 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChevronLeft, Gauge, User, CalendarDays, Clock, Loader2 } from 'lucide-react';
 import type { UserData } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from "@/hooks/use-toast"; // Import useToast
-import { Toaster } from '@/components/ui/toaster'; // Import Toaster
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from '@/components/ui/toaster';
+
+// Define the missing interface for MileageInfo
+interface MileageInfo {
+  truckNumber: string;
+  driverName: string;
+  lastRecordedMileage: string;
+  lastDrivenDate: string;
+  lastDropOffTime: string;
+}
 
 export default function AddMilesPage() {
   const [mileageInfo, setMileageInfo] = useState<MileageInfo | null>(null);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
-  const [newMileage, setNewMileage] = useState(''); // State for new mileage input
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newMileage, setNewMileage] = useState('');
   const router = useRouter();
-  const { toast } = useToast(); // Initialize useToast
+  const { toast } = useToast();
 
   useEffect(() => {
     const truckNumberFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('currentTruckNumber') : 'N/A';
@@ -66,16 +73,14 @@ export default function AddMilesPage() {
         return;
     }
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Placeholder submission logic
     toast({
         title: "Mileage Submitted (Placeholder)",
         description: `New mileage ${newMileage} for truck ${mileageInfo?.truckNumber} logged.`,
     });
     
     router.back();
-    // setIsSubmitting(false); // Component likely unmounts
   };
 
   if (isLoadingInitialData) {
@@ -98,12 +103,12 @@ export default function AddMilesPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
-      <Toaster /> {/* Add Toaster */}
+      <Toaster />
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        {/* The local AppHeader is removed as it's now global */}
       </div>
 
       <div className="flex-grow flex flex-col items-center">
