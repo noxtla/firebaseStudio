@@ -15,9 +15,10 @@ interface NavItem {
   label: string;
 }
 
+// MODIFICATION: Changed href for 'Chat'
 const navItems: NavItem[] = [
   { href: '/main-menu', icon: Home, label: 'Home' },
-  { href: '#', icon: MessageSquare, label: 'Chat' }, // Placeholder href
+  { href: '/chat', icon: MessageSquare, label: 'Chat' },
 ];
 
 export default function AppFooter() {
@@ -27,7 +28,8 @@ export default function AppFooter() {
   const [isNotifying, setIsNotifying] = useState(false);
 
   // Determine if the footer should be visible based on the current path
-  const hiddenPaths = ['/'];
+  // MODIFICATION: Hide footer on chat page for a better UI
+  const hiddenPaths = ['/', '/chat'];
   if (hiddenPaths.includes(pathname)) {
     return null;
   }
