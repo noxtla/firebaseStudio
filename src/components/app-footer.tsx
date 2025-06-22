@@ -33,7 +33,7 @@ export default function AppFooter() {
   const [isNavigatingProfile, setIsNavigatingProfile] = useState(false);
 
   // Paths where the footer should be hidden
-  const hiddenPaths = ['/', '/chat'];
+  const hiddenPaths = ['/', '/chat', '/scan'];
   if (hiddenPaths.includes(pathname)) {
     return null;
   }

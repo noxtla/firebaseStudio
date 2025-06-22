@@ -5,6 +5,10 @@ import './globals.css';
 import AppFooter from '@/components/app-footer';
 import AppHeader from '@/components/app-header'; // Import the AppHeader
 import { Toaster } from '@/components/ui/toaster'; // Import the Toaster
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Camera } from 'lucide-react';
 
 const lato = Lato({
   subsets: ['latin'],
@@ -23,6 +27,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+
+  // Paths where the camera icon should NOT be displayed
+  const hideCameraOnPaths = [
+    '/', // Initial login/welcome screen
+    '/attendance', // During the multi-step attendance form
+    '/scan', // The scanner page itself
+  ];
+  
+  // Corrected logic: Check for exact match on '/' and startsWith for others.
+  const showCameraIcon = !hideCameraOnPaths.some(path => {
+    if (path === '/') return pathname === '/';
+    return pathname.startsWith(path);
+  });
+
   return (
     <html lang="en" className={`${lato.variable} ${openSans.variable}`}>
       <head>
@@ -32,7 +51,18 @@ export default function RootLayout({
         {/* The global header is now part of the root layout */}
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container flex h-20 items-center justify-center">
-            <AppHeader />
+            <div className="flex items-center gap-2">
+              <Link href="/main-menu" className="no-underline">
+                <AppHeader />
+              </Link>
+              {showCameraIcon && (
+                <Link href="/scan" passHref>
+                  <Button variant="ghost" size="icon" aria-label="Open scanner">
+                    <Camera className="h-6 w-6 text-primary" />
+                  </Button>
+                </Link>
+              )}
+            </div>
           </div>
         </header>
 
