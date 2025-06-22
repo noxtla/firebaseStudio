@@ -68,7 +68,7 @@ const ChatInterface = () => {
         <h1 className="text-lg font-semibold text-foreground">Support Chat</h1>
       </header>
 
-      {/* Message Area */}
+      {/* Message Area - This now works correctly */}
       <ScrollArea className="flex-grow p-4" viewportRef={scrollAreaRef}>
         <div className="flex flex-col gap-4">
           {messages.map((msg) => (
