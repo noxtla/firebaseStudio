@@ -38,7 +38,7 @@ const InitialScreen: FC<InitialScreenProps> = ({ onNextStep }) => {
           {/* Responsive container for the logo */}
           <div className="relative w-36 h-36 sm:w-44 sm:h-44">
             <Image
-              src="https://storage.googleapis.com/proud-booster-358215.appspot.com/e312484f-1779-4531-9f79-679982463b27.png"
+              src="https://placehold.co/144x144.png"
               alt="Asplundh Service Logo"
               fill
               className="rounded-2xl shadow-md"

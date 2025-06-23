@@ -5,10 +5,16 @@ import './globals.css';
 import AppFooter from '@/components/app-footer';
 import AppHeader from '@/components/app-header'; // Import the AppHeader
 import { Toaster } from '@/components/ui/toaster'; // Import the Toaster
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Camera } from 'lucide-react';
+
+// --- NEW IMPORTS ---
+import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
+import { SessionTimeoutDialog } from '@/components/session-timeout-dialog';
+import { useToast } from '@/hooks/use-toast';
+// --- END NEW IMPORTS ---
 
 const lato = Lato({
   subsets: ['latin'],
@@ -28,6 +34,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // --- LOGIC FOR INACTIVITY TIMEOUT ---
+  const handleLogout = () => {
+    // Clear session-related data
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
+    // Redirect to login page with a toast message
+    router.push('/');
+    toast({
+      title: "Session Expired",
+      description: "Your session has expired due to inactivity. Please log in again.",
+      variant: "destructive",
+    });
+  };
+
+  const { showWarning, countdown, extendSession } = useInactivityTimeout(handleLogout);
+  // --- END LOGIC ---
 
   // Paths where the camera icon should NOT be displayed
   const hideCameraOnPaths = [
@@ -57,8 +83,9 @@ export default function RootLayout({
               </Link>
               {showCameraIcon && (
                 <Link href="/scan" passHref>
-                  <Button variant="ghost" size="icon" aria-label="Open scanner">
-                    <Camera className="h-6 w-6 text-primary" />
+                  {/* --- MODIFIED: Adjusted size and color of the camera button --- */}
+                  <Button variant="ghost" size="icon" aria-label="Open scanner" className="h-12 w-12">
+                    <Camera className="h-8 w-8 text-blue-600" />
                   </Button>
                 </Link>
               )}
@@ -70,6 +97,15 @@ export default function RootLayout({
         <main className="pt-8 pb-20">
           {children}
         </main>
+        
+        {/* --- COMPONENT FOR TIMEOUT DIALOG --- */}
+        <SessionTimeoutDialog
+          isOpen={showWarning}
+          countdown={countdown}
+          onExtend={extendSession}
+          onLogout={handleLogout}
+        />
+        {/* --- END COMPONENT --- */}
 
         <AppFooter />
         <Toaster />

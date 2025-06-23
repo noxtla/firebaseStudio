@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut } from "lucide-react"; // Added LogOut icon
 
 import type { UserData } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import ProfileInfo from "@/components/profile/profile-info";
 import ProfileStats from "@/components/profile/profile-stats";
 import ActivityChart from "@/components/profile/activity-chart";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast"; // Added useToast hook
 
 const mockProfileData = {
   contributions: 10,
@@ -23,6 +24,7 @@ const mockProfileData = {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { toast } = useToast(); // Initialized toast
   const [userData, setUserData] = useState<UserData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -45,6 +47,19 @@ export default function ProfilePage() {
     setIsLoading(false);
   }, [router]);
 
+  // --- NEW FUNCTION: Handles the sign-off logic ---
+  const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
+    toast({
+      title: "Signed Out",
+      description: "You have been successfully signed out.",
+    });
+    router.push('/');
+  };
+  // --- END NEW FUNCTION ---
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -59,8 +74,6 @@ export default function ProfilePage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-gray-800 pb-20">
-      {/* The local sticky header bar is removed to avoid conflict with the global header. */}
-      
       <main className="flex-grow container mx-auto p-4 md:p-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mb-4">
             <ArrowLeft className="h-6 w-6" />
@@ -90,6 +103,18 @@ export default function ProfilePage() {
             <ActivityChart data={mockProfileData.activityData} />
           </div>
 
+          {/* --- NEW BUTTON: Added at the bottom of the profile content --- */}
+          <div className="pt-6">
+            <Button
+              variant="destructive"
+              className="w-full"
+              onClick={handleSignOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Off
+            </Button>
+          </div>
+          {/* --- END NEW BUTTON --- */}
         </div>
       </main>
     </div>
