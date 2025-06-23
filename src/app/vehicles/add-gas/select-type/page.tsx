@@ -1,11 +1,9 @@
-
 "use client";
 
 import type { FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Truck as TruckIcon, Package as PackageIcon, Fuel as FuelIcon, ChevronLeft, HelpCircle as HelpCircleIcon, type LucideIcon } from 'lucide-react';
-import AppHeader from '@/components/app-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -41,7 +39,7 @@ export default function SelectGasTypePage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        {/* AppHeader removed from here, it is now global */}
       </div>
 
       <div className="flex-grow flex flex-col items-center">

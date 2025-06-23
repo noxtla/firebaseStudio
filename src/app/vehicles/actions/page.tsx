@@ -1,11 +1,9 @@
-
 "use client";
 
 import { useState, type FC } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Gauge, Caravan, Fuel, TriangleAlert, Info, ChevronLeft, Loader2, type LucideIcon, Wrench } from 'lucide-react';
-import AppHeader from '@/components/app-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,8 +13,8 @@ interface VehicleMenuItemProps {
   icon: LucideIcon;
   href?: string;
   description?: string;
-  isPrimary?: boolean; // Added isPrimary prop to match MenuItemProps
-  onClick?: () => Promise<void> | void; // Added onClick prop to match MenuItemProps
+  isPrimary?: boolean;
+  onClick?: () => Promise<void> | void;
   isDisabled?: boolean;
   isLoading?: boolean;
 }
@@ -97,11 +95,11 @@ export default function VehicleActionsPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
+      {/* The AppHeader is now global and has been removed from this page. */}
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow text-center" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 flex-grow">

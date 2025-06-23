@@ -1,18 +1,12 @@
 "use client";
 
-import { useState } from 'react';
-
 interface HorizontalTabBarProps {
   labels: string[];
+  onTabClick: (label: string) => void;
+  activeTab: string; // Now controlled from parent
 }
 
-const HorizontalTabBar: React.FC<HorizontalTabBarProps> = ({ labels }) => {
-  const [activeTab, setActiveTab] = useState(labels[0]);
-
-  const handleClick = (label: string) => {
-    setActiveTab(label);
-  };
-
+const HorizontalTabBar: React.FC<HorizontalTabBarProps> = ({ labels, activeTab, onTabClick }) => {
   return (
     <div className="bg-white">
       <div
@@ -21,16 +15,16 @@ const HorizontalTabBar: React.FC<HorizontalTabBarProps> = ({ labels }) => {
         {labels.map((label) => (
           <button
             key={label}
-            className={`px-4 py-2 text-lg focus:outline-none ${
+            className={`px-4 py-2 text-lg focus:outline-none transition-colors duration-200 ${
               activeTab === label
-                ? 'font-bold text-black'
-                : 'text-gray-500 font-normal'
+                ? 'font-bold text-foreground'
+                : 'text-muted-foreground font-normal hover:text-foreground'
             }`}
-            onClick={() => handleClick(label)}
+            onClick={() => onTabClick(label)}
           >
             {label}
             {activeTab === label && (
-              <div className="h-1 bg-black mt-1"></div>
+              <div className="h-1 bg-primary mt-1"></div>
             )}
           </button>
         ))}

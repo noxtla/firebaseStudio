@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AttendanceForm from '@/components/attendance-form';
 import type { UserData } from '@/types';
-import AppHeader from '@/components/app-header';
 import { Loader2 } from 'lucide-react';
-import { Toaster } from '@/components/ui/toaster';
 import { Button } from '@/components/ui/button';
 
 export default function AttendancePage() {
@@ -50,15 +48,13 @@ export default function AttendancePage() {
   if (!userData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
-        <Toaster/>
-        <AppHeader className="my-8" />
         <p className="text-destructive text-lg">No se encontraron datos de usuario. Por favor, inicie sesión de nuevo.</p>
         <Button onClick={() => router.push('/')} className="mt-4">Ir al Login</Button>
       </div>
     );
   }
 
-  // Si llegamos aquí, userData es válido y se lo pasamos al formulario.
+  // The AppHeader component is removed from here as it's now global.
   console.log("[ÉXITO] Pasando userData al componente AttendanceForm.");
   return <AttendanceForm initialUserData={userData} />;
 }

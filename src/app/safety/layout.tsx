@@ -1,5 +1,3 @@
-
-import AppHeader from '@/components/app-header';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -14,9 +12,7 @@ export default function SafetyLayout({
 }) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="w-full max-w-4xl mx-auto pt-6 sm:pt-8 md:pt-12 px-4">
-        <AppHeader className="my-4 sm:my-6" />
-      </div>
+      {/* The AppHeader is now global and has been removed from this layout */}
       <main className="flex-grow container mx-auto px-4 py-8">
         {children}
       </main>

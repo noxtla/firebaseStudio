@@ -1,16 +1,14 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChevronLeft, Truck as TruckIcon, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useToast } from "@/hooks/use-toast"; // Import useToast
-import { Toaster } from '@/components/ui/toaster'; // Import Toaster
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from '@/components/ui/toaster';
 
 
 interface TrailerContextInfo {
@@ -19,11 +17,11 @@ interface TrailerContextInfo {
 
 export default function AddTrailerPage() {
   const [trailerContext, setTrailerContext] = useState<TrailerContextInfo | null>(null);
-  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true); // Renamed for clarity
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [trailerNumber, setTrailerNumber] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false); // Added for submission loading
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { toast } = useToast(); // Initialize useToast
+  const { toast } = useToast();
 
   useEffect(() => {
     const truckNumberFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('currentTruckNumber') : 'N/A';
@@ -44,16 +42,14 @@ export default function AddTrailerPage() {
         return;
     }
     setIsSubmitting(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Placeholder submission logic
     toast({
         title: "Trailer Added (Placeholder)",
         description: `Trailer ${trailerNumber} added to truck ${trailerContext?.truckNumber}.`,
     });
     
     router.back();
-    // setIsSubmitting(false); // Component likely unmounts
   };
 
   if (isLoadingInitialData) {
@@ -76,12 +72,12 @@ export default function AddTrailerPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background p-4">
-      <Toaster /> {/* Add Toaster */}
+      <Toaster />
       <div className="flex items-center mb-6">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2" disabled={isSubmitting}>
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        {/* AppHeader removed from here, it is now global */}
       </div>
 
       <div className="flex-grow flex flex-col items-center">

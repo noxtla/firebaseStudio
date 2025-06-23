@@ -1,9 +1,7 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import AppHeader from '@/components/app-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { ChevronLeft, Info as InfoIcon } from 'lucide-react';
@@ -26,7 +24,6 @@ export default function VehicleInfoPage() {
 
   useEffect(() => {
     const truckNumberFromSession = typeof window !== 'undefined' ? sessionStorage.getItem('currentTruckNumber') : 'N/A';
-    // Dummy data for now
     setVehicleInfo({
       truckNumber: truckNumberFromSession || 'N/A',
       engineNumber: "DUMMY-ENG-12345",
@@ -61,7 +58,7 @@ export default function VehicleInfoPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="mr-2">
           <ChevronLeft className="h-8 w-8" />
         </Button>
-        <AppHeader className="flex-grow" />
+        {/* AppHeader removed from here, it is now global */}
       </div>
 
       <div className="flex-grow flex flex-col items-center">
