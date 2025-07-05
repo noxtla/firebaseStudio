@@ -11,8 +11,8 @@ const isProduction = true; // <-- CHANGE THIS VALUE TO SWITCH
 
 // --- Webhook URLs ---
 const urls = {
-  prod: 'https://noxtla.app.n8n.cloud/webhook/login',
-  test: 'https://noxtla.app.n8n.cloud/webhook-test/login',
+  prod: 'https://noxtla.app.n8n.cloud/webhook/MVPv1',
+  test: 'https://noxtla.app.n8n.cloud/webhook-test/MVPv1',
 };
 
 // Export the selected URL to be used throughout the app
