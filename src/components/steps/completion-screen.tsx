@@ -1,3 +1,5 @@
+/*
+
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -201,3 +203,11 @@ const CompletionScreen: FC<CompletionScreenProps> = ({
 };
 
 export default CompletionScreen;
+*/
+
+/*
+* ESTE ARCHIVO HA SIDO COMENTADO COMPLETAMENTE COMO PARTE DE LA REESTRUCTURACIÓN TEMPORAL DEL FLUJO DE ASISTENCIA.
+* LOS PASOS DE "VALIDACIÓN BIOMÉTRICA" Y "REGISTRO FINAL" HAN SIDO DESHABILITADOS TEMPORALMENTE.
+* El flujo actual termina después de la toma de la foto.
+*/
+// (Aquí iría el resto del código original, ahora comentado)

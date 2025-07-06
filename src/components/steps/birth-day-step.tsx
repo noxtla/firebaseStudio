@@ -1,4 +1,4 @@
-"use client";
+/*"use client";
 
 import React, { useState, useEffect, useMemo, type FC } from 'react';
 import { cn } from '@/lib/utils';
@@ -206,3 +206,11 @@ const BirthDayStep: FC<BirthDayStepProps> = ({ onInputChange, onValidityChange, 
 };
 
 export default BirthDayStep;
+*/
+
+/*
+* ESTE ARCHIVO HA SIDO COMENTADO COMPLETAMENTE COMO PARTE DE LA REESTRUCTURACIÓN DEL FLUJO DE ASISTENCIA.
+* LOS PASOS DE VERIFICACIÓN DE SSN Y FECHA DE NACIMIENTO HAN SIDO ELIMINADOS DEL PROCESO DE LOGIN/ASISTENCIA.
+* Su funcionalidad ha sido reemplazada por validaciones de ubicación y horario.
+*/
+// (Aquí iría el resto del código original, ahora comentado)

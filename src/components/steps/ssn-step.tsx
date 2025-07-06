@@ -1,4 +1,4 @@
-import React, { FC, useState, useEffect } from 'react';
+/*import React, { FC, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,3 +82,14 @@ const SsnStep: FC<SsnStepProps> = ({ formData, onInputChange, isSsnValid }) => {
 };
 
 export default SsnStep;
+*/
+
+      
+/*
+* ESTE ARCHIVO HA SIDO COMENTADO COMPLETAMENTE COMO PARTE DE LA REESTRUCTURACIÓN DEL FLUJO DE ASISTENCIA.
+* LOS PASOS DE VERIFICACIÓN DE SSN Y FECHA DE NACIMIENTO HAN SIDO ELIMINADOS DEL PROCESO DE LOGIN/ASISTENCIA.
+* Su funcionalidad ha sido reemplazada por validaciones de ubicación y horario.
+*/
+// (Aquí iría el resto del código original, ahora comentado)
+
+    

@@ -1,26 +1,26 @@
-/**
- * Client-side functionality.
- */
 "use client";
 
 import { useState, type ChangeEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import type { FormData, FormStep, UserData, CapturedLocation } from '@/types';
+import type { FormStep, UserData, CapturedLocation } from '@/types';
 import { useToast } from "@/hooks/use-toast";
 import { WEBHOOK_URL } from '@/config/appConfig';
 
 import ProgressStepper from './progress-stepper';
-import SsnStep from './steps/ssn-step';
-import BirthDayStep from './steps/birth-day-step';
+import LocationValidationStep from './steps/location-validation-step';
+import ScheduleValidationStep from './steps/schedule-validation-step';
 import PhotoStep from './steps/photo-step';
-import CompletionScreen from './steps/completion-screen';
+// ELIMINADA: import CompletionScreen from './steps/completion-screen';
 
 import { Button } from '@/components/ui/button';
-import { Info, CalendarDays, Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2, RefreshCw, ShieldCheck } from 'lucide-react';
+import {
+  Camera as CameraIconLucide, CheckCircle2, ArrowLeft, ArrowRight, Loader2, RefreshCw, ShieldCheck,
+  MapPin, CalendarCheck2
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Toaster } from "@/components/ui/toaster";
 import {
-  AlertDialog,
+  AlertDialog, // Se mantiene por si se usa en otros componentes, pero no para el diálogo final aquí
   AlertDialogAction,
   AlertDialogContent,
   AlertDialogDescription,
@@ -29,16 +29,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const MAX_ATTENDANCE_STEPS: FormStep = 3;
+const MAX_ATTENDANCE_STEPS: FormStep = 2; // CAMBIADO: Ahora el flujo termina en el paso de la foto (índice 2)
 
-// 5 pasos para la UI
-const stepperLabels = ["SSN", "Birth Day", "Photo", "Validation", "Registered"];
-const ATTENDANCE_STEP_CONFIG = [
-  { title: "Enter Last 4 of SSN", icon: Info },
-  { title: "Day of Birth", icon: CalendarDays },
+// Solo 3 pasos para la UI visible
+const stepperLabels = ["Location", "Schedule", "Photo"]; // CAMBIADO
+const ATTENDANCE_STEP_CONFIG = [ // CAMBIADO
+  { title: "Validate Location", icon: MapPin },
+  { title: "Check Schedule", icon: CalendarCheck2 },
   { title: "Take Photo & Location", icon: CameraIconLucide },
-  { title: "Biometric Validation", icon: ShieldCheck },
-  { title: "Attendance Registered", icon: CheckCircle2 },
+  // Eliminados Validation y Registered temporalmente
 ];
 
 interface AttendanceFormProps {
@@ -47,17 +46,14 @@ interface AttendanceFormProps {
 
 export default function AttendanceForm({ initialUserData }: AttendanceFormProps) {
   const [currentStep, setCurrentStep] = useState<FormStep>(0);
-  const [isValidationComplete, setIsValidationComplete] = useState(false);
-  const [isFinishing, setIsFinishing] = useState(false); // Para el paso final de registro
-  const [showFinalSuccessDialog, setShowFinalSuccessDialog] = useState(false); // Para el diálogo final
-  const [formData, setFormData] = useState({
-    ssnLast4: '',
-    birthYear: '',
-    birthMonth: '',
-    birthDay: '',
-  });
-  const [isSsnValid, setIsSsnValid] = useState(false);
-  const [isBirthDayInputValid, setIsBirthDayInputValid] = useState(false);
+  // ELIMINADO: const [isValidationComplete, setIsValidationComplete] = useState(false);
+  // ELIMINADO: const [isFinishing, setIsFinishing] = useState(false);
+  // ELIMINADO: const [showFinalSuccessDialog, setShowFinalSuccessDialog] = useState(false);
+  const [formData, setFormData] = useState({});
+
+  const [isLocationValidated, setIsLocationValidated] = useState(false);
+  const [isScheduleValidated, setIsScheduleValidated] = useState(false);
+
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [captureTimestamp, setCaptureTimestamp] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
@@ -66,24 +62,9 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   const { toast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
-    const isValid = formData.ssnLast4.length === 4 &&
-      /^\d{4}$/.test(formData.ssnLast4) &&
-      initialUserData?.SSN?.slice(-4) === formData.ssnLast4;
-    setIsSsnValid(isValid);
-  }, [formData.ssnLast4, initialUserData?.SSN]);
-
-  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement> | { name: string; value: string }) => {
-    const { name, value } = 'target' in e ? e.target : e;
-
-    if (name === 'ssnLast4' || name === 'birthMonth' || name === 'birthDay' || name === 'birthYear') {
-      const numericValue = value.replace(/\D/g, '');
-      setFormData(prev => ({ ...prev, [name]: numericValue }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
-  }, [setFormData]); 
-
+  const handleInputChange = useCallback(() => {
+    // Ya no se manejan inputs de SSN/BirthDay aquí.
+  }, []);
 
   const handlePhotoCaptured = (
     imageDataUrl: string | null,
@@ -94,36 +75,23 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setCaptureTimestamp(timestamp || null);
     setCapturedLocation(location || null);
   };
-  
+
   const handleRetakePhoto = () => {
     setCapturedImage(null);
     setCaptureTimestamp(null);
     setCapturedLocation(null);
   };
 
-  const handleBirthDayValidationChange = useCallback((isValid: boolean) => {
-    setIsBirthDayInputValid(isValid);
-  }, []);
-
-  const handleMaxAttemptsReached = () => {
-    toast({
-      title: "Too Many Incorrect Attempts",
-      description: "You have been returned to the main menu for security.",
-      variant: "destructive",
-    });
-    router.push('/main-menu');
-  };
-
   const getCanProceed = (): boolean => {
     switch (currentStep) {
-      case 0:
-        return isSsnValid;
-      case 1:
-        return isBirthDayInputValid;
-      case 2:
+      case 0: // Paso de Ubicación
+        return isLocationValidated;
+      case 1: // Paso de Horario
+        return isScheduleValidated;
+      case 2: // Paso de la Foto (ahora es el último paso "funcional")
         return !!capturedImage && !!capturedLocation;
       default:
-        return true;
+        return true; // No deberíamos llegar aquí si el flujo está bien definido hasta MAX_ATTENDANCE_STEPS
     }
   };
 
@@ -133,44 +101,46 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     if (canProceed) {
       setIsNavigating(true);
 
-      if (currentStep === 2) {
-        try {
-          console.log("Enviando webhook con action: 'location'...");
-          const response = await fetch(WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              action: 'location',
-              capturedLocation: capturedLocation,
-              userData: initialUserData,
-            }),
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error("El webhook de ubicación falló:", errorText);
-            toast({
-              title: "Advertencia",
-              description: "No se pudo pre-registrar la ubicación.",
-              variant: "destructive"
-            });
-          } else {
-            console.log("Webhook de ubicación enviado con éxito.");
-          }
-        } catch (error) {
-          console.error("Error al enviar el webhook de ubicación:", error);
-          toast({
-            title: "Error de Red",
-            description: "No se pudo conectar al servidor para registrar la ubicación.",
-            variant: "destructive"
-          });
-        }
-      }
-
       await new Promise(resolve => setTimeout(resolve, 300));
 
       if (currentStep < MAX_ATTENDANCE_STEPS) {
         setCurrentStep((prev) => (prev + 1) as FormStep);
+      } else if (currentStep === MAX_ATTENDANCE_STEPS) {
+        // Si estamos en el último paso permitido (la foto) y se presiona Next,
+        // se redirige al menú principal después de mostrar un toast.
+        toast({
+          title: "Attendance Recorded (Temporary)",
+          description: "Photo captured. Proceeding to main menu as final steps are temporarily disabled.",
+          variant: "success",
+        });
+
+        // Opcional: Si quieres enviar la foto aquí al terminar el flujo temporalmente.
+        // Aquí podrías añadir una llamada a tu webhook para enviar la foto y ubicación.
+        // Por ejemplo:
+        /*
+        try {
+            const response = await fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'temporaryPhotoFinish', // Una nueva acción para este flujo temporal
+                    capturedImage,
+                    captureTimestamp,
+                    capturedLocation,
+                    userData: initialUserData,
+                }),
+            });
+            if (!response.ok) {
+                console.error("Fallo el webhook temporal de la foto final", await response.text());
+                toast({ title: "Error Temporal", description: "La foto se tomó pero no se pudo enviar.", variant: "destructive" });
+            }
+        } catch (error) {
+            console.error("Error en el webhook temporal de la foto final:", error);
+            toast({ title: "Error de Red", description: "No se pudo contactar al servidor para el registro final.", variant: "destructive" });
+        }
+        */
+
+        router.push('/main-menu');
       }
       setIsNavigating(false);
     } else {
@@ -182,76 +152,34 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     setIsNavigating(true);
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    if (currentStep > 0) {
-      if (currentStep === 3 && isValidationComplete) {
-         setIsValidationComplete(false);
-      } else {
-        setCurrentStep((prev) => (prev - 1) as FormStep);
-        if (currentStep === 1) {
-          setFormData(prev => ({...prev, ssnLast4: ''}));
-          setIsSsnValid(false);
-        }
-        if (currentStep === 2) {
-          setFormData(prev => ({...prev, birthMonth: '', birthDay: '', birthYear: ''}));
-          setIsBirthDayInputValid(false);
-        }
-        if (currentStep === 3) {
+    if (currentStep > 0) { // Siempre permite retroceder si no es el primer paso
+      const previousStepValue = currentStep - 1;
+      setCurrentStep(previousStepValue as FormStep);
+
+      // Limpiar datos del paso al que se regresa
+      if (previousStepValue === 2) { // Regresando a la foto (currentStep === 2)
           setCapturedImage(null);
           setCaptureTimestamp(null);
           setCapturedLocation(null);
-        }
+      } else if (previousStepValue === 1) { // Regresando al horario (currentStep === 1)
+          setIsScheduleValidated(false);
+      } else if (previousStepValue === 0) { // Regresando a la ubicación (currentStep === 0)
+          setIsLocationValidated(false);
       }
     }
     setIsNavigating(false);
   };
 
-  const handleFinalRegistration = async () => {
-    setIsFinishing(true);
-    try {
-      console.log("Enviando webhook con action: 'finalAte'...");
-      const response = await fetch(WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'finalAte',
-          capturedImage,
-          captureTimestamp,
-          capturedLocation,
-          userData: initialUserData,
-        }),
-      });
+  // ELIMINADAS: handleFinalRegistration y handleRestartFromCompletion
 
-      if (!response.ok) {
-        throw new Error('Failed to send completion webhook');
-      }
-      setShowFinalSuccessDialog(true);
-    } catch (error) {
-      console.error('Error al enviar el webhook de finalización:', error);
-      toast({
-        title: "Error de Red",
-        description: "No se pudo conectar con el servidor para finalizar. Su asistencia fue guardada, pero la notificación final falló.",
-        variant: "destructive",
-      });
-      setShowFinalSuccessDialog(true);
-    }
-  };
+  // Ajustado el cálculo del progressStepIndex para los 3 pasos visibles (0-2)
+  const progressStepIndex = currentStep; // Ya no hay estado isFinishing separado
+  const ActiveIcon = ATTENDANCE_STEP_CONFIG[progressStepIndex]?.icon; // Directamente el icono del currentStep
+  const activeTitle = ATTENDANCE_STEP_CONFIG[progressStepIndex]?.title; // Directamente el título del currentStep
 
-
-  const handleRestartFromCompletion = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('currentTruckNumber');
-    }
-    router.push('/main-menu');
-  };
-
-  const progressStepIndex = isFinishing ? 5 : (currentStep < 3 ? currentStep : (isValidationComplete ? 4 : 3));
-  const ActiveIcon = ATTENDANCE_STEP_CONFIG[progressStepIndex <= 4 ? progressStepIndex : 4]?.icon;
-  const activeTitle = ATTENDANCE_STEP_CONFIG[progressStepIndex <= 4 ? progressStepIndex : 4]?.title;
-  
-  // AppHeader is now global, so flags to show it are removed.
-  const showStepper = currentStep <= MAX_ATTENDANCE_STEPS;
-  const showStepTitle = currentStep < MAX_ATTENDANCE_STEPS && !isValidationComplete;
-  const showNavButtons = currentStep < MAX_ATTENDANCE_STEPS;
+  const showStepper = true; // Siempre mostrar el stepper
+  const showStepTitle = true; // Siempre mostrar el título del paso
+  const showNavButtons = true; // Siempre mostrar los botones de navegación
 
   const formatInitialsForDisplay = (fullName: string | undefined): string => {
     if (!fullName) return '';
@@ -262,32 +190,27 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
   };
 
   const renderActiveStepContent = () => {
-    if (!initialUserData?.SSN) {
-      return <p className="text-destructive text-center p-4">Error: El SSN del usuario no está disponible. No se puede continuar.</p>;
-    }
-
     switch (currentStep) {
-      case 0:
+      case 0: // Paso: Validación de Ubicación
         return (
-          <SsnStep
-            formData={formData}
-            onInputChange={handleInputChange}
-            isSsnValid={isSsnValid}
+          <LocationValidationStep
+            userData={initialUserData}
+            onLocationValidated={(loc) => {
+              setCapturedLocation(loc); // Guarda la ubicación capturada para el paso de la foto
+              setIsLocationValidated(true);
+            }}
+            isActiveStep={currentStep === 0}
           />
         );
-      case 1:
-        if (!initialUserData.birth_date) {
-            return <p className="text-destructive text-center p-4">Error: La fecha de nacimiento del usuario no está disponible. No se puede continuar.</p>;
-        }
+      case 1: // Paso: Validación de Horario
         return (
-          <BirthDayStep
-            onInputChange={handleInputChange}
-            onValidityChange={handleBirthDayValidationChange}
-            expectedBirthDate={initialUserData.birth_date}
-            onMaxAttemptsReached={handleMaxAttemptsReached}
+          <ScheduleValidationStep
+            userData={initialUserData}
+            onScheduleValidated={() => setIsScheduleValidated(true)}
+            isActiveStep={currentStep === 1}
           />
         );
-      case 2:
+      case 2: // Paso: Toma de Foto
         return (
           <PhotoStep
             onPhotoCaptured={handlePhotoCaptured}
@@ -295,21 +218,16 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
             formattedUserInitials={formatInitialsForDisplay(initialUserData?.Name)}
           />
         );
-      case 3:
-        return (
-          <CompletionScreen
-            capturedImage={capturedImage}
-            captureTimestamp={captureTimestamp}
-            capturedLocation={capturedLocation}
-            userData={initialUserData}
-            onFinalSubmit={handleFinalRegistration}
-            onValidationSuccess={() => setIsValidationComplete(true)}
-            isValidationComplete={isValidationComplete}
-            onRestart={handleRestartFromCompletion}
-          />
-        );
+      // ELIMINADO: case 3 (CompletionScreen)
       default:
-        return null;
+        // Si por alguna razón currentStep excede MAX_ATTENDANCE_STEPS
+        // o hay un estado inesperado, redirigimos o mostramos un mensaje.
+        useEffect(() => {
+          if (currentStep > MAX_ATTENDANCE_STEPS) {
+            router.push('/main-menu'); // O una página de error
+          }
+        }, [currentStep, router]);
+        return <div className="text-center text-muted-foreground p-8">Error: Paso desconocido o fuera de secuencia. Redirigiendo...</div>;
     }
   };
 
@@ -317,8 +235,6 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
     <>
       <div className="flex flex-col min-h-screen bg-background">
          <Toaster />
-
-         {/* The AppHeader has been removed from here. It is now in the global layout. */}
 
         <div className="w-full max-w-md mx-auto px-4">
           {showStepper && (
@@ -341,7 +257,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
 
         <div className="flex-grow flex flex-col items-center justify-start p-4 pt-0">
           <div className="w-full max-w-md mx-auto">
-            <div className="animate-step-enter w-full" key={`${currentStep}-${isValidationComplete}`}>
+            <div className="animate-step-enter w-full" key={currentStep}>
               {renderActiveStepContent()}
             </div>
 
@@ -350,7 +266,7 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
                   <Button
                       variant="ghost"
                       onClick={prevStep}
-                      disabled={isNavigating}
+                      disabled={isNavigating || currentStep === 0} // Deshabilitar el botón "Previous" en el primer paso (Location)
                       className={cn(currentStep === 2 && !capturedImage && "invisible")}
                   >
                       <ArrowLeft className="mr-2 h-4 w-4" />
@@ -370,14 +286,14 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
                         </Button>
                     )}
 
-                    <Button 
-                      onClick={nextStep} 
+                    <Button
+                      onClick={nextStep}
                       disabled={!canProceed || isNavigating}
                       className={cn(currentStep === 2 && !capturedImage && "invisible")}
                     >
                         {isNavigating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {isNavigating ? "Loading..." : (currentStep === 2 ? 'OK' : 'Next')}
-                        {(isNavigating || currentStep === 2) ? null : <ArrowRight className="ml-2 h-4 w-4" />}
+                        {isNavigating ? "Loading..." : (currentStep === MAX_ATTENDANCE_STEPS ? 'Submit' : 'Next')}
+                        {(isNavigating || currentStep === MAX_ATTENDANCE_STEPS) ? null : <ArrowRight className="ml-2 h-4 w-4" />}
                     </Button>
                   </div>
               </div>
@@ -385,21 +301,8 @@ export default function AttendanceForm({ initialUserData }: AttendanceFormProps)
           </div>
         </div>
       </div>
-      
-      <AlertDialog open={showFinalSuccessDialog} onOpenChange={setShowFinalSuccessDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader className="items-center">
-            <CheckCircle2 className="h-12 w-12 text-success mb-2" />
-            <AlertDialogTitle>Asistencia Completada con Éxito</AlertDialogTitle>
-          </AlertDialogHeader>
-          <AlertDialogDescription className="text-center">
-            ¡Todo listo! Tu registro de asistencia está completo.
-          </AlertDialogDescription>
-          <AlertDialogFooter>
-            <AlertDialogAction onClick={handleRestartFromCompletion}>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+
+      {/* ELIMINADO: AlertDialog para showFinalSuccessDialog */}
     </>
   );
 }
