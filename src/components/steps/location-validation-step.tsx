@@ -4,9 +4,8 @@ import type { FC } from 'react';
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { MapPin, Loader2, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { MapPin, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +18,10 @@ import {
 import type { UserData, CapturedLocation } from '@/types';
 import { WEBHOOK_URL } from '@/config/appConfig';
 
+// --- Estados permitidos para locationStatus ---
+const locationStates = ['idle', 'fetching', 'success', 'error'] as const;
+type LocationStatus = typeof locationStates[number];
+
 interface LocationValidationStepProps {
   userData: UserData;
   onLocationValidated: (location: CapturedLocation) => void;
@@ -27,36 +30,33 @@ interface LocationValidationStepProps {
 
 const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onLocationValidated, isActiveStep }) => {
   const { toast } = useToast();
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('idle');
   const [locationErrorMsg, setLocationErrorMsg] = useState<string | null>(null);
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
 
-  // ESTADOS para el AlertDialog
   const [showAlertDialog, setShowAlertDialog] = useState(false);
   const [alertDialogMessage, setAlertDialogMessage] = useState('');
   const [alertDialogTitle, setAlertDialogTitle] = useState('');
   const [alertDialogIcon, setAlertDialogIcon] = useState<React.ElementType | null>(null);
   const [alertDialogIconColor, setAlertDialogIconColor] = useState('');
 
-
-  // Resetear el estado cuando este paso ya no está activo
   useEffect(() => {
     if (!isActiveStep) {
       setLocationStatus('idle');
       setLocationErrorMsg(null);
       setCapturedLocation(null);
-      setShowAlertDialog(false); // También resetear el estado del diálogo
+      setShowAlertDialog(false);
     }
   }, [isActiveStep]);
 
-
   const fetchLocation = useCallback(async () => {
     if (!navigator.geolocation) {
-      setLocationErrorMsg("Geolocation is not supported by this browser.");
+      const msg = "Geolocation is not supported by this browser.";
+      setLocationErrorMsg(msg);
       setLocationStatus('error');
       toast({
         title: "Location Error",
-        description: "Geolocation is not supported by this browser. Cannot proceed.",
+        description: msg,
         variant: "destructive",
       });
       return;
@@ -65,7 +65,7 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
     setLocationStatus('fetching');
     setLocationErrorMsg(null);
     setCapturedLocation(null);
-    setShowAlertDialog(false); // Asegurarse de cerrar cualquier diálogo previo al reintentar
+    setShowAlertDialog(false);
 
     const geoOptions = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
@@ -80,7 +80,6 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
         setCapturedLocation(newLocation);
 
         try {
-          console.log("Enviando webhook con action: 'location'...");
           const response = await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -91,28 +90,36 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
             }),
           });
 
+          const responseData = await response.json();
+          const insideCompany = responseData?.insideCompany === "true";
+          const rawDistance = responseData?.Distance;
+
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: "Unknown error from server." }));
-            const errorMessage = errorData.message || "Failed to validate location with server.";
+            const errorMessage = responseData?.message || "Unknown error from server.";
+
+            if (responseData?.Error === "User is outside of the designated work area") {
+              setAlertDialogTitle("Location Status: Outside Company");
+              setAlertDialogIcon(AlertTriangle);
+              setAlertDialogIconColor("text-yellow-500");
+
+              const parsedDistance = parseFloat(rawDistance);
+              const miles = !isNaN(parsedDistance) ? Math.round(parsedDistance * 10) / 10 : 'N/A';
+              setAlertDialogMessage(`You are currently outside the designated company area. You are approximately ${miles} miles away.`);
+              setShowAlertDialog(true);
+            } else {
+              toast({
+                title: "Network Error",
+                description: "Could not connect to the server to validate location: " + errorMessage,
+                variant: "destructive",
+              });
+            }
+
             setLocationErrorMsg(errorMessage);
             setLocationStatus('error');
-            toast({
-              title: "Network Error",
-              description: "Could not connect to the server to validate location: " + errorMessage,
-              variant: "destructive",
-            });
-
           } else {
-            // RESPUESTA OK (HTTP 200) DE N8N, AHORA VALIDAMOS EL CONTENIDO
-            const responseData = await response.json();
-            const { insideCompany, adjustedDistanceMiles } = responseData[0] || {};
-
-            // *** LÓGICA DE AVANCE PARA PRUEBAS: SIEMPRE AVANZA SI LA COMUNICACIÓN CON N8N ES OK ***
-            // IMPORTANTE: Esto permite que el flujo continúe incluso si insideCompany es false.
-            onLocationValidated(newLocation); 
-
-            if (insideCompany === true) {
+            if (insideCompany) {
               setLocationStatus('success');
+              onLocationValidated(newLocation);
               toast({
                 title: "Location Validated!",
                 description: `Your location has been successfully verified. Accuracy: ${newLocation?.accuracy?.toFixed(0)}m.`,
@@ -120,14 +127,17 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
                 action: <CheckCircle2 className="text-green-500" />,
               });
             } else {
-              // insideCompany es false
-              setLocationStatus('success'); // Se pone en 'success' para permitir el avance del paso en el front
+              setLocationStatus('success');
+              onLocationValidated(newLocation);
+
               setAlertDialogTitle("Location Status: Outside Company");
               setAlertDialogIcon(AlertTriangle);
               setAlertDialogIconColor("text-yellow-500");
-              const miles = adjustedDistanceMiles ? Math.round(adjustedDistanceMiles) : 'N/A';
+
+              const parsedDistance = parseFloat(rawDistance);
+              const miles = !isNaN(parsedDistance) ? Math.round(parsedDistance * 10) / 10 : 'N/A';
               setAlertDialogMessage(`You are currently outside the designated company area. You are approximately ${miles} miles away.`);
-              setShowAlertDialog(true); // Abrir el diálogo para informar
+              setShowAlertDialog(true);
             }
           }
         } catch (error) {
@@ -142,7 +152,6 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
         }
       },
       (error) => {
-        console.error("Error getting location from device:", error);
         let message = "Could not retrieve location.";
         if (error.code === error.PERMISSION_DENIED) {
           message = "Location access denied. Please allow location access in your browser/device settings.";
@@ -162,7 +171,6 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
       geoOptions
     );
   }, [userData, onLocationValidated, toast]);
-
 
   const getStatusTitle = () => {
     switch (locationStatus) {
@@ -185,39 +193,36 @@ const LocationValidationStep: FC<LocationValidationStepProps> = ({ userData, onL
     }
   };
 
-  const AlertDialogIconComponent = alertDialogIcon; // Componente para el icono del diálogo
+  const AlertDialogIconComponent = alertDialogIcon;
 
   return (
     <Card className="w-full max-w-md border-none shadow-none flex flex-col items-center justify-center text-center">
       <CardHeader>
         {locationStatus === 'fetching' && <Loader2 className="h-12 w-12 animate-spin text-primary mb-2" />}
         {locationStatus === 'success' && !showAlertDialog && <CheckCircle2 className="h-12 w-12 text-success mb-2 animate-soft-pulse" />}
-        {locationStatus === 'error' && <AlertTriangle className="h-12 w-12 text-destructive mb-2 animate-shake" />}
+        {(locationStatus === 'error' || (locationStatus === 'success' && showAlertDialog)) && <AlertTriangle className="h-12 w-12 text-destructive mb-2 animate-shake" />}
         {locationStatus === 'idle' && <MapPin className="h-12 w-12 text-muted-foreground mb-2" />}
         <CardTitle className="text-2xl font-heading-style">{getStatusTitle()}</CardTitle>
         <CardDescription className="px-4">{getStatusDescription()}</CardDescription>
       </CardHeader>
       <CardContent className="w-full">
-        {/* El botón está habilitado si el estado es 'idle' o 'error', y deshabilitado si es 'fetching' */}
-        {(locationStatus === 'idle' || locationStatus === 'error') && (
+        {(locationStatus === 'idle' || locationStatus === 'error' || (locationStatus === 'success' && showAlertDialog)) && (
           <Button onClick={fetchLocation} disabled={locationStatus === 'fetching'} className="w-full mt-6">
             {locationStatus === 'fetching' ? 'Validating...' : locationStatus === 'error' ? 'Try Again' : 'Validate Location'}
           </Button>
         )}
-        {/* El botón de 'Location Validated' se muestra solo en estado 'success' */}
-        {locationStatus === 'success' && (
-             <Button disabled className="w-full mt-6 bg-success text-success-foreground hover:bg-success/90">
-                 Location Validated
-             </Button>
+        {locationStatus === 'success' && !showAlertDialog && (
+          <Button disabled className="w-full mt-6 bg-success text-success-foreground hover:bg-success/90">
+            Location Validated
+          </Button>
         )}
       </CardContent>
 
-      {/* AlertDialog para el mensaje específico de "fuera de la compañía" */}
       <AlertDialog open={showAlertDialog} onOpenChange={setShowAlertDialog}>
         <AlertDialogContent>
           <AlertDialogHeader className="items-center">
             {AlertDialogIconComponent && (
-                <AlertDialogIconComponent className={`h-12 w-12 mb-2 ${alertDialogIconColor}`} />
+              <AlertDialogIconComponent className={`h-12 w-12 mb-2 ${alertDialogIconColor}`} />
             )}
             <AlertDialogTitle>{alertDialogTitle}</AlertDialogTitle>
           </AlertDialogHeader>
