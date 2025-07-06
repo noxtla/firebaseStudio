@@ -7,12 +7,12 @@
  * - Set to `false` to use the TEST webhook URL.
  * - Set to `true` to use the PRODUCTION webhook URL.
  */
-const isProduction = true; // <-- CHANGE THIS VALUE TO SWITCH
+const isProduction = false; // <-- CHANGE THIS VALUE TO SWITCH
 
 // --- Webhook URLs ---
 const urls = {
-  prod: 'https://noxtla.app.n8n.cloud/webhook/MVPv1',
-  test: 'https://noxtla.app.n8n.cloud/webhook-test/MVPv1',
+  prod: 'https://noxtla.app.n8n.cloud/webhook/mvp/v1/1.0.1',
+  test: 'https://noxtla.app.n8n.cloud/webhook-test/mvp/v1/1.0.1',
 };
 
 // Export the selected URL to be used throughout the app
